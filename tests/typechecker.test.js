@@ -419,6 +419,49 @@ let f: Fn<Number> = fn() -> Number { x };
 f()
 `, /Undefined variable/i);
 
+testError('nested lambda cannot access outer lambda let binding', `
+let outer: Fn<Number> = fn() -> Number {
+  let a: Number = 1;
+  let inner: Fn<Number> = fn() -> Number { a };
+  inner()
+};
+outer()
+`, /Undefined variable/i);
+
+testError('fn body local not visible to another fn', `
+let f1: Fn<Number> = fn() -> Number {
+  let a: Number = 1;
+  a
+};
+let f2: Fn<Number> = fn() -> Number { a };
+f1()
+`, /Undefined variable/i);
+
+test('lambda can access its own param in isolation', `
+let f: Fn<Number, Number> = fn(x: Number) -> Number { x };
+f(5)
+`, 5);
+
+test('lambda body with return stmt and explicit return type', `
+let f: Fn<Number, Number> = fn(x: Number) -> Number {
+  let y: Number = x + 1;
+  return y + 2;
+};
+f(3)
+`, 6);
+
+testError('lambda return type mismatch in expression body', `
+let f: Fn<Number> = fn() -> Number { true };
+f()
+`, /expected|but got/i);
+
+testError('lambda return type mismatch in return stmt', `
+let f: Fn<Number> = fn() -> Number {
+  return true;
+};
+f()
+`, /expected|but got/i);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 
