@@ -17,10 +17,11 @@ import { Interpreter, RuntimeError } from './runtime/interpreter.js';
 import { Builtins } from './runtime/builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
 import { list as mkList, string as mkString } from './runtime/values.js';
+import { FnDecl, Program } from './ast/nodes.js';
 
 class ModuleLoader {
-  baseDir: any;
-  loadedModules: any;
+  baseDir: string;
+  loadedModules: Map<string, { name: string; path: string; program: Program; exports: Map<string, FnDecl> }>;
 
   constructor(baseDir = process.cwd()) {
     this.baseDir = baseDir;
@@ -123,7 +124,7 @@ class ModuleLoader {
           namespace.set(name, fnDecl);
         }
         // Register namespace object in env (used for field access)
-        interpreter.rootEnv.define(stmt.name, { _module: namespace }, false);
+        interpreter.rootEnv.define(stmt.name, { _module: namespace } as any);
       }
     }
   }

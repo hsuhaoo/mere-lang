@@ -37,6 +37,7 @@
  */
 
 import { TokenType } from '../lexer/tokens.js';
+import { Token } from '../lexer/index.js';
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
@@ -48,11 +49,11 @@ import {
 } from '../ast/nodes.js';
 
 class ParseError extends Error {
-  line: any;
-  column: any;
-  name: any;
+  line: number;
+  column: number;
+  override name: string;
 
-  constructor(message, line = 0, column = 0) {
+  constructor(message: string, line: number = 0, column: number = 0) {
     super(`Parse error [${line}:${column}]: ${message}`);
     this.line = line;
     this.column = column;
@@ -61,10 +62,10 @@ class ParseError extends Error {
 }
 
 class Parser {
-  tokens: any;
-  pos: any;
+  tokens: Token[];
+  pos: number;
 
-  constructor(tokens) {
+  constructor(tokens: Token[]) {
     this.tokens = tokens;
     this.pos = 0;
   }
@@ -82,7 +83,7 @@ class Parser {
     return token;
   }
 
-  expect(type) {
+  expect(type: string) {
     const token = this.peek();
     if (token.type !== type) {
       throw new ParseError(`Expected ${type} but found ${token.type}`, token.line, token.column);
@@ -90,11 +91,11 @@ class Parser {
     return this.advance();
   }
 
-  check(type) {
+  check(type: string) {
     return this.peek().type === type;
   }
 
-  match(...types) {
+  match(...types: string[]) {
     if (types.includes(this.peek().type)) {
       return this.advance();
     }
@@ -161,7 +162,7 @@ class Parser {
     this.expect(TokenType.FROM);
     const fromToken = this.expect(TokenType.STRING);
     this.match(TokenType.SEMICOLON);
-    return new ImportStmt(nameToken.value, fromToken.value, nameToken.line, nameToken.column);
+    return new ImportStmt(nameToken.value as string, fromToken.value as string, nameToken.line, nameToken.column);
   }
 
   // ── Export ────────────────────────────────────────────────────
@@ -589,7 +590,7 @@ class Parser {
     );
   }
 
-  parseMethodCall(base) {
+  parseMethodCall(base: any) {
     this.expect(TokenType.LPAREN);
     const args = [];
     if (!this.check(TokenType.RPAREN)) {
@@ -617,7 +618,7 @@ class Parser {
     return new MethodCallExpr(base, base.name || '', args, base.line, base.column);
   }
 
-  parseFieldChain(base) {
+  parseFieldChain(base: any) {
     let expr = base;
 
     while (this.check(TokenType.DOT)) {
@@ -665,7 +666,7 @@ class Parser {
 
   // ── Operator precedence ───────────────────────────────────────
 
-  getBinOpPrecedence(type) {
+  getBinOpPrecedence(type: string) {
     const opMap = {
       '+': 5,
       '-': 5,

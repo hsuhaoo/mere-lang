@@ -1,4 +1,4 @@
-import { Value, TaskValue, task as mkTask } from './values.js';
+import { Value, TaskValue, TaskHandle, task as mkTask } from './values.js';
 import { TypeAnnotation } from '../ast/nodes.js';
 
 class SchedulerTask {
@@ -9,7 +9,7 @@ class SchedulerTask {
   result: Value | null;
   error: string | null;
 
-  constructor(id: number, fn: () => any, resultType: TypeAnnotation | null) {
+  constructor(id: number, fn: () => Value, resultType: TypeAnnotation | null) {
     this.id = id;
     this.fn = fn;
     this.resultType = resultType;
@@ -48,8 +48,8 @@ class Scheduler {
     return mkTask(task, resultType);
   }
 
-  join(taskValue: TaskValue): any {
-    const task: SchedulerTask = taskValue.handle;
+  join(taskValue: TaskValue): Value {
+    const task: TaskHandle = taskValue.handle;
 
     if (task.isDone()) {
       if (task.error) {
@@ -88,7 +88,7 @@ class Scheduler {
         const result = task.fn();
         task.result = result;
         task.state = 'done';
-      } catch (e: any) {
+      } catch (e) {
         task.error = e.message;
         task.state = 'done';
       }

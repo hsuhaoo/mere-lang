@@ -320,11 +320,22 @@ class FnValue extends Value {
   }
 }
 
+export interface TaskHandle {
+  id: number;
+  state: 'pending' | 'ready' | 'done';
+  fn: () => Value;
+  result: Value | null;
+  error: string | null;
+  resultType: TypeAnnotation | null;
+  isDone(): boolean;
+  isReady(): boolean;
+}
+
 class TaskValue extends Value {
-  handle: any;
+  handle: TaskHandle;
   _taskType: TypeAnnotation | null;
 
-  constructor(handle: any, taskType: TypeAnnotation | null = null) {
+  constructor(handle: TaskHandle, taskType: TypeAnnotation | null = null) {
     super(ValueKind.TASK);
     this.handle = handle;
     this._taskType = taskType;
@@ -376,7 +387,7 @@ function fn(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[],
   return new FnValue(params, body, closure);
 }
 
-function task(handle: any, taskType: TypeAnnotation | null = null): TaskValue {
+function task(handle: TaskHandle, taskType: TypeAnnotation | null = null): TaskValue {
   return new TaskValue(handle, taskType);
 }
 

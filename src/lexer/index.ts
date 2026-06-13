@@ -42,12 +42,12 @@ const OPERATOR_1CHAR = {
 };
 
 class Token {
-  type: any;
-  value: any;
-  line: any;
-  column: any;
+  type: string;
+  value: any; // type varies by token kind (string for idents/ops, number for literals, null for EOF)
+  line: number;
+  column: number;
 
-  constructor(type, value, line, column) {
+  constructor(type: string, value: any, line: number, column: number) {
     this.type = type;
     this.value = value;
     this.line = line;
@@ -60,11 +60,10 @@ class Token {
 }
 
 class LexerError extends Error {
-  line: any;
-  column: any;
-  name: any;
+  line: number;
+  column: number;
 
-  constructor(message, line = 0, column = 0) {
+  constructor(message: string, line: number = 0, column: number = 0) {
     super(`[${line}:${column}] ${message}`);
     this.line = line;
     this.column = column;
@@ -73,13 +72,13 @@ class LexerError extends Error {
 }
 
 class Lexer {
-  source: any;
-  pos: any;
-  line: any;
-  column: any;
-  tokens: any;
+  source: string;
+  pos: number;
+  line: number;
+  column: number;
+  tokens: Token[];
 
-  constructor(source) {
+  constructor(source: string) {
     this.source = source;
     this.pos = 0;
     this.line = 1;

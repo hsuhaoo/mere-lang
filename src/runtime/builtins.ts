@@ -261,11 +261,16 @@ class Builtins {
     // Since Simplex has no async IO, spawn is synchronous.
     // It captures the result of expr and returns it via join().
     this.registerFn('spawn', 1, (args) => {
-      const result = args[0];  // already evaluated value
+      const result = args[0];
       return mkTask({
         id: 0,
         state: 'done',
+        fn: () => result,
         result: result,
+        error: null,
+        resultType: null,
+        isDone: () => true,
+        isReady: () => false,
       }, null);
     });
 
