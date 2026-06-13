@@ -153,17 +153,6 @@ class ListValue extends Value {
     return this._elements[index];
   }
 
-  set(index: number, value: Value): void {
-    if (index < 0 || index >= this._elements.length) {
-      throw new RangeError(`Index ${index} out of range`);
-    }
-    this._elements[index] = value;
-  }
-
-  push(value: Value): void {
-    this._elements.push(value);
-  }
-
   _getElements(): Value[] {
     return this._elements;
   }
@@ -328,13 +317,12 @@ class FnValue extends Value {
 
 export interface TaskHandle {
   id: number;
-  state: 'pending' | 'ready' | 'done';
-  fn: () => Value;
+  state: 'pending' | 'done';
+  fn: () => Value | Promise<Value>;
   result: Value | null;
   error: string | null;
   resultType: TypeAnnotation | null;
   isDone(): boolean;
-  isReady(): boolean;
 }
 
 class TaskValue extends Value {

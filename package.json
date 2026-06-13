@@ -18,6 +18,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260612.1"
   },
   "dependencies": {
+    "deasync": "^0.1.31",
     "typescript": "^6.0.3"
   }
 }

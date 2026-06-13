@@ -454,6 +454,33 @@ class TypeChecker {
         return this.inferPolyBuiltin(expr, fnName);
       }
 
+      // spawn: Fn<RetT> → Task<RetT>
+      if (fnName === 'spawn') {
+        const fnType = this.inferExprType(expr.args[0]);
+        if (fnType.name !== 'Fn') {
+          throw new TypeError('spawn expects a function', expr.line, expr.column);
+        }
+        const typeParams = fnType.typeParams || [];
+        if (typeParams.length === 0) {
+          throw new TypeError('spawn expects a function with a return type', expr.line, expr.column);
+        }
+        const retType = typeParams[typeParams.length - 1];
+        return new TypeAnnotation('Task', [retType], expr.line, expr.column);
+      }
+
+      // join: Task<RetT> → RetT
+      if (fnName === 'join') {
+        const taskType = this.inferExprType(expr.args[0]);
+        if (taskType.name !== 'Task') {
+          throw new TypeError('join expects a Task', expr.line, expr.column);
+        }
+        const typeParams = taskType.typeParams || [];
+        if (typeParams.length === 0) {
+          throw new TypeError('join expects a Task with a type parameter', expr.line, expr.column);
+        }
+        return typeParams[0];
+      }
+
       // Built-in function
       if (BUILTIN_FUNCTIONS.has(fnName)) {
         fnType = BUILTIN_FUNCTIONS.get(fnName);
@@ -1067,14 +1094,10 @@ const BUILTIN_FUNCTIONS = new Map([
   ['map_has', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Boolean') }],
   ['map_remove', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Unit') }],
 
-  // File I/O
-  ['file_read', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('String')]) }],
-  ['file_read_lines', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('List', [new TypeAnnotation('String')])]) }],
-  ['file_write', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Unit')]) }],
-
-  // Task builtins
-  ['spawn', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('$T')]) }],
-  ['join', { paramTypes: [new TypeAnnotation('Task', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('$T') }],
+  // File I/O (async — returns Task, I/O happens on join)
+  ['file_read', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+  ['file_read_lines', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('List', [new TypeAnnotation('String')])])]) }],
+  ['file_write', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
 
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],

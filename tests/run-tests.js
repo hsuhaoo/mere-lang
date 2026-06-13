@@ -1,4 +1,7 @@
 const { run } = require('../dist/index.js');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 console.log('=== Simplex Language Test Suite ===');
 console.log();
@@ -39,7 +42,10 @@ function testError(name, src, expectedSubstring) {
     console.log('✗', name, 'expected error, got result');
     failed++;
   } catch (e) {
-    if (e.message.includes(expectedSubstring)) {
+    const matches = expectedSubstring instanceof RegExp
+      ? expectedSubstring.test(e.message)
+      : e.message.includes(expectedSubstring);
+    if (matches) {
       console.log('✓', name, '=', e.message);
       passed++;
     } else {
@@ -319,6 +325,165 @@ let p: P = { x: 10, y: 20 };
 let s: String = to_string(p);
 len(s)
 `, 20);
+
+// ── Edge cases: stdlib edges ────────────────────────────────────
+testError('len on number errors', 'len(42)', /length|function/i);
+testError('len on boolean errors', 'len(true)', /length|function/i);
+
+test('abs negative', `
+abs(-5)
+`, 5);
+
+test('abs positive', `
+abs(5)
+`, 5);
+
+test('max equal values', `
+max(5, 5)
+`, 5);
+
+test('min equal values', `
+min(5, 5)
+`, 5);
+
+test('parse_num success', `
+let r: Result<Number> = parse_num("42");
+r.value
+`, 42);
+
+test('append to list', `
+let l: List<Number> = [1, 2];
+let l2: List<Number> = append(l, 3);
+list_len(l2)
+`, 3);
+
+test('list_get out of bounds', `
+let l: List<Number> = [1, 2, 3];
+not list_get(l, 10).isOk
+`, true);
+
+test('get negative index', `
+not get([1, 2, 3], -1).isOk
+`, true);
+
+test('to_string number', `
+to_string(42)
+`, "42");
+
+// ── File I/O ────────────────────────────────────────────────────
+const ioDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simplex-io-test-'));
+const ioFilePath = path.join(ioDir, 'test.txt');
+const ioLinesPath = path.join(ioDir, 'lines.txt');
+const ioWritePath = path.join(ioDir, 'written.txt');
+  const ioNoDirPath = path.join(ioDir, 'nope', 'file.txt');
+fs.writeFileSync(ioFilePath, 'hello simplex');
+fs.writeFileSync(ioLinesPath, 'line1\nline2\nline3\n');
+fs.writeFileSync(path.join(ioDir, 'conc-a.txt'), 'aaa');
+fs.writeFileSync(path.join(ioDir, 'conc-b.txt'), 'bbb');
+
+test('file_read existing file', `
+let r: Result<String> = join(file_read("${ioFilePath}"));
+r.value
+`, "hello simplex");
+
+test('file_read non-existent file', `
+let r: Result<String> = join(file_read("${ioNoDirPath}"));
+not r.isOk
+`, true);
+
+test('file_read_lines existing file', `
+let r: Result<List<String>> = join(file_read_lines("${ioLinesPath}"));
+let lines: List<String> = r.value;
+list_len(lines)
+`, 3);
+
+test('file_read_lines non-existent file', `
+let r: Result<List<String>> = join(file_read_lines("${ioNoDirPath}"));
+not r.isOk
+`, true);
+
+test('file_write and read back', `
+let w: Result<Unit> = join(file_write("${ioWritePath}", "written content"));
+let r: Result<String> = join(file_read("${ioWritePath}"));
+r.value
+`, "written content");
+
+test('file_write empty string', `
+let w: Result<Unit> = join(file_write("${ioDir}/empty.txt", ""));
+let r: Result<String> = join(file_read("${ioDir}/empty.txt"));
+r.value
+`, "");
+
+test('file_read_lines empty file', `
+let r: Result<List<String>> = join(file_read_lines("${ioDir}/empty.txt"));
+list_len(r.value)
+`, 0);
+
+test('file_write to non-existent directory', `
+let r: Result<Unit> = join(file_write("${ioDir}/x/y.txt", "content"));
+not r.isOk
+`, true);
+
+test('spawn with io inside', `
+let w: Result<Unit> = join(file_write("${ioDir}/spawn-test.txt", "spawned io"));
+let t: Task<String> = spawn(fn () -> String {
+  let r: Result<String> = join(file_read("${ioDir}/spawn-test.txt"));
+  r.value
+});
+let v: String = join(t);
+  v
+`, "spawned io");
+
+test('concurrent file reads', `
+let t1: Task<Result<String>> = file_read("${ioDir}/conc-a.txt");
+let t2: Task<Result<String>> = file_read("${ioDir}/conc-b.txt");
+let r1: Result<String> = join(t1);
+let r2: Result<String> = join(t2);
+r1.value + r2.value
+`, "aaabbb");
+
+fs.rmSync(ioDir, { recursive: true, force: true });
+
+// ── Tail call optimization ───────────────────────────────────────
+test('tail-call sum at depth 10000', `
+fn sum(n: Number, acc: Number) -> Number {
+  if n == 0 { return acc; }
+  return sum(n - 1, acc + n);
+}
+sum(10000, 0)
+`, 50005000);
+
+test('tail-call factorial', `
+fn fact(n: Number, acc: Number) -> Number {
+  if n <= 1 { return acc; }
+  return fact(n - 1, acc * n);
+}
+fact(5, 1)
+`, 120);
+
+// ── Spawn / Join ────────────────────────────────────────────────
+test('spawn and join fn', `
+let f: Fn<Number> = fn () -> Number { 42 };
+let t: Task<Number> = spawn(f);
+let v: Number = join(t);
+v
+`, 42);
+
+test('spawn lambda directly', `
+let t: Task<Number> = spawn(fn () -> Number { 7 });
+let v: Number = join(t);
+v
+`, 7);
+
+test('spawn multiple', `
+let a: Fn<Number> = fn () -> Number { 1 };
+let b: Fn<Number> = fn () -> Number { 2 };
+let ta: Task<Number> = spawn(a);
+let tb: Task<Number> = spawn(b);
+let va: Number = join(ta);
+let vb: Number = join(tb);
+  va + vb
+`, 3);
 
 // ── Nested generics ────────────────────────────────────────────
 test('Nested List<List<Number>>', `

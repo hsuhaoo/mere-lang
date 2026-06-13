@@ -1,15 +1,16 @@
-import { Value, TaskValue, TaskHandle, task as mkTask } from './values.js';
+import { Value, TaskValue, task as mkTask } from './values.js';
 import { TypeAnnotation } from '../ast/nodes.js';
+import deasync from 'deasync';
 
 class SchedulerTask {
   id: number;
-  fn: () => Value;
+  fn: () => Value | Promise<Value>;
   resultType: TypeAnnotation | null;
-  state: 'pending' | 'ready' | 'done';
+  state: 'pending' | 'done';
   result: Value | null;
   error: string | null;
 
-  constructor(id: number, fn: () => Value, resultType: TypeAnnotation | null) {
+  constructor(id: number, fn: () => Value | Promise<Value>, resultType: TypeAnnotation | null) {
     this.id = id;
     this.fn = fn;
     this.resultType = resultType;
@@ -21,35 +22,35 @@ class SchedulerTask {
   isDone(): boolean {
     return this.state === 'done';
   }
-
-  isReady(): boolean {
-    return this.state === 'ready';
-  }
 }
 
 class Scheduler {
   tasks: Map<number, SchedulerTask>;
-  readyQueue: SchedulerTask[];
   nextId: number;
-  running: boolean;
 
   constructor() {
     this.tasks = new Map();
-    this.readyQueue = [];
     this.nextId = 0;
-    this.running = false;
   }
 
-  spawn(fn: () => Value, resultType: TypeAnnotation | null): TaskValue {
+  spawn(fn: () => Value | Promise<Value>, resultType: TypeAnnotation | null): TaskValue {
     const task = new SchedulerTask(this.nextId++, fn, resultType);
     this.tasks.set(task.id, task);
-    this.readyQueue.push(task);
+    return mkTask(task, resultType);
+  }
 
+  spawnAsync(promise: Promise<Value>, resultType: TypeAnnotation | null): TaskValue {
+    const task = new SchedulerTask(this.nextId++, () => promise, resultType);
+    this.tasks.set(task.id, task);
+    promise.then(
+      value => { task.result = value; task.state = 'done'; },
+      err => { task.error = err.message; task.state = 'done'; }
+    );
     return mkTask(task, resultType);
   }
 
   join(taskValue: TaskValue): Value {
-    const task: TaskHandle = taskValue.handle;
+    const task = taskValue.handle;
 
     if (task.isDone()) {
       if (task.error) {
@@ -58,17 +59,18 @@ class Scheduler {
       return task.result;
     }
 
-    if (task.isReady()) {
-      this.runTasks([task]);
-      if (task.isDone()) {
-        if (task.error) {
-          throw new Error(`Task ${task.id} failed: ${task.error}`);
-        }
-        return task.result;
-      }
-    }
+    const result = task.fn();
 
-    this.run();
+    if (result instanceof Promise) {
+      // Async task — already started by spawnAsync, pump loop until done
+      if (!task.isDone()) {
+        deasync.loopWhile(() => !task.isDone());
+      }
+    } else {
+      // Sync task — execute result immediately
+      task.result = result;
+      task.state = 'done';
+    }
 
     if (task.error) {
       throw new Error(`Task ${task.id} failed: ${task.error}`);
@@ -76,48 +78,9 @@ class Scheduler {
     return task.result;
   }
 
-  run() {
-    this.running = true;
-    this.runTasks([...this.tasks.values()].filter(t => t.state === 'ready'));
-    this.running = false;
-  }
-
-  runTasks(tasks: SchedulerTask[]) {
-    for (const task of tasks) {
-      try {
-        const result = task.fn();
-        task.result = result;
-        task.state = 'done';
-      } catch (e) {
-        task.error = e.message;
-        task.state = 'done';
-      }
-    }
-  }
-
-  registerTask(task: SchedulerTask) {
-    this.tasks.set(task.id, task);
-  }
-
-  markReady(taskId: number) {
-    const task = this.tasks.get(taskId);
-    if (task) {
-      task.state = 'ready';
-      if (!this.readyQueue.includes(task)) {
-        this.readyQueue.push(task);
-      }
-    }
-  }
-
-  remainingTasks(): SchedulerTask[] {
-    return [...this.tasks.values()].filter(t => !t.isDone());
-  }
-
   reset() {
     this.tasks.clear();
-    this.readyQueue = [];
     this.nextId = 0;
-    this.running = false;
   }
 }
 

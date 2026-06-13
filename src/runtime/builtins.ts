@@ -6,7 +6,6 @@
  * Every possible failure returns a Result value.
  */
 
-import * as fs from 'fs';
 import process from 'process';
 import {
   Value, ValueKind,
@@ -15,7 +14,6 @@ import {
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
   mkOk, mkErr,
-  task as mkTask,
 } from './values.js';
 
 class Builtins {
@@ -62,44 +60,6 @@ class Builtins {
     this.registerFn('print', 1, (args) => {
       process.stdout.write(args[0].toString() + '\n');
       return mkUnit();
-    });
-
-    // ── File I/O ──────────────────────────────────────────────────
-    // fs already imported at top
-
-    this.registerFn('file_read', 1, (args) => {
-      const path = args[0].get();
-      try {
-        const content = fs.readFileSync(path, 'utf-8');
-        return mkOk(mkString(content));
-      } catch (e) {
-        return mkErr(`Cannot read file '${path}': ${e.message}`);
-      }
-    });
-
-    this.registerFn('file_read_lines', 1, (args) => {
-      const path = args[0].get();
-      try {
-        const content = fs.readFileSync(path, 'utf-8');
-        const lines = content.split('\n');
-        return mkOk(mkList(
-          lines.map(line => mkString(line)),
-          null
-        ));
-      } catch (e) {
-        return mkErr(`Cannot read file '${path}': ${e.message}`);
-      }
-    });
-
-    this.registerFn('file_write', 2, (args) => {
-      const path = args[0].get();
-      const content = args[1].get();
-      try {
-        fs.writeFileSync(path, content);
-        return mkOk(mkUnit());
-      } catch (e) {
-        return mkErr(`Cannot write file '${path}': ${e.message}`);
-      }
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -223,35 +183,6 @@ class Builtins {
 
     this.registerFn('min', 2, (args) => {
       return mkNumber(Math.min(args[0].getNumber(), args[1].getNumber()));
-    });
-
-    // ── Task builtins ──────────────────────────────────────────────
-    // spawn(expr) — wraps an evaluated expression into Task<T>
-    // Since Simplex has no async IO, spawn is synchronous.
-    // It captures the result of expr and returns it via join().
-    this.registerFn('spawn', 1, (args) => {
-      const result = args[0];
-      return mkTask({
-        id: 0,
-        state: 'done',
-        fn: () => result,
-        result: result,
-        error: null,
-        resultType: null,
-        isDone: () => true,
-        isReady: () => false,
-      });
-    });
-
-    this.registerFn('join', 1, (args) => {
-      const task = args[0].handle;
-      if (task.state === 'done') {
-        if (task.error) {
-          throw new Error(`Task failed: ${task.error}`);
-        }
-        return task.result;
-      }
-      throw new Error('Task not completed');
     });
 
   }

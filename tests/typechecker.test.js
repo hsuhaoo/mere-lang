@@ -384,6 +384,21 @@ let add: Fn<Number, Number> = fn(n: Number) -> Number { n + 1 };
 add(1, 2)
 `, /expects.*args/i);
 
+// ── Edge cases: type checker ────────────────────────────────────
+testError('record field type mismatch', `
+type P = { x: Number };
+let p: P = { x: "hello" };
+p.x
+`, /Expected type.*Number.*got.*String|type/i);
+
+testError('get on number errors', `
+get(42, 1)
+`, /expects.*List.*Map/i);
+
+testError('put on non-map errors', `
+put(42, 1, 2)
+`, /expects.*Map/i);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 
