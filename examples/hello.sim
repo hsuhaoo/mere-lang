@@ -1,0 +1,7 @@
+// Simplex example: Hello World
+// Run with: node bin/simplex.js examples/hello.sim
+
+print("Hello, Simplex!")
+
+let name: String = "World";
+print("Hello, " + name + "!")

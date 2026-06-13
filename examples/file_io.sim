@@ -1,0 +1,21 @@
+// Simplex example: File I/O
+// Run with: node bin/simplex.js examples/file_io.sim
+
+// --- Write a file ---
+let write_result: Result<Unit> = file_write("output.txt", "Hello from Simplex!\nSecond line\n");
+if is_ok(write_result) {
+  print("File written successfully");
+}
+
+// --- Read a file ---
+let content: Result<String> = file_read("output.txt");
+if is_ok(content) {
+  print("File contents: " + unwrap(content));
+}
+
+// --- Read lines ---
+let lines: Result<List<String>> = file_read_lines("output.txt");
+if is_ok(lines) {
+  let line_count: Int = list_len(unwrap(lines));
+  print("Line count: " + to_string(line_count));
+}

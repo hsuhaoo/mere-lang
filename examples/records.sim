@@ -1,0 +1,42 @@
+// Simplex example: Custom record types
+// Run with: node bin/simplex.js examples/records.sim
+
+// Define a Point record
+type Point = { x: Int, y: Int };
+
+// Define a Rectangle record
+type Rectangle = { top_left: Point, width: Int, height: Int };
+
+// Create points
+let origin: Point = { x: 0, y: 0 };
+let p1: Point = { x: 10, y: 20 };
+
+print("Point p1: x=" + to_string(p1.x) + ", y=" + to_string(p1.y));
+
+// Create a rectangle using helper function
+fn make_rect(x: Int, y: Int, w: Int, h: Int) -> Rectangle {
+  let tl: Point = { x: x, y: y };
+  { top_left: tl, width: w, height: h }
+}
+
+let rect: Rectangle = make_rect(0, 0, 100, 200);
+
+print("Rectangle: width=" + to_string(rect.width) + ", height=" + to_string(rect.height));
+print("Rectangle top-left: x=" + to_string(rect.top_left.x) + ", y=" + to_string(rect.top_left.y));
+
+// Calculate area
+fn area(r: Rectangle) -> Int {
+  r.width * r.height
+}
+
+print("Rectangle area: " + to_string(area(rect)));
+
+// Calculate distance between two points
+fn distance(p1: Point, p2: Point) -> Int {
+  let dx: Int = p2.x - p1.x;
+  let dy: Int = p2.y - p1.y;
+  // Approximate distance (integer square root would be better)
+  dx * dx + dy * dy
+}
+
+print("Distance from origin to p1 (squared): " + to_string(distance(origin, p1)));

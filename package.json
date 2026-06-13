@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "name": "simplex-lang",
+  "description": "A minimal, explicit programming language with no syntax sugar and no implicit behavior.",
+  "main": "src/index.js",
+  "bin": {
+    "simplex": "bin/simplex.js"
+  },
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

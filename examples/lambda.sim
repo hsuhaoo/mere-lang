@@ -1,0 +1,24 @@
+// Simplex example: Lambda expressions
+// Run with: node bin/simplex.js examples/lambda.sim
+
+// --- Lambda as a value ---
+let add: Fn<Int, Int, Int> = fn(x: Int, y: Int) -> Int { x + y };
+let result: Int = add(3, 4);
+print("add(3, 4) = " + to_string(result));
+
+// --- Lambda in expression ---
+let times: Fn<Int, Int, Int> = fn(a: Int, b: Int) -> Int { a * b };
+print("times(5, 6) = " + to_string(times(5, 6)));
+
+// --- Lambda with no parameters ---
+let hello: Fn<String> = fn() -> String { "Hello from lambda!" };
+print(hello());
+
+// --- Lambda with single param ---
+let double: Fn<Int, Int> = fn(n: Int) -> Int { n * 2 };
+print("double(21) = " + to_string(double(21)));
+
+// --- Use lambda with spawn ---
+let task: Task<Int> = spawn(add(10, 20));
+let taskResult: Int = join(task);
+print("spawned result: " + to_string(taskResult));

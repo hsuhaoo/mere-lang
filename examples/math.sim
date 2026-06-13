@@ -1,0 +1,7 @@
+export fn add(a: Int, b: Int) -> Int {
+  a + b
+}
+
+export fn multiply(a: Int, b: Int) -> Int {
+  a * b
+}

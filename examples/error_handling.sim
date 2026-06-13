@@ -1,0 +1,28 @@
+// Simplex example: Error handling with Result
+// Run with: node bin/simplex.js examples/error_handling.sim
+
+fn safe_divide(a: Int, b: Int) -> Result<Int> {
+  if b == 0 {
+    return err("division by zero");
+  }
+  if a < 0 {
+    return err("negative dividend");
+  }
+  ok(a / b)
+}
+
+fn handle_division(a: Int, b: Int) -> Unit {
+  let result: Result<Int> = safe_divide(a, b);
+  if is_ok(result) {
+    let value: Int = unwrap(result);
+    print("Result: " + to_string(value));
+  }
+  if is_err(result) {
+    let error: String = unwrap_err(result);
+    print("Error: " + error);
+  }
+}
+
+handle_division(10, 2);
+handle_division(10, 0);
+handle_division(-10, 2);

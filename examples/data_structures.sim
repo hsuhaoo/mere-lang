@@ -1,0 +1,48 @@
+// Simplex example: Data structures (List, Map, and Records)
+// Run with: node bin/simplex.js examples/data_structures.sim
+
+// --- List operations ---
+let numbers: List<Int> = [1, 2, 3, 4, 5];
+print("List: [1, 2, 3, 4, 5]");
+print("Length: " + to_string(list_len(numbers)));
+
+let first: Result<Int> = list_get(numbers, 0);
+if is_ok(first) {
+  print("First element: " + to_string(unwrap(first)));
+}
+
+let extended: List<Int> = append(numbers, 6);
+print("After append 6: length = " + to_string(list_len(extended)));
+
+// --- Map with Int keys ---
+let scores: Map<Int, String> = {
+  1: "Alice",
+  2: "Bob",
+  3: "Charlie"
+};
+
+print("Scores: 1=Alice, 2=Bob, 3=Charlie");
+
+let name1: Result<String> = map_get(scores, 1);
+if is_ok(name1) {
+  print("Player 1: " + unwrap(name1));
+}
+
+let has_player2: Bool = map_has(scores, 2);
+print("Has player 2: " + to_string(has_player2));
+
+let missing: Result<String> = map_get(scores, 99);
+if is_err(missing) {
+  print("Player 99 not found");
+}
+
+// --- Map with String keys ---
+let ages: Map<String, Int> = {
+  "Alice": 30,
+  "Bob": 25
+};
+
+let age: Result<Int> = map_get(ages, "Alice");
+if is_ok(age) {
+  print("Alice is " + to_string(unwrap(age)) + " years old");
+}
