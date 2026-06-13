@@ -20,6 +20,7 @@
 - 用 `Result<T>` 代替异常和 `try-catch`
 - `spawn` 接受零参 lambda，`join` 等待结果
 - 异步 I/O（`file_read`、`file_write`、`file_read_lines`）返回 `Task`，调用即启动，`join` 等待
+- 网络 I/O（`fetch`）支持 HTTP GET/POST/PUT/DELETE，自定义 Header，返回 `Task<Result<String>>`
 - 没有 `else`，只有 `if` 单分支
 - 没有循环，使用递归
 - 扁平模块系统，无嵌套

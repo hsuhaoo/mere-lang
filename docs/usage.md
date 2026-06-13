@@ -25,6 +25,7 @@ Simplex 是一个极简、显式的编程语言。关键字分为几类：
 9. [数据结构](#9-数据结构)
 10. [自定义记录](#10-自定义记录)
 11. [文件 I/O](#11-文件-io)
+11.3 [网络 I/O](#11-3-网络-io)
 12. [模块系统](#12-模块系统)
 13. [任务与并发](#13-任务与并发)
 14. [完整示例](#14-完整示例)
@@ -482,6 +483,48 @@ if lines.isOk {
   print("Line count: " + to_string(count));
 }
 ```
+
+### 11.3 网络 I/O
+
+```sim
+// GET 请求
+let task: Task<Result<String>> = fetch("https://httpbin.org/get", "GET", {}, "");
+let result: Result<String> = join(task);
+if result.isOk {
+  print("Response: " + result.value);
+}
+
+// POST 请求（带 body）
+let task2: Task<Result<String>> = fetch("https://httpbin.org/post", "POST", {}, "Hello server");
+let result2: Result<String> = join(task2);
+if result2.isOk {
+  print("Response: " + result2.value);
+}
+
+// 带自定义 Header
+let headers: Record<String, String> = {
+  "User-Agent": "MySimplexApp/1.0",
+  "Authorization": "Bearer token123"
+};
+let task3: Task<Result<String>> = fetch("https://api.example.com/data", "GET", headers, "");
+let result3: Result<String> = join(task3);
+```
+
+**签名**：
+```
+fetch(url: String, method: String, headers: Record<String, String>, body: String) -> Task<Result<String>>
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `url` | `String` | 完整 URL（含协议） |
+| `method` | `String` | HTTP 方法：`GET`、`POST`、`PUT`、`DELETE` 等 |
+| `headers` | `Record<String, String>` | 请求头，空对象 `{}` 表示无自定义头 |
+| `body` | `String` | 请求体，`GET`/`HEAD` 时忽略 |
+
+- 返回 `Task<Result<String>>`，需用 `join` 获取
+- `Result<String>`：成功时 `ok(body)`，失败时 `err("HTTP 404: ...")` 或 `err("Fetch failed: ...")`
+- 采用 Node.js 内置 `fetch` API（需 Node 18+）
 
 ---
 
