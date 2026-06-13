@@ -12,7 +12,7 @@ import {
   Value, ValueKind,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap, record as mkRecord,
-  fn as mkFn, task as mkTask,
+  task as mkTask,
 
   mkOk, mkErr,
   NumberValue, StringValue, BooleanValue, ListValue,
@@ -120,7 +120,6 @@ class Interpreter {
         return mkErr(msg as StringValue);
       }
       case UnitExpr:   return mkUnit();
-      case FnDecl:       return this.execFnLiteral(expr as FnDecl);
       default:
         throw new RuntimeError(`Unknown expression: ${(expr as any).constructor.name}`, (expr as any).line, (expr as any).column);
     }
@@ -440,10 +439,6 @@ class Interpreter {
       entries[String(key.kind === ValueKind.NUMBER ? key.getNumber() : (key as StringValue).get())] = value;
     }
     return mkMap(entries, null, null);
-  }
-
-  execFnLiteral(fnDecl: FnDecl): Value {
-    return mkFn(fnDecl.params, fnDecl.body);
   }
 
   execLambdaExpr(expr: LambdaExpr): Value {
