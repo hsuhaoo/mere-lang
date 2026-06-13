@@ -3,9 +3,9 @@ import type { Stmt } from '../ast/nodes.js';
 import { Env } from './env.js';
 
 const ValueKind = Object.freeze({
-  NUM: 'Num',
+  NUMBER: 'Number',
   STRING: 'String',
-  BOOL: 'Bool',
+  BOOLEAN: 'Boolean',
   UNIT: 'Unit',
   LIST: 'List',
   MAP: 'Map',
@@ -35,19 +35,19 @@ class Value {
   }
 }
 
-class NumValue extends Value {
+class NumberValue extends Value {
   value: number;
 
   constructor(value: number) {
-    super(ValueKind.NUM);
+    super(ValueKind.NUMBER);
     if (typeof value !== 'number' || !isFinite(value)) {
-      throw new TypeError(`Num value must be a finite number, got: ${value}`);
+      throw new TypeError(`Number value must be a finite number, got: ${value}`);
     }
     this.value = value;
   }
 
   typeName(): string {
-    return 'Num';
+    return 'Number';
   }
 
   toString(): string {
@@ -87,19 +87,19 @@ class StringValue extends Value {
   }
 }
 
-class BoolValue extends Value {
+class BooleanValue extends Value {
   value: boolean;
 
   constructor(value: boolean) {
-    super(ValueKind.BOOL);
+    super(ValueKind.BOOLEAN);
     if (typeof value !== 'boolean') {
-      throw new TypeError(`BoolValue must be constructed with a boolean, got: ${value}`);
+      throw new TypeError(`BooleanValue must be constructed with a boolean, got: ${value}`);
     }
     this.value = value;
   }
 
   typeName(): string {
-    return 'Bool';
+    return 'Boolean';
   }
 
   toString(): string {
@@ -258,14 +258,16 @@ class RecordValue extends Value {
 }
 
 class ResultValue extends Value {
-  _ok: boolean;
-  _value: Value;
+  isOk: BooleanValue;
+  value: Value;
+  errMessage: StringValue;
   _resultType: TypeAnnotation | null;
 
-  constructor(ok: boolean, value: Value, resultType: TypeAnnotation | null = null) {
+  constructor(isOk: BooleanValue, value: Value, errMessage: StringValue, resultType: TypeAnnotation | null = null) {
     super(ValueKind.RESULT);
-    this._ok = ok;
-    this._value = value;
+    this.isOk = isOk;
+    this.value = value;
+    this.errMessage = errMessage;
     this._resultType = resultType;
   }
 
@@ -274,32 +276,32 @@ class ResultValue extends Value {
     return `Result<${inner}>`;
   }
 
-  isOk(): boolean {
-    return this._ok;
+  isOkValue(): boolean {
+    return this.isOk.get();
   }
 
   isErr(): boolean {
-    return !this._ok;
+    return !this.isOk.get();
   }
 
   getOk(): Value {
-    if (!this._ok) {
+    if (this.isErr()) {
       throw new TypeError('Called getOk() on an Err value');
     }
-    return this._value;
+    return this.value;
   }
 
   getErr(): Value {
-    if (this._ok) {
+    if (this.isOkValue()) {
       throw new TypeError('Called getErr() on an Ok value');
     }
-    return this._value;
+    return this.errMessage;
   }
 
   toString(): string {
-    return this._ok
-      ? `ok(${this._value.toString()})`
-      : `err(${this._value.toString()})`;
+    return this.isOkValue()
+      ? `ok(${this.value.toString()})`
+      : `err(${this.errMessage.toString()})`;
   }
 }
 
@@ -355,16 +357,16 @@ class TaskValue extends Value {
   }
 }
 
-function num(v: number): NumValue {
-  return new NumValue(v);
+function number(v: number): NumberValue {
+  return new NumberValue(v);
 }
 
 function string(v: string): StringValue {
   return new StringValue(v);
 }
 
-function bool(v: boolean): BoolValue {
-  return new BoolValue(v);
+function boolean(v: boolean): BooleanValue {
+  return new BooleanValue(v);
 }
 
 function unit(): UnitValue {
@@ -383,8 +385,13 @@ function record(fields: Record<string, Value>, typeName: string): RecordValue {
   return new RecordValue(fields, typeName);
 }
 
-function result(ok: boolean, value: Value, resultType: TypeAnnotation | null = null): ResultValue {
-  return new ResultValue(ok, value, resultType);
+function mkOk(value: Value, resultType: TypeAnnotation | null = null): ResultValue {
+  return new ResultValue(boolean(true), value, string(""), resultType);
+}
+
+function mkErr(message: string | StringValue, resultType: TypeAnnotation | null = null): ResultValue {
+  const msg = typeof message === 'string' ? string(message) : message;
+  return new ResultValue(boolean(false), UNIT_VALUE, msg, resultType);
 }
 
 function fn(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], closure: Env): FnValue {
@@ -398,9 +405,9 @@ function task(handle: TaskHandle, taskType: TypeAnnotation | null = null): TaskV
 export {
   ValueKind,
   Value,
-  NumValue,
+  NumberValue,
   StringValue,
-  BoolValue,
+  BooleanValue,
   UnitValue,
   ListValue,
   MapValue,
@@ -409,14 +416,15 @@ export {
   FnValue,
   TaskValue,
   UNIT_VALUE,
-  num,
+  number,
   string,
-  bool,
+  boolean,
   unit,
   list,
   map,
   record,
-  result,
+  mkOk,
+  mkErr,
   fn,
   task,
 };

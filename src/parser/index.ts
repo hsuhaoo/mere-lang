@@ -444,7 +444,7 @@ class Parser {
 
     // Identifier (possibly with field access)
     if (token.type === TokenType.IDENTIFIER) {
-      let expr = new IdentifierExpr(token.value, token.line, token.column);
+      let expr: IdentifierExpr | CallExpr | FieldAccessExpr = new IdentifierExpr(token.value, token.line, token.column);
       this.advance();
 
       // Function call: identifier(...)
@@ -459,7 +459,12 @@ class Parser {
           }
         }
         this.expect(TokenType.RPAREN);
-        return new CallExpr(expr, args, token.line, token.column);
+        expr = new CallExpr(expr, args, token.line, token.column);
+        // Chained field access after call: fn(...).field
+        if (this.check(TokenType.DOT)) {
+          expr = this.parseFieldChain(expr);
+        }
+        return expr;
       }
       // Field/method access: identifier.field or identifier.method(...)
       else if (this.check(TokenType.DOT)) {

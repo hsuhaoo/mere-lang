@@ -22,9 +22,9 @@ import {
 // ── Built-in types ──────────────────────────────────────────────
 
 const BUILTIN_TYPES = {
-  Num: { kind: 'primitive', params: null },
+  Number: { kind: 'primitive', params: null },
   String: { kind: 'primitive', params: null },
-  Bool: { kind: 'primitive', params: null },
+  Boolean: { kind: 'primitive', params: null },
   Unit: { kind: 'primitive', params: null },
   List: { kind: 'generic', params: 1 },      // List<T>
   Result: { kind: 'generic', params: 1 },     // Result<T>
@@ -194,7 +194,7 @@ class TypeChecker {
   }
 
   checkIf(stmt) {
-    this.checkExpr(stmt.condition, new TypeAnnotation('Bool'));
+    this.checkExpr(stmt.condition, new TypeAnnotation('Boolean'));
     for (const s of stmt.thenBlock) {
       this.checkStmt(s);
     }
@@ -280,13 +280,13 @@ class TypeChecker {
   inferLiteralType(expr) {
     const value = expr.value;
     if (typeof value === 'number') {
-      return new TypeAnnotation('Num');
+      return new TypeAnnotation('Number');
     }
     if (typeof value === 'string') {
       return new TypeAnnotation('String');
     }
     if (typeof value === 'boolean') {
-      return new TypeAnnotation('Bool');
+      return new TypeAnnotation('Boolean');
     }
     if (value === null) {
       return new TypeAnnotation('Unit');
@@ -372,7 +372,7 @@ class TypeChecker {
     const leftType = this.inferExprType(expr.left);
     const rightType = this.inferExprType(expr.right);
 
-    // Arithmetic operators (Num only)
+    // Arithmetic operators (Number only)
     if (['-', '*', '/'].includes(expr.op)) {
       if (!this.isNumeric(leftType) || !this.isNumeric(rightType)) {
         throw new TypeError(
@@ -380,13 +380,13 @@ class TypeChecker {
           expr.line, expr.column
         );
       }
-      return new TypeAnnotation('Num');
+      return new TypeAnnotation('Number');
     }
 
-    // Addition: Num + Num = Num, String + String = String
+    // Addition: Number + Number = Number, String + String = String
     if (expr.op === '+') {
       if (this.isNumeric(leftType) && this.isNumeric(rightType)) {
-        return new TypeAnnotation('Num');
+        return new TypeAnnotation('Number');
       }
       if (leftType.name === 'String' && rightType.name === 'String') {
         return new TypeAnnotation('String');
@@ -405,18 +405,18 @@ class TypeChecker {
           expr.line, expr.column
         );
       }
-      return new TypeAnnotation('Bool');
+      return new TypeAnnotation('Boolean');
     }
 
     // Boolean operators
     if (expr.op === 'and' || expr.op === 'or') {
-      if (leftType.name !== 'Bool' || rightType.name !== 'Bool') {
+      if (leftType.name !== 'Boolean' || rightType.name !== 'Boolean') {
         throw new TypeError(
-          `Boolean operator '${expr.op}' requires Bool types, got ${leftType.toString()} and ${rightType.toString()}`,
+          `Boolean operator '${expr.op}' requires Boolean types, got ${leftType.toString()} and ${rightType.toString()}`,
           expr.line, expr.column
         );
       }
-      return new TypeAnnotation('Bool');
+      return new TypeAnnotation('Boolean');
     }
 
     throw new TypeError(`Unknown operator: ${expr.op}`, expr.line, expr.column);
@@ -426,17 +426,17 @@ class TypeChecker {
     const operandType = this.inferExprType(expr.operand);
 
     if (expr.op === 'not') {
-      if (operandType.name !== 'Bool') {
-        throw new TypeError(`'not' operator requires Bool, got ${operandType.toString()}`, expr.line, expr.column);
+      if (operandType.name !== 'Boolean') {
+        throw new TypeError(`'not' operator requires Boolean, got ${operandType.toString()}`, expr.line, expr.column);
       }
-      return new TypeAnnotation('Bool');
+      return new TypeAnnotation('Boolean');
     }
 
     if (expr.op === '-') {
       if (!this.isNumeric(operandType)) {
         throw new TypeError(`Negation requires numeric type, got ${operandType.toString()}`, expr.line, expr.column);
       }
-      return new TypeAnnotation('Num');
+      return new TypeAnnotation('Number');
     }
 
     throw new TypeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
@@ -538,6 +538,22 @@ class TypeChecker {
   inferFieldAccess(expr) {
     const objectType = this.inferExprType(expr.object);
 
+    // Result fields: isOk, value, errMessage
+    if (objectType.name === 'Result') {
+      if (expr.field === 'isOk') return new TypeAnnotation('Boolean');
+      if (expr.field === 'value') {
+        const innerType = objectType.typeParams && objectType.typeParams.length > 0
+          ? objectType.typeParams[0]
+          : new TypeAnnotation('Unit');
+        return innerType;
+      }
+      if (expr.field === 'errMessage') return new TypeAnnotation('String');
+      throw new TypeError(
+        `Result has no field '${expr.field}'`,
+        expr.line, expr.column
+      );
+    }
+
     // Check if it's a known record type (from type declaration)
     const typeDecl = this.typeDecls.get(objectType.name);
     if (typeDecl) {
@@ -569,7 +585,7 @@ class TypeChecker {
   }
 
   inferIfExpr(expr) {
-    this.checkExpr(expr.condition, new TypeAnnotation('Bool'));
+    this.checkExpr(expr.condition, new TypeAnnotation('Boolean'));
     for (const s of expr.thenBlock) {
       this.checkStmt(s);
     }
@@ -685,7 +701,7 @@ class TypeChecker {
   }
 
   isNumeric(type) {
-    return type.name === 'Num';
+    return type.name === 'Number';
   }
 
   canCompare(left, right) {
@@ -954,8 +970,8 @@ class TypeChecker {
       const keyType = this.inferExprType(expr.args[1]);
 
       if (firstType.name === 'List') {
-        if (keyType.name !== 'Num') {
-          throw new TypeError(`List index must be Num, got ${keyType.name}`, expr.line, expr.column);
+        if (keyType.name !== 'Number') {
+          throw new TypeError(`List index must be Number, got ${keyType.name}`, expr.line, expr.column);
         }
         const elemType = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$T');
         return new TypeAnnotation('Result', [elemType]);
@@ -986,7 +1002,7 @@ class TypeChecker {
       if (!this.typesMatch(keyType, keyParam)) {
         throw new TypeError(`Map key must be ${keyParam.toString()}, got ${keyType.toString()}`, expr.line, expr.column);
       }
-      return new TypeAnnotation('Bool');
+      return new TypeAnnotation('Boolean');
     }
 
     if (fnName === 'put') {
@@ -1032,29 +1048,23 @@ class TypeChecker {
 
 const BUILTIN_FUNCTIONS = new Map([
   // String builtins
-  ['len', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Num') }],
+  ['len', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Number') }],
   ['concat', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
-  ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('String') }],
-  ['parse_num', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Num')]) }],
+  ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('String') }],
+  ['parse_num', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Number')]) }],
   ['to_string', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('String') }],
   ['print', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
 
   // List builtins (as functions)
   ['append', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$T')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
-  ['list_get', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Num')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
-  ['list_len', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Num') }],
-  ['substring_list', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
-
-  // Result builtins
-  ['is_ok', { paramTypes: [new TypeAnnotation('Result', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Bool') }],
-  ['is_err', { paramTypes: [new TypeAnnotation('Result', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Bool') }],
-  ['unwrap', { paramTypes: [new TypeAnnotation('Result', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('$T') }],
-  ['unwrap_err', { paramTypes: [new TypeAnnotation('Result', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('String') }],
+  ['list_get', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
+  ['list_len', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Number') }],
+  ['substring_list', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
   // Map builtins (fully generic)
   ['map_put', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K'), new TypeAnnotation('$V')], returnType: new TypeAnnotation('Unit') }],
   ['map_get', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$V')]) }],
-  ['map_has', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Bool') }],
+  ['map_has', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Boolean') }],
   ['map_remove', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Unit') }],
 
   // File I/O
@@ -1067,9 +1077,9 @@ const BUILTIN_FUNCTIONS = new Map([
   ['join', { paramTypes: [new TypeAnnotation('Task', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('$T') }],
 
   // Math builtins
-  ['abs', { paramTypes: [new TypeAnnotation('Num')], returnType: new TypeAnnotation('Num') }],
-  ['max', { paramTypes: [new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('Num') }],
-  ['min', { paramTypes: [new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('Num') }],
+  ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['max', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
 ]);
 
 export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };

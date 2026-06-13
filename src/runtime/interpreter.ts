@@ -10,10 +10,12 @@ import {
 } from '../ast/nodes.js';
 import {
   Value, ValueKind,
-  num as mkNum, string as mkString, bool as mkBool, unit as mkUnit,
+  number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap, record as mkRecord,
-  result as mkResult, fn as mkFn,
-  NumValue, StringValue, BoolValue, ListValue,
+  fn as mkFn,
+
+  mkOk, mkErr,
+  NumberValue, StringValue, BooleanValue, ListValue,
   MapValue, RecordValue, ResultValue, FnValue,
 } from './values.js';
 import { Env } from './env.js';
@@ -112,10 +114,10 @@ class Interpreter {
       case RecordCreateExpr: return this.execRecordCreate(expr as RecordCreateExpr);
       case ListCreateExpr:  return this.execListCreate(expr as ListCreateExpr);
       case MapCreateExpr:   return this.execMapCreate(expr as MapCreateExpr);
-      case ResultOkExpr:    return mkResult(true, this.execExpr((expr as ResultOkExpr).value), null);
+      case ResultOkExpr:    return mkOk(this.execExpr((expr as ResultOkExpr).value));
       case ResultErrExpr: {
         const msg = this.execExpr((expr as ResultErrExpr).message);
-        return mkResult(false, msg, null);
+        return mkErr(msg as StringValue);
       }
       case UnitExpr:   return mkUnit();
       case FnDecl:       return this.execFnLiteral(expr as FnDecl);
@@ -126,9 +128,9 @@ class Interpreter {
 
   execLiteral(expr: LiteralExpr): Value {
     const value = expr.value;
-    if (typeof value === 'number') return mkNum(value);
+    if (typeof value === 'number') return mkNumber(value);
     if (typeof value === 'string') return mkString(value);
-    if (typeof value === 'boolean') return mkBool(value);
+    if (typeof value === 'boolean') return mkBoolean(value);
     if (value === null) return mkUnit();
     throw new RuntimeError(`Unknown literal: ${value}`, 0, 0);
   }
@@ -142,25 +144,25 @@ class Interpreter {
         if (left.kind === ValueKind.STRING && right.kind === ValueKind.STRING) {
           return mkString((left as StringValue).get() + (right as StringValue).get());
         }
-        return mkNum(left.getNumber() + right.getNumber());
-      case '-': return mkNum(left.getNumber() - right.getNumber());
-      case '*': return mkNum(left.getNumber() * right.getNumber());
+        return mkNumber(left.getNumber() + right.getNumber());
+      case '-': return mkNumber(left.getNumber() - right.getNumber());
+      case '*': return mkNumber(left.getNumber() * right.getNumber());
       case '/':
         if (right.getNumber() === 0)
           throw new RuntimeError('Division by zero', expr.line, expr.column);
-        return mkNum(left.getNumber() / right.getNumber());
-      case '==': return mkBool(this.valuesEqual(left, right));
-      case '!=': return mkBool(!this.valuesEqual(left, right));
-      case '<': return mkBool(left.getNumber() < right.getNumber());
-      case '>': return mkBool(left.getNumber() > right.getNumber());
-      case '<=': return mkBool(left.getNumber() <= right.getNumber());
-      case '>=': return mkBool(left.getNumber() >= right.getNumber());
-      case 'and': return mkBool(
-        left.kind === ValueKind.BOOL && (left as BoolValue).get() &&
-        right.kind === ValueKind.BOOL && (right as BoolValue).get());
-      case 'or': return mkBool(
-        left.kind === ValueKind.BOOL && (left as BoolValue).get() ||
-        right.kind === ValueKind.BOOL && (right as BoolValue).get());
+        return mkNumber(left.getNumber() / right.getNumber());
+      case '==': return mkBoolean(this.valuesEqual(left, right));
+      case '!=': return mkBoolean(!this.valuesEqual(left, right));
+      case '<': return mkBoolean(left.getNumber() < right.getNumber());
+      case '>': return mkBoolean(left.getNumber() > right.getNumber());
+      case '<=': return mkBoolean(left.getNumber() <= right.getNumber());
+      case '>=': return mkBoolean(left.getNumber() >= right.getNumber());
+      case 'and': return mkBoolean(
+        left.kind === ValueKind.BOOLEAN && (left as BooleanValue).get() &&
+        right.kind === ValueKind.BOOLEAN && (right as BooleanValue).get());
+      case 'or': return mkBoolean(
+        left.kind === ValueKind.BOOLEAN && (left as BooleanValue).get() ||
+        right.kind === ValueKind.BOOLEAN && (right as BooleanValue).get());
       default:
         throw new RuntimeError(`Unknown operator: ${expr.op}`, expr.line, expr.column);
     }
@@ -169,8 +171,8 @@ class Interpreter {
   execUnOp(expr: UnOpExpr): Value {
     const operand = this.execExpr(expr.operand);
     switch (expr.op) {
-      case 'not': return mkBool(operand.kind === ValueKind.BOOL && !(operand as BoolValue).get());
-      case '-': return mkNum(-operand.getNumber());
+      case 'not': return mkBoolean(operand.kind === ValueKind.BOOLEAN && !(operand as BooleanValue).get());
+      case '-': return mkNumber(-operand.getNumber());
       default:
         throw new RuntimeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
     }
@@ -348,6 +350,13 @@ class Interpreter {
       throw new RuntimeError(`Module has no export '${expr.field}'`, expr.line, expr.column);
     }
 
+    if (obj instanceof ResultValue) {
+      if (expr.field === 'isOk') return obj.isOk;
+      if (expr.field === 'value') return obj.value;
+      if (expr.field === 'errMessage') return obj.errMessage;
+      throw new RuntimeError(`Result has no field '${expr.field}'`, expr.line, expr.column);
+    }
+
     if (!(obj instanceof RecordValue)) {
       throw new RuntimeError(`Cannot access field on non-record type ${obj.typeName()}`, expr.line, expr.column);
     }
@@ -359,7 +368,7 @@ class Interpreter {
 
   execIfExpr(expr: IfExpr): Value {
     const condition = this.execExpr(expr.condition);
-    if (condition.kind === ValueKind.BOOL && (condition as BoolValue).get()) {
+    if (condition.kind === ValueKind.BOOLEAN && (condition as BooleanValue).get()) {
       for (const stmt of expr.thenBlock) {
         this.execStmt(stmt);
       }
@@ -369,7 +378,7 @@ class Interpreter {
 
   execIf(stmt: IfStmt): Value {
     const condition = this.execExpr(stmt.condition);
-    if (condition.kind === ValueKind.BOOL && (condition as BoolValue).get()) {
+    if (condition.kind === ValueKind.BOOLEAN && (condition as BooleanValue).get()) {
       return this.execBlock({ stmts: stmt.thenBlock } as BlockExpr);
     }
     return mkUnit();
@@ -409,7 +418,7 @@ class Interpreter {
     for (const entry of expr.entries) {
       const key = this.execExpr(entry.key);
       const value = this.execExpr(entry.value);
-      entries[String(key.kind === ValueKind.NUM ? key.getNumber() : (key as StringValue).get())] = value;
+      entries[String(key.kind === ValueKind.NUMBER ? key.getNumber() : (key as StringValue).get())] = value;
     }
     return mkMap(entries, null, null);
   }
@@ -419,7 +428,7 @@ class Interpreter {
   }
 
   execLambdaExpr(expr: LambdaExpr): Value {
-    const closure = new Env(this.rootEnv);
+    const closure = new Env();
     return new FnValue(expr.params, expr.body, closure);
   }
 
@@ -503,9 +512,9 @@ class Interpreter {
     if (a.kind !== b.kind) return false;
 
     switch (a.kind) {
-      case ValueKind.NUM:     return (a as NumValue).getNumber() === (b as NumValue).getNumber();
+      case ValueKind.NUMBER:     return (a as NumberValue).getNumber() === (b as NumberValue).getNumber();
       case ValueKind.STRING:  return (a as StringValue).get() === (b as StringValue).get();
-      case ValueKind.BOOL:    return (a as BoolValue).get() === (b as BoolValue).get();
+      case ValueKind.BOOLEAN:    return (a as BooleanValue).get() === (b as BooleanValue).get();
       case ValueKind.UNIT:    return true;
       case ValueKind.LIST: {
         const la = a as ListValue;
@@ -532,8 +541,8 @@ class Interpreter {
       case ValueKind.RESULT: {
         const rva = a as ResultValue;
         const rvb = b as ResultValue;
-        if (rva.isOk() !== rvb.isOk()) return false;
-        if (rva.isOk()) return this.valuesEqual(rva.getOk(), rvb.getOk());
+        if (rva.isOkValue() !== rvb.isOkValue()) return false;
+        if (rva.isOkValue()) return this.valuesEqual(rva.getOk(), rvb.getOk());
         return this.valuesEqual(rva.getErr(), rvb.getErr());
       }
       default: return false;
