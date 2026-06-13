@@ -33,6 +33,22 @@ function test(name, src, expected) {
   }
 }
 
+function testError(name, src, expectedSubstring) {
+  try {
+    const result = run(src);
+    console.log('✗', name, 'expected error, got result');
+    failed++;
+  } catch (e) {
+    if (e.message.includes(expectedSubstring)) {
+      console.log('✓', name, '=', e.message);
+      passed++;
+    } else {
+      console.log('✗', name, 'expected "' + expectedSubstring + '", got "' + e.message + '"');
+      failed++;
+    }
+  }
+}
+
 /**
  * Extract the primitive value from a Value class instance.
  * This bridges the old .data API used by tests to the new class-based system.
@@ -157,6 +173,114 @@ test('Comparison ==', `
 let x: Bool = 5 == 5;
 x
 `, true);
+
+test('Parenthesized expression', `
+let x: Num = (2 + 3) * 4;
+x
+`, 20);
+
+test('Chained function calls', `
+fn double(x: Num) -> Num { x * 2 }
+fn square(x: Num) -> Num { x * x }
+square(double(3))
+`, 36);
+
+test('Function with unit return', `
+fn greet(name: String) -> Unit {
+  print("Hello, " + name)
+}
+greet("World")
+`, undefined);
+
+test('If false branch (no else)', `
+let x: Num = 3;
+if x > 5 {
+  let y: Num = 1;
+  y
+}
+x
+`, 3);
+
+test('Nested ifs', `
+let x: Num = 10;
+if x > 5 {
+  if x > 8 {
+    let y: Num = 2;
+    y
+  }
+}
+`, 2);
+
+test('Sum of list', `
+fn sum(lst: List<Num>) -> Num {
+  if list_len(lst) == 0 { return 0; }
+  let head: Num = unwrap(get(lst, 0));
+  let tail: List<Num> = substring_list(lst, 1, list_len(lst) - 1);
+  head + sum(tail)
+}
+sum([1, 2, 3, 4, 5])
+`, 15);
+
+// ── Runtime errors ──────────────────────────────────────────────
+testError('unwrap on err value', `
+let r: Result<Num> = err("fail");
+unwrap(r)
+`, 'Called unwrap on err value: "fail"');
+
+testError('unwrap_err on ok value', `
+let r: Result<Num> = ok(42);
+unwrap_err(r)
+`, 'Called unwrap_err on ok value');
+
+// ── Returns err (not throw) ────────────────────────────────────
+test('List get out of bounds', `
+is_err(get([1, 2, 3], 10))
+`, true);
+
+test('Map get missing key', `
+let m: Map<Num, Num> = {1: 10};
+is_err(get(m, 99))
+`, true);
+
+test('Map remove', `
+let m: Map<Num, Num> = {1: 10, 2: 20};
+map_remove(m, 1);
+has(m, 1)
+`, false);
+
+// ── Lambda runtime ─────────────────────────────────────────────
+test('Lambda with no params', `
+let f: Fn<Num> = fn () -> Num { 42 };
+f()
+`, 42);
+
+test('Lambda as higher-order argument', `
+fn apply(g: Fn<Num, Num>, x: Num) -> Num { g(x) }
+apply(fn (x: Num) -> Num { x * 2 }, 5)
+`, 10);
+
+// ── to_string other types ──────────────────────────────────────
+test('to_string bool', `
+let s: String = to_string(true);
+len(s)
+`, 4);
+
+test('to_string unit', `
+let s: String = to_string(());
+len(s)
+`, 2);
+
+test('to_string list', `
+let s: String = to_string([1, 2, 3]);
+len(s)
+`, 9);
+
+// ── Nested generics ────────────────────────────────────────────
+test('Nested List<List<Num>>', `
+let l: List<List<Num>> = [[1, 2], [3, 4]];
+let inner: List<Num> = unwrap(get(l, 0));
+list_len(inner)
+`, 2);
 
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');

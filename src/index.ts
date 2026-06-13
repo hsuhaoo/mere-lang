@@ -6,7 +6,7 @@
 import { Lexer, LexerError, Token } from './lexer/index.js';
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
-  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr,
+  FieldAccessExpr, IfExpr, BlockExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
@@ -90,7 +90,6 @@ export {
   BinOpExpr,
   UnOpExpr,
   CallExpr,
-  MethodCallExpr,
   FieldAccessExpr,
   RecordCreateExpr,
   ListCreateExpr,

@@ -41,8 +41,8 @@ const RULES = [
 
   // === PARSER/INDEX ===
   { file: 'parser/index', from: "const { TokenType } = require('../lexer/tokens');", to: "import { TokenType } from '../lexer/tokens.js';" },
-  { file: 'parser/index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('../ast/nodes');",
-    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from '../ast/nodes.js';" },
+  { file: 'parser/index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('../ast/nodes');",
+    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from '../ast/nodes.js';" },
   { file: 'parser/index', from: "module.exports = { Parser, ParseError };", to: "export { Parser, ParseError };" },
 
   // === AST/NODES ===
@@ -64,8 +64,8 @@ const RULES = [
   { file: 'runtime/scheduler', from: "module.exports = { Scheduler };", to: "export { Scheduler };" },
 
   // === RUNTIME/INTERPRETER ===
-  { file: 'runtime/interpreter', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation,\n} = require('../ast/nodes');",
-    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation,\n} from '../ast/nodes.js';" },
+  { file: 'runtime/interpreter', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation,\n} = require('../ast/nodes');",
+    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation,\n} from '../ast/nodes.js';" },
   { file: 'runtime/interpreter', from: "const {\n  Value, ValueKind,\n  int: mkInt, string: mkString, bool: mkBool, unit: mkUnit,\n  list: mkList, map: mkMap, record: mkRecord,\n  result: mkResult, fn: mkFn,\n  IntValue, StringValue, BoolValue, ListValue,\n  MapValue, RecordValue, ResultValue, FnValue,\n} = require('./values');",
     to: "import {\n  Value, ValueKind,\n  int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,\n  list as mkList, map as mkMap, record as mkRecord,\n  result as mkResult, fn as mkFn,\n  IntValue, StringValue, BoolValue, ListValue,\n  MapValue, RecordValue, ResultValue, FnValue,\n} from './values.js';" },
   { file: 'runtime/interpreter', from: "const { Env } = require('./env');", to: "import { Env } from './env.js';" },
@@ -75,9 +75,9 @@ const RULES = [
   { file: 'runtime/interpreter', from: "module.exports = { Interpreter, RuntimeError, ReturnSignal, TailCall };", to: "export { Interpreter, RuntimeError, ReturnSignal, TailCall };" },
 
   // === TYPECHECKER/INDEX ===
-  { file: 'typechecker/index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('../ast/nodes');",
-    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from '../ast/nodes.js';" },
-  { file: 'typechecker/index', from: "module.exports = { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };", to: "export { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };" },
+  { file: 'typechecker/index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('../ast/nodes');",
+    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from '../ast/nodes.js';" },
+  { file: 'typechecker/index', from: "module.exports = { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };", to: "export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };" },
 
   // === MODULE-LOADER ===
   { file: 'module-loader', from: "const fs = require('fs');", to: "import * as fs from 'fs';" },
@@ -93,8 +93,8 @@ const RULES = [
 
   // === INDEX (top-level) ===
   { file: 'index', from: "const { Lexer, LexerError, Token } = require('./lexer');", to: "import { Lexer, LexerError, Token } from './lexer/index.js';" },
-  { file: 'index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('./ast/nodes');",
-    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from './ast/nodes.js';" },
+  { file: 'index', from: "const {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} = require('./ast/nodes');",
+    to: "import {\n  LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,\n  FieldAccessExpr, IfExpr, BlockExpr,\n  RecordCreateExpr, ListCreateExpr, MapCreateExpr,\n  ResultOkExpr, ResultErrExpr, UnitExpr,\n  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,\n  ImportStmt, ExportStmt, TypeDecl,\n  TypeAnnotation, Program,\n} from './ast/nodes.js';" },
   { file: 'index', from: "const { Parser, ParseError } = require('./parser');", to: "import { Parser, ParseError } from './parser/index.js';" },
   { file: 'index', from: "const { TypeChecker, TypeError } = require('./typechecker');", to: "import { TypeChecker, TypeError } from './typechecker/index.js';" },
   { file: 'index', from: "const { Value, ValueKind } = require('./runtime/values');", to: "import { Value, ValueKind } from './runtime/values.js';" },

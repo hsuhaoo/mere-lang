@@ -1,6 +1,6 @@
 /**
  * Standard library for the Simplex language.
- * Built-in functions and methods implemented in JavaScript.
+ * Built-in functions implemented in JavaScript.
  * 
  * All built-ins are explicit: no implicit conversions, no hidden behavior.
  * Every possible failure returns a Result value.
@@ -19,11 +19,9 @@ import {
 
 class Builtins {
   fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
-  methodMap: Map<string, { paramArities: number[]; fn: (obj: any, args: any[]) => Value }>;
 
   constructor() {
     this.fnMap = new Map();
-    this.methodMap = new Map();
     this.registerBuiltins();
   }
 
@@ -285,100 +283,14 @@ class Builtins {
       throw new Error('Task not completed');
     });
 
-    // ═══════════════════════════════════════════════════════════
-    // Method bindings (object.method)
-    // ═══════════════════════════════════════════════════════════
-
-    // String methods
-    this.registerMethod('String.len', [], (obj) => {
-      return mkNum(obj.get().length);
-    });
-    this.registerMethod('String.concat', [1], (obj, args) => {
-      return mkString(obj.get() + args[0].get());
-    });
-    this.registerMethod('String.substring', [2], (obj, args) => {
-      return mkString(obj.get().substring(args[0].getNumber(), args[0].getNumber() + args[1].getNumber()));
-    });
-    this.registerMethod('String.print', [], (obj) => {
-      process.stdout.write(obj.get() + '\n');
-      return mkUnit();
-    });
-
-    // List methods
-    this.registerMethod('List.append', [1], (obj, args) => {
-      obj.push(args[0]);
-      return mkUnit();
-    });
-    this.registerMethod('List.get', [1], (obj, args) => {
-      const index = args[0].getNumber();
-      if (index < 0 || index >= obj.length()) {
-        return mkResult(false, mkString(`Index ${index} out of bounds`), null);
-      }
-      return mkResult(true, obj.get(index), null);
-    });
-    this.registerMethod('List.len', [], (obj) => {
-      return mkNum(obj.length());
-    });
-
-    // Result methods
-    this.registerMethod('Result.is_ok', [], (obj) => {
-      return mkBool(obj.isOk());
-    });
-    this.registerMethod('Result.is_err', [], (obj) => {
-      return mkBool(obj.isErr());
-    });
-    this.registerMethod('Result.unwrap', [], (obj) => {
-      if (!obj.isOk()) {
-        throw new Error(`Called unwrap on err: ${obj.getErr()}`);
-      }
-      return obj.getOk();
-    });
-    this.registerMethod('Result.unwrap_err', [], (obj) => {
-      if (obj.isOk()) {
-        throw new Error('Called unwrap_err on ok value');
-      }
-      return obj.getErr();
-    });
-
-    // Map methods
-    this.registerMethod('Map.put', [2], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
-      obj._getEntries()[key] = args[1];
-      return mkUnit();
-    });
-    this.registerMethod('Map.get', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
-      if (!(key in obj._getEntries())) {
-        return mkResult(false, mkString(`Key '${key}' not found`), null);
-      }
-      return mkResult(true, obj._getEntries()[key], null);
-    });
-    this.registerMethod('Map.has', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
-      return mkBool(obj.has(key));
-    });
-    this.registerMethod('Map.remove', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
-      delete obj._getEntries()[key];
-      return mkUnit();
-    });
   }
 
   registerFn(name: string, arity: number, fn: (args: any[]) => Value) {
     this.fnMap.set(name, { arity, fn });
   }
 
-  registerMethod(path: string, paramArities: number[], fn: (obj: any, args: any[]) => Value) {
-    this.methodMap.set(path, { paramArities, fn });
-  }
-
   getFn(name: string): { arity: number; fn: (args: any[]) => Value } | undefined {
     return this.fnMap.get(name);
-  }
-
-  getMethod(typeName: string, methodName: string): { paramArities: number[]; fn: (obj: any, args: any[]) => Value } | undefined {
-    const path = `${typeName}.${methodName}`;
-    return this.methodMap.get(path);
   }
 
   isBuiltin(name: string): boolean {

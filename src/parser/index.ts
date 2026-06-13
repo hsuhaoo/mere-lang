@@ -40,7 +40,7 @@ import { TokenType } from '../lexer/tokens.js';
 import { Token } from '../lexer/index.js';
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
-  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
+  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
@@ -442,7 +442,7 @@ class Parser {
       return this.parseMapLiteral();
     }
 
-    // Identifier (possibly with method call or field access)
+    // Identifier (possibly with field access)
     if (token.type === TokenType.IDENTIFIER) {
       let expr = new IdentifierExpr(token.value, token.line, token.column);
       this.advance();
@@ -590,34 +590,6 @@ class Parser {
     );
   }
 
-  parseMethodCall(base: any) {
-    this.expect(TokenType.LPAREN);
-    const args = [];
-    if (!this.check(TokenType.RPAREN)) {
-      args.push(this.parseExpr());
-      while (this.match(TokenType.COMMA)) {
-        args.push(this.parseExpr());
-      }
-    }
-    this.expect(TokenType.RPAREN);
-
-    // Check if base is already a MethodCallExpr or IdentifierExpr
-    if (base instanceof MethodCallExpr) {
-      return new MethodCallExpr(base.object, base.method, args, base.line, base.column);
-    }
-
-    if (base instanceof IdentifierExpr) {
-      return new MethodCallExpr(base, base.name, args, base.line, base.column);
-    }
-
-    if (base instanceof FieldAccessExpr) {
-      return new MethodCallExpr(base.object, base.field, args, base.line, base.column);
-    }
-
-    // For complex expressions, wrap in a temporary approach
-    return new MethodCallExpr(base, base.name || '', args, base.line, base.column);
-  }
-
   parseFieldChain(base: any) {
     let expr = base;
 
@@ -625,7 +597,6 @@ class Parser {
       this.advance();
       const fieldToken = this.expect(TokenType.IDENTIFIER);
 
-      // Check if it's a method call
       if (this.check(TokenType.LPAREN)) {
         this.advance();
         const args = [];
@@ -636,7 +607,7 @@ class Parser {
           }
         }
         this.expect(TokenType.RPAREN);
-        expr = new MethodCallExpr(expr, fieldToken.value, args, fieldToken.line, fieldToken.column);
+        expr = new CallExpr(new FieldAccessExpr(expr, fieldToken.value, fieldToken.line, fieldToken.column), args, fieldToken.line, fieldToken.column);
       } else {
         expr = new FieldAccessExpr(expr, fieldToken.value, fieldToken.line, fieldToken.column);
       }

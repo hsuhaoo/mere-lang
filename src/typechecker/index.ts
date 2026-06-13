@@ -11,7 +11,7 @@
 
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
-  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
+  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
@@ -244,9 +244,6 @@ class TypeChecker {
 
       case CallExpr:
         return this.inferCall(expr, expectedType);
-
-      case MethodCallExpr:
-        return this.inferMethodCall(expr);
 
       case FieldAccessExpr:
         return this.inferFieldAccess(expr);
@@ -510,74 +507,32 @@ class TypeChecker {
       throw new TypeError(`Undefined function: ${fnName}`, expr.callee.line, expr.callee.column);
     }
 
-    throw new TypeError(`Cannot call non-function expression`, expr.line, expr.column);
-  }
-
-  inferMethodCall(expr) {
-    const objectType = this.inferExprType(expr.object);
-    const methodName = expr.method;
-
-    // Check if it's a module namespace method (e.g., math.add)
-    if (objectType.name === 'Record' && objectType.typeParams) {
-      const qualifiedName = `${expr.object.name || 'unknown'}.${methodName}`;
-      const qualifiedBinding = this.scopeBindings.get(qualifiedName);
-      if (qualifiedBinding) {
-        // It's a module function call - check args and return type
-        const sig = qualifiedBinding.type;
-        const expectedParams = sig.typeParams ? sig.typeParams.slice(0, -1) : [];
-        const returnType = sig.typeParams ? sig.typeParams[sig.typeParams.length - 1] : new TypeAnnotation('Unit');
-        if (expr.args.length !== expectedParams.length) {
+    if (expr.callee instanceof FieldAccessExpr) {
+      const fnType = this.inferExprType(expr.callee);
+      if (fnType.name === 'Fn') {
+        const typeParams = fnType.typeParams || [];
+        if (expr.args.length !== typeParams.length - 1) {
           throw new TypeError(
-            `${qualifiedName} expects ${expectedParams.length} args, got ${expr.args.length}`,
+            `Function expects ${typeParams.length - 1} args, got ${expr.args.length}`,
             expr.line, expr.column
           );
         }
         for (let i = 0; i < expr.args.length; i++) {
           const actual = this.inferExprType(expr.args[i]);
-          const expected = expectedParams[i];
+          const expected = typeParams[i];
           if (!this.typesMatch(actual, expected)) {
             throw new TypeError(
-              `${qualifiedName} arg ${i}: expected ${expected.toString()} but got ${actual.toString()}`,
+              `Arg ${i}: expected ${expected.toString()} but got ${actual.toString()}`,
               expr.line, expr.column
             );
           }
         }
-        return returnType;
+        return typeParams[typeParams.length - 1];
       }
+      throw new TypeError(`Cannot call non-function expression`, expr.line, expr.column);
     }
 
-    // Built-in methods
-    const methodKey = `${objectType.name}.${methodName}`;
-    if (BUILTIN_METHODS.has(methodKey)) {
-      const sig = BUILTIN_METHODS.get(methodKey);
-      const typeVars = new Map();
-      // Bind type vars from object type's type parameters
-      // e.g., Map<String, Int> => $K=String, $V=Int; List<Int> => $T=Int
-      if (objectType.typeParams) {
-        for (const tv of ['$T', '$K', '$V']) {
-          if (!typeVars.has(tv)) {
-            const idx = objectType.name === 'Map'
-              ? (tv === '$K' ? 0 : tv === '$V' ? 1 : -1)
-              : tv === '$T' ? 0 : -1;
-            if (idx >= 0 && idx < objectType.typeParams.length) {
-              typeVars.set(tv, objectType.typeParams[idx]);
-            }
-          }
-        }
-      }
-      // Collect type vars from args (overrides object-level defaults)
-      for (let i = 0; i < expr.args.length; i++) {
-        const inferredType = this.inferExprType(expr.args[i]);
-        const expectedType = sig.paramTypes[i] instanceof TypeAnnotation
-          ? sig.paramTypes[i]
-          : new TypeAnnotation(String(sig.paramTypes[i]));
-        this.unifyTypeVars(expectedType, inferredType, typeVars);
-      }
-      const resolvedReturn = this.resolveTypeVars(sig.returnType, typeVars);
-      return resolvedReturn;
-    }
-
-    throw new TypeError(`Unknown method: ${methodKey}`, expr.line, expr.column);
+    throw new TypeError(`Cannot call non-function expression`, expr.line, expr.column);
   }
 
   inferFieldAccess(expr) {
@@ -1117,32 +1072,4 @@ const BUILTIN_FUNCTIONS = new Map([
   ['min', { paramTypes: [new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('Num') }],
 ]);
 
-// ── Built-in method signatures ──────────────────────────────────
-
-const BUILTIN_METHODS = new Map([
-  // String methods
-  ['String.len', { paramTypes: [], returnType: new TypeAnnotation('Num') }],
-  ['String.concat', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
-  ['String.substring', { paramTypes: [new TypeAnnotation('Num'), new TypeAnnotation('Num')], returnType: new TypeAnnotation('String') }],
-  ['String.to_string', { paramTypes: [], returnType: new TypeAnnotation('String') }],
-  ['String.print', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
-
-  // List methods
-  ['List.append', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Unit') }],
-  ['List.get', { paramTypes: [new TypeAnnotation('Num')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
-  ['List.len', { paramTypes: [], returnType: new TypeAnnotation('Num') }],
-
-  // Result methods
-  ['Result.is_ok', { paramTypes: [], returnType: new TypeAnnotation('Bool') }],
-  ['Result.is_err', { paramTypes: [], returnType: new TypeAnnotation('Bool') }],
-  ['Result.unwrap', { paramTypes: [], returnType: new TypeAnnotation('$T') }],
-  ['Result.unwrap_err', { paramTypes: [], returnType: new TypeAnnotation('String') }],
-
-  // Map methods
-  ['Map.put', { paramTypes: [new TypeAnnotation('$K'), new TypeAnnotation('$V')], returnType: new TypeAnnotation('Unit') }],
-  ['Map.get', { paramTypes: [new TypeAnnotation('$K')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$V')]) }],
-  ['Map.has', { paramTypes: [new TypeAnnotation('$K')], returnType: new TypeAnnotation('Bool') }],
-  ['Map.remove', { paramTypes: [new TypeAnnotation('$K')], returnType: new TypeAnnotation('Unit') }],
-]);
-
-export { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };
+export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };

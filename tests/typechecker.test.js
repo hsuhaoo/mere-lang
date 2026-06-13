@@ -264,48 +264,21 @@ let p: Point = { x: 10, y: 20 };
 p.x + p.y
 `, 30);
 
-test('method call: string.len()', `
-let s: String = "hello";
-s.len()
-`, 5);
-
 test('function call: substring()', `
 let s: String = "hello world";
 let sub: String = substring(s, 0, 5);
 len(sub)
 `, 5);
 
-test('method call: string.concat()', `
+test('function call: concat()', `
 let s: String = "hello";
-let t: String = s.concat(" world");
+let t: String = concat(s, " world");
 len(t)
 `, 11);
 
-test('method call: list.len()', `
+test('chained function calls with get/is_ok', `
 let l: List<Num> = [1, 2, 3];
-l.len()
-`, 3);
-
-// note: list.get() only works at runtime via direct method syntax
-
-test('method call: result.is_ok()', `
-let r: Result<Num> = ok(42);
-r.is_ok()
-`, true);
-
-test('method call: result.is_err()', `
-let r: Result<Num> = err("msg");
-r.is_err()
-`, true);
-
-test('method call: result.unwrap()', `
-let r: Result<Num> = ok(42);
-r.unwrap()
-`, 42);
-
-test('chained method and field access', `
-let l: List<Num> = [1, 2, 3];
-l.get(0).is_ok()
+is_ok(get(l, 0))
 `, true);
 
 // ── Runtime edge cases ──────────────────────────────────────────
@@ -372,25 +345,6 @@ sub
 test('to_string with number', `
 to_string(42)
 `, "42");
-
-// ── Method edge cases ──────────────────────────────────────────
-
-test('method: list.append() mutates', `
-let l: List<Num> = [1, 2];
-l.append(3);
-list_len(l)
-`, 3);
-
-test('method: result.unwrap_err()', `
-let r: Result<Num> = err("fail");
-r.unwrap_err()
-`, "fail");
-
-test('method: map.get', `
-let m: Map<String, Num> = {"a": 10};
-let v: Num = unwrap(m.get("a"));
-v
-`, 10);
 
 // ── Lambda tests ────────────────────────────────────────────────
 

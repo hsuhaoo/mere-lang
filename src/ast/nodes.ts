@@ -66,22 +66,6 @@ class CallExpr {
   }
 }
 
-class MethodCallExpr {
-  object: Expr;
-  method: string;
-  args: Expr[];
-  line: number;
-  column: number;
-
-  constructor(object: Expr, method: string, args: Expr[], line = 0, column = 0) {
-    this.object = object;
-    this.method = method;
-    this.args = args;
-    this.line = line;
-    this.column = column;
-  }
-}
-
 class FieldAccessExpr {
   object: Expr;
   field: string;
@@ -387,7 +371,6 @@ type Expr =
   | BinOpExpr
   | UnOpExpr
   | CallExpr
-  | MethodCallExpr
   | FieldAccessExpr
   | IfExpr
   | BlockExpr
@@ -415,7 +398,6 @@ export {
   BinOpExpr,
   UnOpExpr,
   CallExpr,
-  MethodCallExpr,
   FieldAccessExpr,
   IfExpr,
   BlockExpr,

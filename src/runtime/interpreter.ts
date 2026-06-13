@@ -1,6 +1,6 @@
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
-  MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
+  FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
@@ -105,7 +105,6 @@ class Interpreter {
       case BinOpExpr:       return this.execBinOp(expr as BinOpExpr);
       case UnOpExpr:        return this.execUnOp(expr as UnOpExpr);
       case CallExpr:        return this.execCall(expr as CallExpr);
-      case MethodCallExpr:  return this.execMethodCall(expr as MethodCallExpr);
       case FieldAccessExpr: return this.execFieldAccess(expr as FieldAccessExpr);
       case IfExpr:          return this.execIfExpr(expr as IfExpr);
       case LambdaExpr:      return this.execLambdaExpr(expr as LambdaExpr);
@@ -337,36 +336,6 @@ class Interpreter {
         this.rootEnv = savedEnv;
       }
     }
-  }
-
-  execMethodCall(expr: MethodCallExpr): Value {
-    const obj = this.execExpr(expr.object);
-    const methodName = expr.method;
-    const args = expr.args.map(a => this.execExpr(a));
-
-    if (obj && typeof obj === 'object' && (obj as any)._module) {
-      const fnDecl = (obj as any)._module.get(methodName);
-      if (fnDecl) {
-        const argValues = expr.args.map(a => this.execExpr(a));
-        return this.callUserFunction(fnDecl, argValues);
-      }
-    }
-
-    const method = this.builtins.getMethod(obj.kind, methodName);
-    if (method) {
-      if (args.length !== method.paramArities.length) {
-        throw new RuntimeError(
-          `Method '${obj.kind}.${methodName}' expects ${method.paramArities.length} args, got ${args.length}`,
-          expr.line, expr.column
-        );
-      }
-      return method.fn(obj, args);
-    }
-
-    throw new RuntimeError(
-      `Unknown method: ${obj.kind}.${methodName}`,
-      expr.line, expr.column
-    );
   }
 
   execFieldAccess(expr: FieldAccessExpr): Value {
