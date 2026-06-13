@@ -1,137 +1,242 @@
 import { TypeAnnotation } from '../ast/nodes.js';
 import type { Stmt } from '../ast/nodes.js';
 
-const ValueKind = Object.freeze({
-  NUMBER: 'Number',
-  STRING: 'String',
-  BOOLEAN: 'Boolean',
-  UNIT: 'Unit',
-  LIST: 'List',
-  MAP: 'Map',
-  RECORD: 'Record',
-  RESULT: 'Result',
-  TASK: 'Task',
-  FN: 'Fn',
-});
-
 class Value {
-  kind: string;
+  type: TypeAnnotation;
 
-  constructor(kind: string) {
-    this.kind = kind;
+  constructor(type: TypeAnnotation) {
+    this.type = type;
   }
 
   typeName(): string {
-    return this.kind;
+    return this.type.name;
   }
 
   toString(): string {
-    return `Value<${this.kind}>`;
+    return `Value<${this.type.name}>`;
   }
 
-  getNumber(): number {
-    throw new TypeError(`Cannot get number from ${this.kind}`);
+  isNumber(): boolean { return this.type.name === 'Number'; }
+  isString(): boolean { return this.type.name === 'String'; }
+  isBoolean(): boolean { return this.type.name === 'Boolean'; }
+  isUnit(): boolean { return this.type.name === 'Unit'; }
+  isList(): boolean { return this.type.name === 'List'; }
+  isMap(): boolean { return this.type.name === 'Map'; }
+  isRecord(): boolean { return this.type.name === 'Record'; }
+  isResult(): boolean { return this.type.name === 'Result'; }
+  isFn(): boolean { return this.type.name === 'Fn'; }
+  isTask(): boolean { return this.type.name === 'Task'; }
+
+  isTruthy(): boolean { return false; }
+
+  equals(other: Value): boolean {
+    if (this.type.name !== other.type.name) return false;
+    return this._equalsSameType(other);
+  }
+
+  _equalsSameType(other: Value): boolean { return false; }
+
+  // ── Boundary: explicit escape to host types ──
+  toRawNumber(): number {
+    throw new TypeError(`Cannot extract number from ${this.typeName()}`);
+  }
+  toRawString(): string {
+    throw new TypeError(`Cannot extract string from ${this.typeName()}`);
+  }
+  toRawBoolean(): boolean {
+    throw new TypeError(`Cannot extract boolean from ${this.typeName()}`);
+  }
+
+  // ── Operation methods (overridden per type) ──
+  add(other: Value): Value {
+    throw new TypeError(`+ not supported for ${this.typeName()}`);
+  }
+  subtract(other: Value): Value {
+    throw new TypeError(`- not supported for ${this.typeName()}`);
+  }
+  multiply(other: Value): Value {
+    throw new TypeError(`* not supported for ${this.typeName()}`);
+  }
+  divide(other: Value): Value {
+    throw new TypeError(`/ not supported for ${this.typeName()}`);
+  }
+  negate(): Value {
+    throw new TypeError(`Negation not supported for ${this.typeName()}`);
+  }
+  lt(other: Value): Value {
+    throw new TypeError(`< not supported for ${this.typeName()}`);
+  }
+  gt(other: Value): Value {
+    throw new TypeError(`> not supported for ${this.typeName()}`);
+  }
+  lte(other: Value): Value {
+    throw new TypeError(`<= not supported for ${this.typeName()}`);
+  }
+  gte(other: Value): Value {
+    throw new TypeError(`>= not supported for ${this.typeName()}`);
+  }
+  and(other: Value): Value {
+    throw new TypeError(`'and' not supported for ${this.typeName()}`);
+  }
+  or(other: Value): Value {
+    throw new TypeError(`'or' not supported for ${this.typeName()}`);
+  }
+  not(): Value {
+    throw new TypeError(`'not' not supported for ${this.typeName()}`);
+  }
+  concat(other: Value): Value {
+    throw new TypeError(`Concat not supported for ${this.typeName()}`);
   }
 }
 
+const NUM_TYPE = new TypeAnnotation('Number');
+
 class NumberValue extends Value {
-  value: number;
+  _value: number;
 
   constructor(value: number) {
-    super(ValueKind.NUMBER);
+    super(NUM_TYPE);
     if (typeof value !== 'number' || !isFinite(value)) {
       throw new TypeError(`Number value must be a finite number, got: ${value}`);
     }
-    this.value = value;
-  }
-
-  typeName(): string {
-    return 'Number';
+    this._value = value;
   }
 
   toString(): string {
-    return String(this.value);
+    return String(this._value);
   }
 
-  getNumber(): number {
-    return this.value;
+  _equalsSameType(other: Value): boolean {
+    return this._value === (other as NumberValue)._value;
+  }
+
+  toRawNumber(): number { return this._value; }
+
+  add(other: Value): NumberValue {
+    return new NumberValue(this._value + (other as NumberValue)._value);
+  }
+  subtract(other: Value): NumberValue {
+    return new NumberValue(this._value - (other as NumberValue)._value);
+  }
+  multiply(other: Value): NumberValue {
+    return new NumberValue(this._value * (other as NumberValue)._value);
+  }
+  divide(other: Value): NumberValue {
+    const rhs = (other as NumberValue)._value;
+    if (rhs === 0) throw new TypeError('Division by zero');
+    return new NumberValue(this._value / rhs);
+  }
+  negate(): NumberValue {
+    return new NumberValue(-this._value);
+  }
+  lt(other: Value): BooleanValue {
+    return new BooleanValue(this._value < (other as NumberValue)._value);
+  }
+  gt(other: Value): BooleanValue {
+    return new BooleanValue(this._value > (other as NumberValue)._value);
+  }
+  lte(other: Value): BooleanValue {
+    return new BooleanValue(this._value <= (other as NumberValue)._value);
+  }
+  gte(other: Value): BooleanValue {
+    return new BooleanValue(this._value >= (other as NumberValue)._value);
   }
 }
 
+const STR_TYPE = new TypeAnnotation('String');
+
 class StringValue extends Value {
-  value: string;
+  _value: string;
 
   constructor(value: string) {
-    super(ValueKind.STRING);
+    super(STR_TYPE);
     if (typeof value !== 'string') {
       throw new TypeError(`StringValue must be constructed with a string, got: ${value}`);
     }
-    this.value = value;
-  }
-
-  typeName(): string {
-    return 'String';
+    this._value = value;
   }
 
   length(): number {
-    return this.value.length;
+    return this._value.length;
   }
 
   toString(): string {
-    return `"${this.value}"`;
+    return `"${this._value}"`;
   }
 
-  get(): string {
-    return this.value;
+  _equalsSameType(other: Value): boolean {
+    return this._value === (other as StringValue)._value;
+  }
+
+  toRawString(): string { return this._value; }
+
+  concat(other: Value): StringValue {
+    return new StringValue(this._value + (other as StringValue)._value);
   }
 }
 
+const BOOL_TYPE = new TypeAnnotation('Boolean');
+
 class BooleanValue extends Value {
-  value: boolean;
+  _value: boolean;
 
   constructor(value: boolean) {
-    super(ValueKind.BOOLEAN);
+    super(BOOL_TYPE);
     if (typeof value !== 'boolean') {
       throw new TypeError(`BooleanValue must be constructed with a boolean, got: ${value}`);
     }
-    this.value = value;
-  }
-
-  typeName(): string {
-    return 'Boolean';
+    this._value = value;
   }
 
   toString(): string {
-    return String(this.value);
+    return String(this._value);
   }
 
-  get(): boolean {
-    return this.value;
+  _equalsSameType(other: Value): boolean {
+    return this._value === (other as BooleanValue)._value;
+  }
+
+  toRawBoolean(): boolean { return this._value; }
+
+  isTruthy(): boolean { return this._value; }
+
+  and(other: Value): BooleanValue {
+    return new BooleanValue(this._value && (other as BooleanValue)._value);
+  }
+  or(other: Value): BooleanValue {
+    return new BooleanValue(this._value || (other as BooleanValue)._value);
+  }
+  not(): BooleanValue {
+    return new BooleanValue(!this._value);
   }
 }
 
+const UNIT_TYPE = new TypeAnnotation('Unit');
+
 class UnitValue extends Value {
   constructor() {
-    super(ValueKind.UNIT);
-  }
-
-  typeName(): string {
-    return 'Unit';
+    super(UNIT_TYPE);
   }
 
   toString(): string {
     return '()';
   }
+
+  _equalsSameType(other: Value): boolean {
+    return other.isUnit();
+  }
 }
 
 const UNIT_VALUE = new UnitValue();
+
+const LIST_TYPE = new TypeAnnotation('List');
 
 class ListValue extends Value {
   _elements: Value[];
   _elementType: TypeAnnotation | null;
 
   constructor(elements: Value[] = [], elementType: TypeAnnotation | null = null) {
-    super(ValueKind.LIST);
+    super(LIST_TYPE);
     this._elements = elements;
     this._elementType = elementType;
   }
@@ -152,14 +257,29 @@ class ListValue extends Value {
     return this._elements[index];
   }
 
-  _getElements(): Value[] {
-    return this._elements;
+  append(elem: Value): ListValue {
+    return new ListValue([...this._elements, elem], this._elementType);
+  }
+
+  slice(start: number, length: number): ListValue {
+    return new ListValue(this._elements.slice(start, start + length), this._elementType);
   }
 
   toString(): string {
     return `[${this._elements.map(e => e.toString()).join(', ')}]`;
   }
+
+  _equalsSameType(other: Value): boolean {
+    const o = other as ListValue;
+    if (this.length() !== o.length()) return false;
+    for (let i = 0; i < this.length(); i++) {
+      if (!this.get(i)!.equals(o.get(i)!)) return false;
+    }
+    return true;
+  }
 }
+
+const MAP_TYPE = new TypeAnnotation('Map');
 
 class MapValue extends Value {
   _entries: Record<string, Value>;
@@ -167,7 +287,7 @@ class MapValue extends Value {
   _valueType: TypeAnnotation | null;
 
   constructor(entries: Record<string, Value> = {}, keyType: TypeAnnotation | null = null, valueType: TypeAnnotation | null = null) {
-    super(ValueKind.MAP);
+    super(MAP_TYPE);
     this._entries = entries;
     this._keyType = keyType;
     this._valueType = valueType;
@@ -177,6 +297,26 @@ class MapValue extends Value {
     const k = this._keyType ? this._keyType.name : '?';
     const v = this._valueType ? this._valueType.name : '?';
     return `Map<${k}, ${v}>`;
+  }
+
+  _resolveKey(key: Value): string {
+    return String(key.isNumber() ? key.toRawNumber() : key.toRawString());
+  }
+
+  getByValueKey(key: Value): Value | undefined {
+    return this._entries[this._resolveKey(key)];
+  }
+
+  hasByValueKey(key: Value): boolean {
+    return this._entries.hasOwnProperty(this._resolveKey(key));
+  }
+
+  set(key: Value, value: Value): void {
+    this._entries[this._resolveKey(key)] = value;
+  }
+
+  remove(key: Value): void {
+    delete this._entries[this._resolveKey(key)];
   }
 
   get(key: string): Value | undefined {
@@ -195,14 +335,21 @@ class MapValue extends Value {
     return Object.keys(this._entries).length;
   }
 
-  _getEntries(): Record<string, Value> {
-    return this._entries;
-  }
-
   toString(): string {
     const pairs = Object.entries(this._entries)
       .map(([k, v]) => `${k}: ${v.toString()}`);
     return `{${pairs.join(', ')}}`;
+  }
+
+  _equalsSameType(other: Value): boolean {
+    const o = other as MapValue;
+    if (this.size() !== o.size()) return false;
+    for (const k of this.keys()) {
+      const aVal = this.get(k);
+      const bVal = o.get(k);
+      if (!aVal || !bVal || !aVal.equals(bVal)) return false;
+    }
+    return true;
   }
 }
 
@@ -211,7 +358,7 @@ class RecordValue extends Value {
   _typeName: string;
 
   constructor(fields: Record<string, Value>, typeName: string) {
-    super(ValueKind.RECORD);
+    super(new TypeAnnotation(typeName));
     this._fields = fields;
     this._typeName = typeName;
   }
@@ -226,12 +373,8 @@ class RecordValue extends Value {
       : undefined;
   }
 
-  has(fieldName: string): boolean {
+  hasField(fieldName: string): boolean {
     return this._fields.hasOwnProperty(fieldName);
-  }
-
-  _getFields(): Record<string, Value> {
-    return this._fields;
   }
 
   fieldNames(): string[] {
@@ -243,19 +386,32 @@ class RecordValue extends Value {
       .map(([k, v]) => `${k}: ${v.toString()}`);
     return `${this._typeName}{${fields.join(', ')}}`;
   }
+
+  _equalsSameType(other: Value): boolean {
+    const o = other as RecordValue;
+    if (this.typeName() !== o.typeName()) return false;
+    const keys = this.fieldNames();
+    if (keys.length !== o.fieldNames().length) return false;
+    for (const k of keys) {
+      const aVal = this.get(k);
+      const bVal = o.get(k);
+      if (!aVal || !bVal || !aVal.equals(bVal)) return false;
+    }
+    return true;
+  }
 }
 
 class ResultValue extends Value {
-  isOk: BooleanValue;
-  value: Value;
-  errMessage: StringValue;
+  _isOk: BooleanValue;
+  _value: Value;
+  _errMessage: StringValue;
   _resultType: TypeAnnotation | null;
 
   constructor(isOk: BooleanValue, value: Value, errMessage: StringValue, resultType: TypeAnnotation | null = null) {
-    super(ValueKind.RESULT);
-    this.isOk = isOk;
-    this.value = value;
-    this.errMessage = errMessage;
+    super(new TypeAnnotation('Result'));
+    this._isOk = isOk;
+    this._value = value;
+    this._errMessage = errMessage;
     this._resultType = resultType;
   }
 
@@ -265,46 +421,51 @@ class ResultValue extends Value {
   }
 
   isOkValue(): boolean {
-    return this.isOk.get();
+    return this._isOk._value;
   }
 
   isErr(): boolean {
-    return !this.isOk.get();
+    return !this._isOk._value;
   }
 
   getOk(): Value {
     if (this.isErr()) {
       throw new TypeError('Called getOk() on an Err value');
     }
-    return this.value;
+    return this._value;
   }
 
   getErr(): Value {
     if (this.isOkValue()) {
       throw new TypeError('Called getErr() on an Ok value');
     }
-    return this.errMessage;
+    return this._errMessage;
   }
 
   toString(): string {
     return this.isOkValue()
-      ? `ok(${this.value.toString()})`
-      : `err(${this.errMessage.toString()})`;
+      ? `ok(${this._value.toString()})`
+      : `err(${this._errMessage.toString()})`;
+  }
+
+  _equalsSameType(other: Value): boolean {
+    const o = other as ResultValue;
+    if (this.isOkValue() !== o.isOkValue()) return false;
+    if (this.isOkValue()) return this.getOk().equals(o.getOk());
+    return this.getErr().equals(o.getErr());
   }
 }
+
+const FN_TYPE = new TypeAnnotation('Fn');
 
 class FnValue extends Value {
   params: Array<{ name: string; type: TypeAnnotation }>;
   body: Stmt[];
 
   constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[]) {
-    super(ValueKind.FN);
+    super(FN_TYPE);
     this.params = params;
     this.body = body;
-  }
-
-  typeName(): string {
-    return 'Fn';
   }
 
   toString(): string {
@@ -322,12 +483,14 @@ export interface TaskHandle {
   isDone(): boolean;
 }
 
+const TASK_TYPE = new TypeAnnotation('Task');
+
 class TaskValue extends Value {
   handle: TaskHandle;
   _taskType: TypeAnnotation | null;
 
   constructor(handle: TaskHandle, taskType: TypeAnnotation | null = null) {
-    super(ValueKind.TASK);
+    super(TASK_TYPE);
     this.handle = handle;
     this._taskType = taskType;
   }
@@ -388,7 +551,6 @@ function task(handle: TaskHandle, taskType: TypeAnnotation | null = null): TaskV
 }
 
 export {
-  ValueKind,
   Value,
   NumberValue,
   StringValue,

@@ -9,7 +9,7 @@ import {
   Expr, Stmt,
 } from '../ast/nodes.js';
 import {
-  Value, ValueKind,
+  Value,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap, record as mkRecord,
   task as mkTask,
@@ -140,28 +140,21 @@ class Interpreter {
 
     switch (expr.op) {
       case '+':
-        if (left.kind === ValueKind.STRING && right.kind === ValueKind.STRING) {
-          return mkString((left as StringValue).get() + (right as StringValue).get());
+        if (left.isString() && right.isString()) {
+          return left.concat(right);
         }
-        return mkNumber(left.getNumber() + right.getNumber());
-      case '-': return mkNumber(left.getNumber() - right.getNumber());
-      case '*': return mkNumber(left.getNumber() * right.getNumber());
-      case '/':
-        if (right.getNumber() === 0)
-          throw new RuntimeError('Division by zero', expr.line, expr.column);
-        return mkNumber(left.getNumber() / right.getNumber());
-      case '==': return mkBoolean(this.valuesEqual(left, right));
-      case '!=': return mkBoolean(!this.valuesEqual(left, right));
-      case '<': return mkBoolean(left.getNumber() < right.getNumber());
-      case '>': return mkBoolean(left.getNumber() > right.getNumber());
-      case '<=': return mkBoolean(left.getNumber() <= right.getNumber());
-      case '>=': return mkBoolean(left.getNumber() >= right.getNumber());
-      case 'and': return mkBoolean(
-        left.kind === ValueKind.BOOLEAN && (left as BooleanValue).get() &&
-        right.kind === ValueKind.BOOLEAN && (right as BooleanValue).get());
-      case 'or': return mkBoolean(
-        left.kind === ValueKind.BOOLEAN && (left as BooleanValue).get() ||
-        right.kind === ValueKind.BOOLEAN && (right as BooleanValue).get());
+        return left.add(right);
+      case '-': return left.subtract(right);
+      case '*': return left.multiply(right);
+      case '/': return left.divide(right);
+      case '==': return mkBoolean(left.equals(right));
+      case '!=': return mkBoolean(!left.equals(right));
+      case '<': return left.lt(right);
+      case '>': return left.gt(right);
+      case '<=': return left.lte(right);
+      case '>=': return left.gte(right);
+      case 'and': return left.and(right);
+      case 'or': return left.or(right);
       default:
         throw new RuntimeError(`Unknown operator: ${expr.op}`, expr.line, expr.column);
     }
@@ -170,8 +163,8 @@ class Interpreter {
   execUnOp(expr: UnOpExpr): Value {
     const operand = this.execExpr(expr.operand);
     switch (expr.op) {
-      case 'not': return mkBoolean(operand.kind === ValueKind.BOOLEAN && !(operand as BooleanValue).get());
-      case '-': return mkNumber(-operand.getNumber());
+      case 'not': return operand.not();
+      case '-': return operand.negate();
       default:
         throw new RuntimeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
     }
@@ -369,16 +362,16 @@ class Interpreter {
     }
 
     if (obj instanceof ResultValue) {
-      if (expr.field === 'isOk') return obj.isOk;
-      if (expr.field === 'value') return obj.value;
-      if (expr.field === 'errMessage') return obj.errMessage;
+      if (expr.field === 'isOk') return mkBoolean(obj.isOkValue());
+      if (expr.field === 'value') return obj._value;
+      if (expr.field === 'errMessage') return obj._errMessage;
       throw new RuntimeError(`Result has no field '${expr.field}'`, expr.line, expr.column);
     }
 
     if (!(obj instanceof RecordValue)) {
       throw new RuntimeError(`Cannot access field on non-record type ${obj.typeName()}`, expr.line, expr.column);
     }
-    if (!(expr.field in obj._getFields())) {
+    if (!obj.hasField(expr.field)) {
       throw new RuntimeError(`Record has no field '${expr.field}'`, expr.line, expr.column);
     }
     return obj.get(expr.field);
@@ -386,7 +379,7 @@ class Interpreter {
 
   execIfExpr(expr: IfExpr): Value {
     const condition = this.execExpr(expr.condition);
-    if (condition.kind === ValueKind.BOOLEAN && (condition as BooleanValue).get()) {
+    if (condition.isTruthy()) {
       for (const stmt of expr.thenBlock) {
         this.execStmt(stmt);
       }
@@ -396,7 +389,7 @@ class Interpreter {
 
   execIf(stmt: IfStmt): Value {
     const condition = this.execExpr(stmt.condition);
-    if (condition.kind === ValueKind.BOOLEAN && (condition as BooleanValue).get()) {
+    if (condition.isTruthy()) {
       return this.execBlock({ stmts: stmt.thenBlock } as BlockExpr);
     }
     return mkUnit();
@@ -436,7 +429,7 @@ class Interpreter {
     for (const entry of expr.entries) {
       const key = this.execExpr(entry.key);
       const value = this.execExpr(entry.value);
-      entries[String(key.kind === ValueKind.NUMBER ? key.getNumber() : (key as StringValue).get())] = value;
+      entries[key.isNumber() ? String(key.toRawNumber()) : key.toRawString()] = value;
     }
     return mkMap(entries, null, null);
   }
@@ -521,46 +514,6 @@ class Interpreter {
     this.modules.set(path, { exports: new Map() });
   }
 
-  valuesEqual(a: Value, b: Value): boolean {
-    if (a.kind !== b.kind) return false;
-
-    switch (a.kind) {
-      case ValueKind.NUMBER:     return (a as NumberValue).getNumber() === (b as NumberValue).getNumber();
-      case ValueKind.STRING:  return (a as StringValue).get() === (b as StringValue).get();
-      case ValueKind.BOOLEAN:    return (a as BooleanValue).get() === (b as BooleanValue).get();
-      case ValueKind.UNIT:    return true;
-      case ValueKind.LIST: {
-        const la = a as ListValue;
-        const lb = b as ListValue;
-        if (la.length() !== lb.length()) return false;
-        for (let i = 0; i < la.length(); i++) {
-          if (!this.valuesEqual(la.get(i)!, lb.get(i)!)) return false;
-        }
-        return true;
-      }
-      case ValueKind.RECORD: {
-        const ra = a as RecordValue;
-        const rb = b as RecordValue;
-        if (ra.typeName() !== rb.typeName()) return false;
-        const keys = ra.fieldNames();
-        if (keys.length !== rb.fieldNames().length) return false;
-        for (const k of keys) {
-          const aVal = ra.get(k);
-          const bVal = rb.get(k);
-          if (!aVal || !bVal || !this.valuesEqual(aVal, bVal)) return false;
-        }
-        return true;
-      }
-      case ValueKind.RESULT: {
-        const rva = a as ResultValue;
-        const rvb = b as ResultValue;
-        if (rva.isOkValue() !== rvb.isOkValue()) return false;
-        if (rva.isOkValue()) return this.valuesEqual(rva.getOk(), rvb.getOk());
-        return this.valuesEqual(rva.getErr(), rvb.getErr());
-      }
-      default: return false;
-    }
-  }
 }
 
 class ReturnSignal extends Error {

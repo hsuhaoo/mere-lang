@@ -15,7 +15,7 @@ import {
 } from './ast/nodes.js';
 import { Parser, ParseError } from './parser/index.js';
 import { TypeChecker, TypeError } from './typechecker/index.js';
-import { Value, ValueKind } from './runtime/values.js';
+import { Value } from './runtime/values.js';
 import { Env } from './runtime/env.js';
 import { Builtins } from './runtime/builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
@@ -75,7 +75,6 @@ export {
 
   // Value system
   Value,
-  ValueKind,
   Env,
 
   // AST nodes

@@ -8,7 +8,7 @@
 
 import process from 'process';
 import {
-  Value, ValueKind,
+  Value,
   NumberValue, StringValue, BooleanValue, ListValue,
   MapValue, TaskValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
@@ -38,18 +38,18 @@ class Builtins {
     });
 
     this.registerFn('concat', 2, (args) => {
-      return mkString(args[0].get() + args[1].get());
+      return args[0].concat(args[1]);
     });
 
     this.registerFn('substring', 3, (args) => {
-      const str = args[0].get();
-      const start = args[1].getNumber();
-      const length = args[2].getNumber();
+      const str = args[0].toRawString();
+      const start = args[1].toRawNumber();
+      const length = args[2].toRawNumber();
       return mkString(str.substring(start, start + length));
     });
 
     this.registerFn('parse_num', 1, (args) => {
-      const str = args[0].get();
+      const str = args[0].toRawString();
       const num = parseFloat(str);
       if (isNaN(num)) {
         return mkErr(`Cannot parse '${str}' as number`);
@@ -71,15 +71,12 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('append', 2, (args) => {
-      const list = args[0];
-      const elem = args[1];
-      const newElements = [...list._getElements(), elem];
-      return mkList(newElements, list._elementType);
+      return args[0].append(args[1]);
     });
 
     this.registerFn('list_get', 2, (args) => {
-      const list = args[0];
-      const index = args[1].getNumber();
+      const list = args[0] as ListValue;
+      const index = args[1].toRawNumber();
       if (index < 0 || index >= list.length()) {
         return mkErr(`Index ${index} out of bounds`);
       }
@@ -91,11 +88,10 @@ class Builtins {
     });
 
     this.registerFn('substring_list', 3, (args) => {
-      const list = args[0];
-      const start = args[1].getNumber();
-      const length = args[2].getNumber();
-      const newElements = list._getElements().slice(start, start + length);
-      return mkList(newElements, list._elementType);
+      const list = args[0] as ListValue;
+      const start = args[1].toRawNumber();
+      const length = args[2].toRawNumber();
+      return list.slice(start, length);
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -103,31 +99,24 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('map_put', 3, (args) => {
-      const map = args[0];
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      map._getEntries()[key] = args[2];
+      (args[0] as MapValue).set(args[1], args[2]);
       return mkUnit();
     });
 
     this.registerFn('map_get', 2, (args) => {
-      const map = args[0];
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      if (!(key in map._getEntries())) {
-        return mkErr(`Key '${key}' not found`);
+      const map = args[0] as MapValue;
+      if (!map.hasByValueKey(args[1])) {
+        return mkErr(`Key '${args[1].toString()}' not found`);
       }
-      return mkOk(map._getEntries()[key]);
+      return mkOk(map.getByValueKey(args[1]));
     });
 
     this.registerFn('map_has', 2, (args) => {
-      const map = args[0];
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      return mkBoolean(map.has(key));
+      return mkBoolean((args[0] as MapValue).hasByValueKey(args[1]));
     });
 
     this.registerFn('map_remove', 2, (args) => {
-      const map = args[0];
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      delete map._getEntries()[key];
+      (args[0] as MapValue).remove(args[1]);
       return mkUnit();
     });
 
@@ -137,39 +126,38 @@ class Builtins {
 
     this.registerFn('get', 2, (args) => {
       const obj = args[0];
-      if (obj.kind === ValueKind.LIST) {
-        const index = args[1].getNumber();
-        if (index < 0 || index >= obj.length()) {
+      if (obj.isList()) {
+        const list = obj as ListValue;
+        const index = args[1].toRawNumber();
+        if (index < 0 || index >= list.length()) {
           return mkErr(`Index ${index} out of bounds`);
         }
-        return mkOk(obj.get(index));
+        return mkOk(list.get(index));
       }
-      if (obj.kind === ValueKind.MAP) {
-        const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-        if (!(key in obj._getEntries())) {
-          return mkErr(`Key '${key}' not found`);
+      if (obj.isMap()) {
+        const map = obj as MapValue;
+        if (!map.hasByValueKey(args[1])) {
+          return mkErr(`Key '${args[1].toString()}' not found`);
         }
-        return mkOk(obj._getEntries()[key]);
+        return mkOk(map.getByValueKey(args[1]));
       }
-      throw new Error(`'get' expects a List or Map, got ${obj.kind}`);
+      throw new Error(`'get' expects a List or Map, got ${obj.typeName()}`);
     });
 
     this.registerFn('has', 2, (args) => {
       const obj = args[0];
-      if (obj.kind !== ValueKind.MAP) {
-        throw new Error(`'has' expects a Map, got ${obj.kind}`);
+      if (!obj.isMap()) {
+        throw new Error(`'has' expects a Map, got ${obj.typeName()}`);
       }
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      return mkBoolean(obj.has(key));
+      return mkBoolean((obj as MapValue).hasByValueKey(args[1]));
     });
 
     this.registerFn('put', 3, (args) => {
       const obj = args[0];
-      if (obj.kind !== ValueKind.MAP) {
-        throw new Error(`'put' expects a Map, got ${obj.kind}`);
+      if (!obj.isMap()) {
+        throw new Error(`'put' expects a Map, got ${obj.typeName()}`);
       }
-      const key = String(args[1].kind === ValueKind.NUMBER ? args[1].getNumber() : args[1].get());
-      obj._getEntries()[key] = args[2];
+      (obj as MapValue).set(args[1], args[2]);
       return mkUnit();
     });
 
@@ -178,15 +166,15 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('abs', 1, (args) => {
-      return mkNumber(Math.abs(args[0].getNumber()));
+      return mkNumber(Math.abs(args[0].toRawNumber()));
     });
 
     this.registerFn('max', 2, (args) => {
-      return mkNumber(Math.max(args[0].getNumber(), args[1].getNumber()));
+      return mkNumber(Math.max(args[0].toRawNumber(), args[1].toRawNumber()));
     });
 
     this.registerFn('min', 2, (args) => {
-      return mkNumber(Math.min(args[0].getNumber(), args[1].getNumber()));
+      return mkNumber(Math.min(args[0].toRawNumber(), args[1].toRawNumber()));
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -195,7 +183,7 @@ class Builtins {
 
     if (this.scheduler) {
       this.registerFn('file_read', 1, (args) => {
-        const path = args[0].get();
+        const path = args[0].toRawString();
         const promise = fs.promises.readFile(path, 'utf-8')
           .then(content => mkOk(mkString(content)))
           .catch(e => mkErr(`Cannot read file '${path}': ${e.message}`));
@@ -203,7 +191,7 @@ class Builtins {
       });
 
       this.registerFn('file_read_lines', 1, (args) => {
-        const path = args[0].get();
+        const path = args[0].toRawString();
         const promise = fs.promises.readFile(path, 'utf-8')
           .then(content => {
             const raw = content.split('\n');
@@ -215,8 +203,8 @@ class Builtins {
       });
 
       this.registerFn('file_write', 2, (args) => {
-        const path = args[0].get();
-        const content = args[1].get();
+        const path = args[0].toRawString();
+        const content = args[1].toRawString();
         const promise = fs.promises.writeFile(path, content)
           .then(() => mkOk(mkUnit()))
           .catch(e => mkErr(`Cannot write file '${path}': ${e.message}`));

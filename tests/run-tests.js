@@ -61,20 +61,17 @@ function testError(name, src, expectedSubstring) {
  */
 function extractValue(v) {
   if (!v) return undefined;
-  // New class-based values
-  if (v.kind === 'Number') return v.getNumber();
-  if (v.kind === 'String') return v.get();
-  if (v.kind === 'Boolean') return v.get();
-  if (v.kind === 'Unit') return '()'; // Unit maps to () for comparison
-  if (v.kind === 'Result') {
+  if (v.isNumber()) return v.toRawNumber();
+  if (v.isString()) return v.toRawString();
+  if (v.isBoolean()) return v.toRawBoolean();
+  if (v.isUnit()) return '()';
+  if (v.isResult()) {
     return {
-      ok: v.isOk.get(),
-      value: v.isOk.get() ? extractValue(v.value) : v.errMessage,
+      ok: v.isOkValue(),
+      value: v.isOkValue() ? extractValue(v.getOk()) : v.getErr(),
     };
   }
-  // If it still has .data (backward compat), use it
   if (v.data !== undefined) return v.data;
-  // Fallback: toString
   return v.toString();
 }
 

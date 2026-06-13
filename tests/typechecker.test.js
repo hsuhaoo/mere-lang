@@ -6,8 +6,8 @@ let failed = 0;
 function test(name, src, expected) {
   try {
     const result = run(src);
-    if (result.kind === 'Number') {
-      const actual = result.getNumber();
+    if (result.isNumber()) {
+      const actual = result.toRawNumber();
       if (actual === expected) {
         console.log('✓', name);
         passed++;
@@ -15,8 +15,8 @@ function test(name, src, expected) {
         console.log('✗', name, 'expected', expected, 'got', actual);
         failed++;
       }
-    } else if (result.kind === 'Boolean') {
-      const actual = result.get();
+    } else if (result.isBoolean()) {
+      const actual = result.toRawBoolean();
       if (actual === expected) {
         console.log('✓', name, '=', actual);
         passed++;
@@ -24,8 +24,8 @@ function test(name, src, expected) {
         console.log('✗', name, 'expected', expected, 'got', actual);
         failed++;
       }
-    } else if (result.kind === 'String') {
-      const actual = result.get();
+    } else if (result.isString()) {
+      const actual = result.toRawString();
       if (actual === expected) {
         console.log('✓', name);
         passed++;
