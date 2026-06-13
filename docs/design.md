@@ -18,7 +18,8 @@
 
 - Lambda 表达式存在但**不捕获**外部变量
 - 用 `Result<T>` 代替异常和 `try-catch`
-- 用 `spawn(expr)` 代替 `spawn(fn, args)`
+- `spawn` 接受零参 lambda，`join` 等待结果
+- 异步 I/O（`file_read`、`file_write`、`file_read_lines`）返回 `Task`，调用即启动，`join` 等待
 - 没有 `else`，只有 `if` 单分支
 - 没有循环，使用递归
 - 扁平模块系统，无嵌套

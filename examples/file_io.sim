@@ -2,19 +2,23 @@
 // Run with: node bin/simplex.js examples/file_io.sim
 
 // --- Write a file ---
-let write_result: Result<Unit> = file_write("output.txt", "Hello from Simplex!\nSecond line\n");
+// file_write returns Task<Result<Unit>> — join to get the result
+let write_task: Task<Result<Unit>> = file_write("output.txt", "Hello from Simplex!\nSecond line\n");
+let write_result: Result<Unit> = join(write_task);
 if write_result.isOk {
   print("File written successfully");
 }
 
 // --- Read a file ---
-let content: Result<String> = file_read("output.txt");
+let content_task: Task<Result<String>> = file_read("output.txt");
+let content: Result<String> = join(content_task);
 if content.isOk {
   print("File contents: " + content.value);
 }
 
 // --- Read lines ---
-let lines: Result<List<String>> = file_read_lines("output.txt");
+let lines_task: Task<Result<List<String>>> = file_read_lines("output.txt");
+let lines: Result<List<String>> = join(lines_task);
 if lines.isOk {
   let line_count: Number = list_len(lines.value);
   print("Line count: " + to_string(line_count));

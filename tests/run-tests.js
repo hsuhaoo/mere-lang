@@ -65,7 +65,7 @@ function extractValue(v) {
   if (v.kind === 'Number') return v.getNumber();
   if (v.kind === 'String') return v.get();
   if (v.kind === 'Boolean') return v.get();
-  if (v.kind === 'Unit') return undefined; // Unit maps to undefined for comparison
+  if (v.kind === 'Unit') return '()'; // Unit maps to () for comparison
   if (v.kind === 'Result') {
     return {
       ok: v.isOk.get(),
@@ -196,7 +196,7 @@ fn greet(name: String) -> Unit {
   print("Hello, " + name)
 }
 greet("World")
-`, undefined);
+`, '()');
 
 test('If false branch (no else)', `
 let x: Number = 3;
@@ -252,7 +252,7 @@ not r.isOk
 test('result field: value on err is unit', `
 let r: Result<Number> = err("fail");
 r.value
-`, undefined);
+`, '()');
 
 test('result field: errMessage on err', `
 let r: Result<Number> = err("fail");

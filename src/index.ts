@@ -40,8 +40,8 @@ function run(source, filePath = 'main.sim') {
   checker.check(program);
 
   // 4. Interpret
-  const builtins = new Builtins();
   const scheduler = new Scheduler();
+  const builtins = new Builtins(scheduler);
   const interpreter = new Interpreter(builtins, scheduler);
 
   return interpreter.run(program);

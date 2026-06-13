@@ -206,8 +206,11 @@ let x: Number = add(3, 4);       // 7
 | `abs` | `abs(Number) → Number` | 绝对值 |
 | `max` | `max(Number, Number) → Number` | 最大值 |
 | `min` | `min(Number, Number) → Number` | 最小值 |
-| `spawn` | `spawn(T) → Task<T>` | 包装表达式为 Task |
+| `spawn` | `spawn(Fn<.., RetT>) → Task<RetT>` | 包装零参 lambda 为 Task |
 | `join` | `join(Task<T>) → T` | 获取 Task 结果 |
+| `file_read` | `file_read(String) → Task<Result<String>>` | 异步读取文件 |
+| `file_write` | `file_write(String, String) → Task<Result<Unit>>` | 异步写入文件 |
+| `file_read_lines` | `file_read_lines(String) → Task<Result<List<String>>>` | 异步读行 |
 
 ---
 
@@ -451,8 +454,11 @@ print("top-left: x=" + to_string(rect.top_left.x));
 
 ### 11.1 写入
 
+I/O 函数返回 `Task<Result<T>>`，需用 `join` 获取结果：
+
 ```sim
-let result: Result<Unit> = file_write("output.txt", "Hello from Simplex!\n");
+let task: Task<Result<Unit>> = file_write("output.txt", "Hello from Simplex!\n");
+let result: Result<Unit> = join(task);
 if result.isOk {
   print("File written successfully");
 }
@@ -462,13 +468,15 @@ if result.isOk {
 
 ```sim
 // 读取全部内容
-let content: Result<String> = file_read("output.txt");
+let task: Task<Result<String>> = file_read("output.txt");
+let content: Result<String> = join(task);
 if content.isOk {
   print("Contents: " + content.value);
 }
 
 // 读取为行
-let lines: Result<List<String>> = file_read_lines("output.txt");
+let task2: Task<Result<List<String>>> = file_read_lines("output.txt");
+let lines: Result<List<String>> = join(task2);
 if lines.isOk {
   let count: Number = list_len(lines.value);
   print("Line count: " + to_string(count));
@@ -516,18 +524,18 @@ let y: Number = math.multiply(5, 6);  // 30
 
 ### 13.1 基本概念
 
-`spawn` 接受一个**已求值的表达式**，包装为 `Task<T>`。`join` 返回任务结果：
+`spawn` 接受一个**零参 lambda**，返回 `Task<T>`。`join` 阻塞等待任务结果：
 
 ```sim
-let task: Task<Number> = spawn(add(10, 20));
+let task: Task<Number> = spawn(fn() -> Number { 10 + 20 });
 let result: Number = join(task);   // 30
 ```
 
 ### 13.2 说明
 
-- `spawn` 接受已求值的值，返回类型自动推导
-- 当前实现为同步任务（无异步 I/O）
-- 为未来异步扩展预留接口
+- `spawn` 的函数在 `join` 时执行（同步任务）
+- 异步 I/O 函数（`file_read`、`file_write`、`file_read_lines`）调用时立即启动后台 I/O，`join` 只等待结果
+- 多个异步 I/O 可同时启动，再分别 `join` 实现并发
 
 ---
 

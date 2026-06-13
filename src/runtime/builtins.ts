@@ -10,17 +10,21 @@ import process from 'process';
 import {
   Value, ValueKind,
   NumberValue, StringValue, BooleanValue, ListValue,
-  MapValue,
+  MapValue, TaskValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
   mkOk, mkErr,
 } from './values.js';
+import { Scheduler } from './scheduler.js';
+import fs from 'fs';
 
 class Builtins {
   fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
+  scheduler: Scheduler | null;
 
-  constructor() {
+  constructor(scheduler?: Scheduler) {
     this.fnMap = new Map();
+    this.scheduler = scheduler || null;
     this.registerBuiltins();
   }
 
@@ -185,6 +189,40 @@ class Builtins {
       return mkNumber(Math.min(args[0].getNumber(), args[1].getNumber()));
     });
 
+    // ═══════════════════════════════════════════════════════════
+    // I/O builtins (async — returns Task, I/O starts immediately)
+    // ═══════════════════════════════════════════════════════════
+
+    if (this.scheduler) {
+      this.registerFn('file_read', 1, (args) => {
+        const path = args[0].get();
+        const promise = fs.promises.readFile(path, 'utf-8')
+          .then(content => mkOk(mkString(content)))
+          .catch(e => mkErr(`Cannot read file '${path}': ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('file_read_lines', 1, (args) => {
+        const path = args[0].get();
+        const promise = fs.promises.readFile(path, 'utf-8')
+          .then(content => {
+            const raw = content.split('\n');
+            if (raw.length > 0 && raw[raw.length - 1] === '') raw.pop();
+            return mkOk(mkList(raw.map(line => mkString(line)), null));
+          })
+          .catch(e => mkErr(`Cannot read file '${path}': ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('file_write', 2, (args) => {
+        const path = args[0].get();
+        const content = args[1].get();
+        const promise = fs.promises.writeFile(path, content)
+          .then(() => mkOk(mkUnit()))
+          .catch(e => mkErr(`Cannot write file '${path}': ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+    }
   }
 
   registerFn(name: string, arity: number, fn: (args: any[]) => Value) {

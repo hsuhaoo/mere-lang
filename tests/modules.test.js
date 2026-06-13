@@ -50,7 +50,7 @@ function extractValue(v) {
   if (v.kind === 'Number') return v.getNumber();
   if (v.kind === 'String') return v.get();
   if (v.kind === 'Boolean') return v.get();
-  if (v.kind === 'Unit') return undefined;
+  if (v.kind === 'Unit') return '()';
   if (v.kind === 'Result') {
     return {
       ok: v.isOk.get(),
@@ -263,7 +263,7 @@ g.say("test")
   // Should not throw; returns unit
   const result = runModule('main.sim');
   const val = extractValue(result);
-  if (val !== undefined) throw new Error(`expected unit, got ${val}`);
+  if (val !== '()') throw new Error(`expected unit, got ${val}`);
 });
 
 test('module with result types', () => {

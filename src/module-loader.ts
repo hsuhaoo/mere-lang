@@ -91,8 +91,8 @@ class ModuleLoader {
     // Load with relative path as key so type checker can find it
     const moduleData = this.loadModule(filePath, filePath);
 
-    const builtins = new Builtins();
     const scheduler = new Scheduler();
+    const builtins = new Builtins(scheduler);
     const interpreter = new Interpreter(builtins, scheduler);
 
     // Inject imported functions into the interpreter's environment

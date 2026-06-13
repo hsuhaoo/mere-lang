@@ -1,6 +1,5 @@
 import { TypeAnnotation } from '../ast/nodes.js';
 import type { Stmt } from '../ast/nodes.js';
-import { Env } from './env.js';
 
 const ValueKind = Object.freeze({
   NUMBER: 'Number',
@@ -297,13 +296,11 @@ class ResultValue extends Value {
 class FnValue extends Value {
   params: Array<{ name: string; type: TypeAnnotation }>;
   body: Stmt[];
-  closure: Env;
 
-  constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], closure: Env) {
+  constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[]) {
     super(ValueKind.FN);
     this.params = params;
     this.body = body;
-    this.closure = closure;
   }
 
   typeName(): string {
@@ -382,8 +379,8 @@ function mkErr(message: string | StringValue, resultType: TypeAnnotation | null 
   return new ResultValue(boolean(false), UNIT_VALUE, msg, resultType);
 }
 
-function fn(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], closure: Env): FnValue {
-  return new FnValue(params, body, closure);
+function fn(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[]): FnValue {
+  return new FnValue(params, body);
 }
 
 function task(handle: TaskHandle, taskType: TypeAnnotation | null = null): TaskValue {

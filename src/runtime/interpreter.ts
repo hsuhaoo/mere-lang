@@ -18,7 +18,6 @@ import {
   NumberValue, StringValue, BooleanValue, ListValue,
   MapValue, RecordValue, ResultValue, FnValue, TaskValue,
 } from './values.js';
-import * as fs from 'fs';
 import { Env } from './env.js';
 import { Builtins } from './builtins.js';
 import { Scheduler } from './scheduler.js';
@@ -47,8 +46,8 @@ class Interpreter {
   currentModule: string;
 
   constructor(builtins?: Builtins, scheduler?: Scheduler) {
-    this.builtins = builtins || new Builtins();
     this.scheduler = scheduler || new Scheduler();
+    this.builtins = builtins || new Builtins(this.scheduler);
     this.rootEnv = new Env();
     this.userFns = new Map();
     this.typeDecls = new Map();
@@ -242,51 +241,6 @@ class Interpreter {
         throw new RuntimeError('join expects a Task', expr.line, expr.column);
       }
       return this.scheduler.join(taskValue);
-    }
-
-    // file_read(path) → Task<Result<String>> — starts async I/O immediately
-    if (name === 'file_read') {
-      const pathVal = this.execExpr(argExprs[0]);
-      if (!(pathVal instanceof StringValue)) {
-        throw new RuntimeError('file_read expects a string', expr.callee.line, expr.callee.column);
-      }
-      const path = pathVal.get();
-      const promise = fs.promises.readFile(path, 'utf-8')
-        .then(content => mkOk(mkString(content)))
-        .catch(e => mkErr(`Cannot read file '${path}': ${e.message}`));
-      return this.scheduler.spawnAsync(promise, null);
-    }
-
-    // file_read_lines(path) → Task<Result<List<String>>>
-    if (name === 'file_read_lines') {
-      const pathVal = this.execExpr(argExprs[0]);
-      if (!(pathVal instanceof StringValue)) {
-        throw new RuntimeError('file_read_lines expects a string', expr.callee.line, expr.callee.column);
-      }
-      const path = pathVal.get();
-      const promise = fs.promises.readFile(path, 'utf-8')
-        .then(content => {
-          const raw = content.split('\n');
-          if (raw.length > 0 && raw[raw.length - 1] === '') raw.pop();
-          return mkOk(mkList(raw.map(line => mkString(line)), null));
-        })
-        .catch(e => mkErr(`Cannot read file '${path}': ${e.message}`));
-      return this.scheduler.spawnAsync(promise, null);
-    }
-
-    // file_write(path, content) → Task<Result<Unit>>
-    if (name === 'file_write') {
-      const pathVal = this.execExpr(argExprs[0]);
-      const contentVal = this.execExpr(argExprs[1]);
-      if (!(pathVal instanceof StringValue) || !(contentVal instanceof StringValue)) {
-        throw new RuntimeError('file_write expects two strings', expr.callee.line, expr.callee.column);
-      }
-      const path = pathVal.get();
-      const content = contentVal.get();
-      const promise = fs.promises.writeFile(path, content)
-        .then(() => mkOk(mkUnit()))
-        .catch(e => mkErr(`Cannot write file '${path}': ${e.message}`));
-      return this.scheduler.spawnAsync(promise, null);
     }
 
     const builtin = this.builtins.getFn(name);
@@ -489,16 +443,15 @@ class Interpreter {
   }
 
   execFnLiteral(fnDecl: FnDecl): Value {
-    return mkFn(fnDecl.params, fnDecl.body, this.rootEnv);
+    return mkFn(fnDecl.params, fnDecl.body);
   }
 
   execLambdaExpr(expr: LambdaExpr): Value {
-    const closure = new Env();
-    return new FnValue(expr.params, expr.body, closure);
+    return new FnValue(expr.params, expr.body);
   }
 
   executeLambda(lambdaExpr: LambdaExpr, argValues: Value[]): Value {
-    const env = new Env(this.rootEnv);
+    const env = new Env();
 
     if (argValues.length !== lambdaExpr.params.length) {
       throw new RuntimeError(
@@ -534,7 +487,7 @@ class Interpreter {
   }
 
   executeLambdaFromValue(fnValue: FnValue, name: string, argValues: Value[]): Value {
-    const env = new Env(fnValue.closure);
+    const env = new Env();
 
     if (argValues.length !== fnValue.params.length) {
       throw new RuntimeError(
