@@ -211,27 +211,16 @@ class Builtins {
         return this.scheduler!.spawnAsync(promise, null);
       });
 
-      this.registerFn('fetch', 1, (args) => {
+      this.registerFn('fetch', 4, (args) => {
         const url = args[0].toRawString();
-        const promise = globalThis.fetch(url)
-          .then(async (response) => {
-            if (!response.ok) {
-              return mkErr(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            const body = await response.text();
-            return mkOk(mkString(body));
-          })
-          .catch((e: Error) => mkErr(`Fetch failed: ${e.message}`));
-        return this.scheduler!.spawnAsync(promise, null);
-      });
-
-      this.registerFn('fetch_post', 2, (args) => {
-        const url = args[0].toRawString();
-        const body = args[1].toRawString();
+        const method = args[1].toRawString();
+        const headers = args[2]; // Record<string, string>
+        const body = args[3].toRawString();
+        
         const promise = globalThis.fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body,
+          method,
+          headers,
+          body: method === 'GET' || method === 'HEAD' ? undefined : body,
         })
           .then(async (response) => {
             if (!response.ok) {
