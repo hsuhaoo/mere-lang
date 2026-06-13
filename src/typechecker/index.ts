@@ -1143,6 +1143,10 @@ const BUILTIN_FUNCTIONS = new Map([
   ['file_read_lines', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('List', [new TypeAnnotation('String')])])]) }],
   ['file_write', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
 
+  // Network I/O (async — returns Task, I/O happens on join)
+  ['fetch', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+  ['fetch_post', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['max', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],

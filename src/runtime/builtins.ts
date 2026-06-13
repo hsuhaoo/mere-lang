@@ -210,6 +210,39 @@ class Builtins {
           .catch(e => mkErr(`Cannot write file '${path}': ${e.message}`));
         return this.scheduler!.spawnAsync(promise, null);
       });
+
+      this.registerFn('fetch', 1, (args) => {
+        const url = args[0].toRawString();
+        const promise = globalThis.fetch(url)
+          .then(async (response) => {
+            if (!response.ok) {
+              return mkErr(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const body = await response.text();
+            return mkOk(mkString(body));
+          })
+          .catch((e: Error) => mkErr(`Fetch failed: ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('fetch_post', 2, (args) => {
+        const url = args[0].toRawString();
+        const body = args[1].toRawString();
+        const promise = globalThis.fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body,
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              return mkErr(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const text = await response.text();
+            return mkOk(mkString(text));
+          })
+          .catch((e: Error) => mkErr(`Fetch failed: ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
     }
   }
 
