@@ -16,8 +16,8 @@ Simplex is a minimal, explicit programming language with a Node.js runtime. It e
 `fn` `let` `if` `type` `import` `export`
 
 ### Types
-- **Built-in**: `Num`, `String`, `Bool`, `Unit`, `List<T>`, `Result<T>`, `Map<K,V>`, `Task<T>`
-- **User-defined**: Records only (`type Point = { x: Num, y: Num }`)
+- **Built-in**: `Number`, `String`, `Boolean`, `Unit`, `List<T>`, `Result<T>`, `Map<K,V>`, `Task<T>`
+- **User-defined**: Records only (`type Point = { x: Number, y: Number }`)
 
 ### Control Flow
 - `if` statements (no `else`, no返回值)
@@ -31,7 +31,7 @@ Simplex is a minimal, explicit programming language with a Node.js runtime. It e
 
 ### Error Handling
 - All fallible operations return `Result<T>`
-- Explicit handling with `is_ok`, `is_err`, `unwrap`, `unwrap_err`
+- Explicit field access with `r.isOk`, `r.value`, `r.errMessage`
 - No `try-catch`, no `?` operator
 
 ### Concurrency
