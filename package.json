@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo",
-    "test": "node tests/run-tests.js"
+    "test": "node tests/run-tests.js && node tests/typechecker.test.js"
   },
   "keywords": [],
   "author": "",

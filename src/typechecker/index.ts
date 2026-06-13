@@ -79,6 +79,7 @@ class TypeChecker {
     this.typeDecls = new Map(); // name -> TypeDecl
     this.fnDecls = new Map();   // name -> FnDecl
     this.errors = [];
+    this._typeVarBindings = new Map();
   }
 
   check(program: Program, options: { imports?: Map<string, any> } = {}) {
@@ -554,7 +555,21 @@ class TypeChecker {
     if (BUILTIN_METHODS.has(methodKey)) {
       const sig = BUILTIN_METHODS.get(methodKey);
       const typeVars = new Map();
-      // Collect type vars from args
+      // Bind type vars from object type's type parameters
+      // e.g., Map<String, Int> => $K=String, $V=Int; List<Int> => $T=Int
+      if (objectType.typeParams) {
+        for (const tv of ['$T', '$K', '$V']) {
+          if (!typeVars.has(tv)) {
+            const idx = objectType.name === 'Map'
+              ? (tv === '$K' ? 0 : tv === '$V' ? 1 : -1)
+              : tv === '$T' ? 0 : -1;
+            if (idx >= 0 && idx < objectType.typeParams.length) {
+              typeVars.set(tv, objectType.typeParams[idx]);
+            }
+          }
+        }
+      }
+      // Collect type vars from args (overrides object-level defaults)
       for (let i = 0; i < expr.args.length; i++) {
         const inferredType = this.inferExprType(expr.args[i]);
         const expectedType = sig.paramTypes[i] instanceof TypeAnnotation
@@ -1046,6 +1061,20 @@ class TypeChecker {
 
     throw new TypeError(`Unknown polymorphic builtin: ${fnName}`, expr.line, expr.column);
   }
+
+  collectTypeVarNames(type: TypeAnnotation): string[] {
+    const names: string[] = [];
+    if (type.name.startsWith('$') && !names.includes(type.name)) {
+      names.push(type.name);
+    }
+    if (type.typeParams) {
+      for (const p of type.typeParams) {
+        const pa = p instanceof TypeAnnotation ? p : new TypeAnnotation(String(p));
+        names.push(...this.collectTypeVarNames(pa));
+      }
+    }
+    return names;
+  }
 }
 
 // ── Built-in function signatures ────────────────────────────────
@@ -1086,6 +1115,11 @@ const BUILTIN_FUNCTIONS = new Map([
   // spawn(expr) — wraps any expression into a Task<T> where T = expr's type
   ['spawn', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('$T')]) }],
   ['join', { paramTypes: [new TypeAnnotation('Task', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('$T') }],
+
+  // Math builtins
+  ['abs', { paramTypes: [new TypeAnnotation('Int')], returnType: new TypeAnnotation('Int') }],
+  ['max', { paramTypes: [new TypeAnnotation('Int'), new TypeAnnotation('Int')], returnType: new TypeAnnotation('Int') }],
+  ['min', { paramTypes: [new TypeAnnotation('Int'), new TypeAnnotation('Int')], returnType: new TypeAnnotation('Int') }],
 ]);
 
 // ── Built-in method signatures ──────────────────────────────────

@@ -290,8 +290,8 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     // String methods
-    this.registerMethod('String.len', [], () => {
-      throw new Error('Method calls on literals not supported');
+    this.registerMethod('String.len', [], (obj) => {
+      return mkInt(obj.get().length);
     });
     this.registerMethod('String.concat', [1], (obj, args) => {
       return mkString(obj.get() + args[0].get());
