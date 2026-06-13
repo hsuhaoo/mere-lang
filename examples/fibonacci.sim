@@ -1,7 +1,7 @@
 // Simplex example: Fibonacci
 // Run with: node bin/simplex.js examples/fibonacci.sim
 
-fn fib(n: Int) -> Int {
+fn fib(n: Number) -> Number {
   if n <= 0 {
     return 0;
   }
@@ -12,11 +12,11 @@ fn fib(n: Int) -> Int {
 }
 
 // Print first 15 Fibonacci numbers using recursion
-fn print_fib(i: Int, max: Int) -> Unit {
+fn print_fib(i: Number, max: Number) -> Unit {
   if i >= max {
     return;
   }
-  let f: Int = fib(i);
+  let f: Number = fib(i);
   print("fib(" + to_string(i) + ") = " + to_string(f));
   print_fib(i + 1, max);
 }

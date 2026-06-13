@@ -1,7 +1,7 @@
-export fn add(a: Int, b: Int) -> Int {
+export fn add(a: Number, b: Number) -> Number {
   a + b
 }
 
-export fn multiply(a: Int, b: Int) -> Int {
+export fn multiply(a: Number, b: Number) -> Number {
   a * b
 }

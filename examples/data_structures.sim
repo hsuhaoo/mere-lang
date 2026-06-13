@@ -2,20 +2,20 @@
 // Run with: node bin/simplex.js examples/data_structures.sim
 
 // --- List operations ---
-let numbers: List<Int> = [1, 2, 3, 4, 5];
+let numbers: List<Number> = [1, 2, 3, 4, 5];
 print("List: [1, 2, 3, 4, 5]");
 print("Length: " + to_string(list_len(numbers)));
 
-let first: Result<Int> = list_get(numbers, 0);
-if is_ok(first) {
-  print("First element: " + to_string(unwrap(first)));
+let first: Result<Number> = list_get(numbers, 0);
+if first.isOk {
+  print("First element: " + to_string(first.value));
 }
 
-let extended: List<Int> = append(numbers, 6);
+let extended: List<Number> = append(numbers, 6);
 print("After append 6: length = " + to_string(list_len(extended)));
 
-// --- Map with Int keys ---
-let scores: Map<Int, String> = {
+// --- Map with Number keys ---
+let scores: Map<Number, String> = {
   1: "Alice",
   2: "Bob",
   3: "Charlie"
@@ -24,25 +24,25 @@ let scores: Map<Int, String> = {
 print("Scores: 1=Alice, 2=Bob, 3=Charlie");
 
 let name1: Result<String> = map_get(scores, 1);
-if is_ok(name1) {
-  print("Player 1: " + unwrap(name1));
+if name1.isOk {
+  print("Player 1: " + name1.value);
 }
 
-let has_player2: Bool = map_has(scores, 2);
+let has_player2: Boolean = map_has(scores, 2);
 print("Has player 2: " + to_string(has_player2));
 
 let missing: Result<String> = map_get(scores, 99);
-if is_err(missing) {
+if not missing.isOk {
   print("Player 99 not found");
 }
 
 // --- Map with String keys ---
-let ages: Map<String, Int> = {
+let ages: Map<String, Number> = {
   "Alice": 30,
   "Bob": 25
 };
 
-let age: Result<Int> = map_get(ages, "Alice");
-if is_ok(age) {
-  print("Alice is " + to_string(unwrap(age)) + " years old");
+let age: Result<Number> = map_get(ages, "Alice");
+if age.isOk {
+  print("Alice is " + to_string(age.value) + " years old");
 }

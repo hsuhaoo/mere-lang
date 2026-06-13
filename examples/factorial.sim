@@ -1,13 +1,13 @@
 // Simplex example: Factorial
 // Run with: node bin/simplex.js examples/factorial.sim
 
-fn factorial(n: Int) -> Int {
+fn factorial(n: Number) -> Number {
   if n <= 1 {
     return 1;
   }
   n * factorial(n - 1)
 }
 
-let n: Int = 10;
-let result: Int = factorial(n);
+let n: Number = 10;
+let result: Number = factorial(n);
 print("factorial(" + to_string(n) + ") = " + to_string(result))

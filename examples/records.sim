@@ -2,10 +2,10 @@
 // Run with: node bin/simplex.js examples/records.sim
 
 // Define a Point record
-type Point = { x: Int, y: Int };
+type Point = { x: Number, y: Number };
 
 // Define a Rectangle record
-type Rectangle = { top_left: Point, width: Int, height: Int };
+type Rectangle = { top_left: Point, width: Number, height: Number };
 
 // Create points
 let origin: Point = { x: 0, y: 0 };
@@ -14,7 +14,7 @@ let p1: Point = { x: 10, y: 20 };
 print("Point p1: x=" + to_string(p1.x) + ", y=" + to_string(p1.y));
 
 // Create a rectangle using helper function
-fn make_rect(x: Int, y: Int, w: Int, h: Int) -> Rectangle {
+fn make_rect(x: Number, y: Number, w: Number, h: Number) -> Rectangle {
   let tl: Point = { x: x, y: y };
   { top_left: tl, width: w, height: h }
 }
@@ -25,16 +25,16 @@ print("Rectangle: width=" + to_string(rect.width) + ", height=" + to_string(rect
 print("Rectangle top-left: x=" + to_string(rect.top_left.x) + ", y=" + to_string(rect.top_left.y));
 
 // Calculate area
-fn area(r: Rectangle) -> Int {
+fn area(r: Rectangle) -> Number {
   r.width * r.height
 }
 
 print("Rectangle area: " + to_string(area(rect)));
 
 // Calculate distance between two points
-fn distance(p1: Point, p2: Point) -> Int {
-  let dx: Int = p2.x - p1.x;
-  let dy: Int = p2.y - p1.y;
+fn distance(p1: Point, p2: Point) -> Number {
+  let dx: Number = p2.x - p1.x;
+  let dy: Number = p2.y - p1.y;
   // Approximate distance (integer square root would be better)
   dx * dx + dy * dy
 }
