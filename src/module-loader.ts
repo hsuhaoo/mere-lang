@@ -67,14 +67,8 @@ class ModuleLoader {
     const checker = new TypeChecker();
     checker.check(program, { imports: this.loadedModules });
 
-    const moduleData = {
-      name: path.basename(filePath, path.extname(filePath)),
-      path: resolved,
-      program: program,
-      exports: exports,
-    };
-
-    return moduleData;
+    // Return the cached entry so loadModule is idempotent (same object on cache hit)
+    return this.loadedModules.get(moduleKey);
   }
 
   /**
@@ -120,6 +114,8 @@ class ModuleLoader {
         for (const [name, fnDecl] of external.exports) {
           // Register function in userFns for direct calling
           interpreter.userFns.set(`${stmt.name}__${name}`, fnDecl);
+          // Also register bare name so intra-module sibling calls resolve
+          interpreter.userFns.set(name, fnDecl);
           // Also store in namespace for field access
           namespace.set(name, fnDecl);
         }
