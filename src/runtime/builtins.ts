@@ -10,9 +10,9 @@ import * as fs from 'fs';
 import process from 'process';
 import {
   Value, ValueKind,
-  IntValue, StringValue, BoolValue, ListValue,
+  NumValue, StringValue, BoolValue, ListValue,
   MapValue, ResultValue,
-  int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,
+  num as mkNum, string as mkString, bool as mkBool, unit as mkUnit,
   list as mkList, map as mkMap, result as mkResult,
   task as mkTask,
 } from './values.js';
@@ -33,7 +33,7 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('len', 1, (args) => {
-      return mkInt(args[0].length());
+      return mkNum(args[0].length());
     });
 
     this.registerFn('concat', 2, (args) => {
@@ -47,13 +47,13 @@ class Builtins {
       return mkString(str.substring(start, start + length));
     });
 
-    this.registerFn('parse_int', 1, (args) => {
+    this.registerFn('parse_num', 1, (args) => {
       const str = args[0].get();
-      const num = parseInt(str, 10);
+      const num = parseFloat(str);
       if (isNaN(num)) {
-        return mkResult(false, mkString(`Cannot parse '${str}' as integer`), null);
+        return mkResult(false, mkString(`Cannot parse '${str}' as number`), null);
       }
-      return mkResult(true, mkInt(num), null);
+      return mkResult(true, mkNum(num), null);
     });
 
     this.registerFn('to_string', 1, (args) => {
@@ -128,7 +128,7 @@ class Builtins {
     });
 
     this.registerFn('list_len', 1, (args) => {
-      return mkInt(args[0].length());
+      return mkNum(args[0].length());
     });
 
     this.registerFn('substring_list', 3, (args) => {
@@ -171,14 +171,14 @@ class Builtins {
 
     this.registerFn('map_put', 3, (args) => {
       const map = args[0];
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       map._getEntries()[key] = args[2];
       return mkUnit();
     });
 
     this.registerFn('map_get', 2, (args) => {
       const map = args[0];
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       if (!(key in map._getEntries())) {
         return mkResult(false, mkString(`Key '${key}' not found`), null);
       }
@@ -187,13 +187,13 @@ class Builtins {
 
     this.registerFn('map_has', 2, (args) => {
       const map = args[0];
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       return mkBool(map.has(key));
     });
 
     this.registerFn('map_remove', 2, (args) => {
       const map = args[0];
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       delete map._getEntries()[key];
       return mkUnit();
     });
@@ -212,7 +212,7 @@ class Builtins {
         return mkResult(true, obj.get(index), null);
       }
       if (obj.kind === ValueKind.MAP) {
-        const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+        const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
         if (!(key in obj._getEntries())) {
           return mkResult(false, mkString(`Key '${key}' not found`), null);
         }
@@ -226,7 +226,7 @@ class Builtins {
       if (obj.kind !== ValueKind.MAP) {
         throw new Error(`'has' expects a Map, got ${obj.kind}`);
       }
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       return mkBool(obj.has(key));
     });
 
@@ -235,7 +235,7 @@ class Builtins {
       if (obj.kind !== ValueKind.MAP) {
         throw new Error(`'put' expects a Map, got ${obj.kind}`);
       }
-      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      const key = String(args[1].kind === ValueKind.NUM ? args[1].getNumber() : args[1].get());
       obj._getEntries()[key] = args[2];
       return mkUnit();
     });
@@ -245,15 +245,15 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('abs', 1, (args) => {
-      return mkInt(Math.abs(args[0].getNumber()));
+      return mkNum(Math.abs(args[0].getNumber()));
     });
 
     this.registerFn('max', 2, (args) => {
-      return mkInt(Math.max(args[0].getNumber(), args[1].getNumber()));
+      return mkNum(Math.max(args[0].getNumber(), args[1].getNumber()));
     });
 
     this.registerFn('min', 2, (args) => {
-      return mkInt(Math.min(args[0].getNumber(), args[1].getNumber()));
+      return mkNum(Math.min(args[0].getNumber(), args[1].getNumber()));
     });
 
     // ── Task builtins ──────────────────────────────────────────────
@@ -291,7 +291,7 @@ class Builtins {
 
     // String methods
     this.registerMethod('String.len', [], (obj) => {
-      return mkInt(obj.get().length);
+      return mkNum(obj.get().length);
     });
     this.registerMethod('String.concat', [1], (obj, args) => {
       return mkString(obj.get() + args[0].get());
@@ -317,7 +317,7 @@ class Builtins {
       return mkResult(true, obj.get(index), null);
     });
     this.registerMethod('List.len', [], (obj) => {
-      return mkInt(obj.length());
+      return mkNum(obj.length());
     });
 
     // Result methods
@@ -342,23 +342,23 @@ class Builtins {
 
     // Map methods
     this.registerMethod('Map.put', [2], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.INT ? args[0].getNumber() : args[0].get());
+      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
       obj._getEntries()[key] = args[1];
       return mkUnit();
     });
     this.registerMethod('Map.get', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.INT ? args[0].getNumber() : args[0].get());
+      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
       if (!(key in obj._getEntries())) {
         return mkResult(false, mkString(`Key '${key}' not found`), null);
       }
       return mkResult(true, obj._getEntries()[key], null);
     });
     this.registerMethod('Map.has', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.INT ? args[0].getNumber() : args[0].get());
+      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
       return mkBool(obj.has(key));
     });
     this.registerMethod('Map.remove', [1], (obj, args) => {
-      const key = String(args[0].kind === ValueKind.INT ? args[0].getNumber() : args[0].get());
+      const key = String(args[0].kind === ValueKind.NUM ? args[0].getNumber() : args[0].get());
       delete obj._getEntries()[key];
       return mkUnit();
     });

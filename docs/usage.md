@@ -44,7 +44,7 @@ node tests/run-tests.js
 
 ```sim
 // 单行注释
-let x: Int = 42;              // 语句以分号结尾（可选）
+let x: Num = 42;              // 语句以分号结尾（可选）
 print("Hello");               // 语句可以不用分号
 ```
 
@@ -61,7 +61,7 @@ print("Hello");               // 语句可以不用分号
 
 | 类型 | 关键字 | 值 |
 |------|--------|-----|
-| 整数 | `Int` | `42`, `-7`, `0` |
+| 整数 | `Num` | `42`, `-7`, `0` |
 | 字符串 | `String` | `"hello"`, `'single'` |
 | 布尔 | `Bool` | `true`, `false` |
 | 单元 | `Unit` | `()` |
@@ -70,7 +70,7 @@ print("Hello");               // 语句可以不用分号
 
 | 类型 | 描述 |
 |------|------|
-| `List<T>` | 同质列表，如 `List<Int>` |
+| `List<T>` | 同质列表，如 `List<Num>` |
 | `Result<T>` | 错误处理类型，`ok(v)` 或 `err(msg)` |
 | `Map<K, V>` | 字符串或整数键的映射 |
 | `Task<T>` | 异步任务结果 |
@@ -79,7 +79,7 @@ print("Hello");               // 语句可以不用分号
 
 ```sim
 // 必须显式标注类型
-let x: Int = 42;
+let x: Num = 42;
 let name: String = "Simplex";
 let flag: Bool = true;
 let empty: Unit = ();
@@ -122,9 +122,9 @@ let empty: Unit = ();
 | 函数 | 签名 | 说明 |
 |------|------|------|
 | `+` | `String + String` | 拼接 |
-| `len` | `len(String) → Int` | 长度 |
+| `len` | `len(String) → Num` | 长度 |
 | `concat` | `concat(String, String) → String` | 拼接 |
-| `substring` | `substring(String, Int, Int) → String` | 截取 |
+| `substring` | `substring(String, Num, Num) → String` | 截取 |
 | `to_string` | `to_string($T) → String` | 转字符串 |
 | `to_string_bool` | `to_string_bool(Bool) → String` | 布尔转字符串 |
 | `print` | `print(String) → Unit` | 打印到 stdout |
@@ -133,9 +133,9 @@ let empty: Unit = ();
 
 | 方法 | 签名 | 说明 |
 |------|------|------|
-| `.len()` | `→ Int` | 长度 |
+| `.len()` | `→ Num` | 长度 |
 | `.concat(s)` | `(String) → String` | 拼接 |
-| `.substring(s, n)` | `(Int, Int) → String` | 截取 |
+| `.substring(s, n)` | `(Num, Num) → String` | 截取 |
 | `.print()` | `→ Unit` | 打印 |
 
 ### 4.6 运算符优先级
@@ -162,7 +162,7 @@ not  -  (negation)
 ### 5.1 定义
 
 ```sim
-fn add(a: Int, b: Int) -> Int {
+fn add(a: Num, b: Num) -> Num {
   a + b
 }
 ```
@@ -173,7 +173,7 @@ fn add(a: Int, b: Int) -> Int {
 ### 5.2 提前返回
 
 ```sim
-fn factorial(n: Int) -> Int {
+fn factorial(n: Num) -> Num {
   if n <= 1 {
     return 1;
   }
@@ -184,21 +184,21 @@ fn factorial(n: Int) -> Int {
 ### 5.3 调用
 
 ```sim
-let x: Int = add(3, 4);       // 7
+let x: Num = add(3, 4);       // 7
 ```
 
 ### 5.4 内置函数
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `len` | `len(String) → Int` | 字符串长度 |
+| `len` | `len(String) → Num` | 字符串长度 |
 | `concat` | `concat(String, String) → String` | 拼接 |
 | `substring` | `substring(String, start, len) → String` | 截取 |
-| `parse_int` | `parse_int(String) → Result<Int>` | 解析整数 |
+| `parse_num` | `parse_num(String) → Result<Num>` | 解析整数 |
 | `to_string` | `to_string($T) → String` | 转字符串 |
-| `list_len` | `list_len(List<T>) → Int` | 列表长度 |
+| `list_len` | `list_len(List<T>) → Num` | 列表长度 |
 | `append` | `append(List<T>, T) → List<T>` | 追加元素 |
-| `list_get` | `list_get(List<T>, Int) → Result<T>` | 按索引取值 |
+| `list_get` | `list_get(List<T>, Num) → Result<T>` | 按索引取值 |
 | `is_ok` | `is_ok(Result<T>) → Bool` | 是否 Ok |
 | `is_err` | `is_err(Result<T>) → Bool` | 是否 Err |
 | `unwrap` | `unwrap(Result<T>) → T` | 取 Ok 值 |
@@ -207,9 +207,9 @@ let x: Int = add(3, 4);       // 7
 | `map_get` | `map_get(Map<K,V>, K) → Result<V>` | 按键取值 |
 | `map_has` | `map_has(Map<K,V>, K) → Bool` | 检查键 |
 | `map_remove` | `map_remove(Map<K,V>, K) → Unit` | 删除 |
-| `abs` | `abs(Int) → Int` | 绝对值 |
-| `max` | `max(Int, Int) → Int` | 最大值 |
-| `min` | `min(Int, Int) → Int` | 最小值 |
+| `abs` | `abs(Num) → Num` | 绝对值 |
+| `max` | `max(Num, Num) → Num` | 最大值 |
+| `min` | `min(Num, Num) → Num` | 最小值 |
 | `spawn` | `spawn(T) → Task<T>` | 包装表达式为 Task |
 | `join` | `join(Task<T>) → T` | 获取 Task 结果 |
 
@@ -220,8 +220,8 @@ let x: Int = add(3, 4);       // 7
 Lambda 是一等值：
 
 ```sim
-let add: Fn<Int, Int, Int> = fn(x: Int, y: Int) -> Int { x + y };
-let result: Int = add(3, 4);      // 7
+let add: Fn<Num, Num, Num> = fn(x: Num, y: Num) -> Num { x + y };
+let result: Num = add(3, 4);      // 7
 ```
 
 ### 6.1 参数说明
@@ -234,12 +234,12 @@ let hello: Fn<String> = fn() -> String { "hello" };
 print(hello());   // "hello"
 
 // 单参数
-let double: Fn<Int, Int> = fn(n: Int) -> Int { n * 2 };
-let d: Int = double(21);   // 42
+let double: Fn<Num, Num> = fn(n: Num) -> Num { n * 2 };
+let d: Num = double(21);   // 42
 
 // 双参数
-let add: Fn<Int, Int, Int> = fn(x: Int, y: Int) -> Int { x + y };
-let s: Int = add(10, 20);  // 30
+let add: Fn<Num, Num, Num> = fn(x: Num, y: Num) -> Num { x + y };
+let s: Num = add(10, 20);  // 30
 ```
 
 ### 6.2 重要限制
@@ -247,8 +247,8 @@ let s: Int = add(10, 20);  // 30
 **Lambda 不捕获外部变量**。所有数据必须作为参数显式传入：
 
 ```sim
-let x: Int = 10;
-let add_x: Fn<Int, Int> = fn(y: Int) -> Int { y + x };  // ❌ 错误：x 不是参数
+let x: Num = 10;
+let add_x: Fn<Num, Num> = fn(y: Num) -> Num { y + x };  // ❌ 错误：x 不是参数
 ```
 
 ---
@@ -268,7 +268,7 @@ if x > 5 {
 ### 7.2 if 作为表达式
 
 ```sim
-let y: Int = if x > 5 {
+let y: Num = if x > 5 {
   100
 };
 ```
@@ -294,17 +294,17 @@ if condition2 {
 ### 8.1 构造
 
 ```sim
-let ok_val: Result<Int> = ok(42);
+let ok_val: Result<Num> = ok(42);
 let err_val: Result<String> = err("something went wrong");
 ```
 
 ### 8.2 检查与解包
 
 ```sim
-let r: Result<Int> = safe_divide(10, 0);
+let r: Result<Num> = safe_divide(10, 0);
 
 if is_ok(r) {
-  let val: Int = unwrap(r);
+  let val: Num = unwrap(r);
   print("Result: " + to_string(val));
 }
 
@@ -317,17 +317,17 @@ if is_err(r) {
 ### 8.3 完整示例
 
 ```sim
-fn safe_divide(a: Int, b: Int) -> Result<Int> {
+fn safe_divide(a: Num, b: Num) -> Result<Num> {
   if b == 0 {
     return err("division by zero");
   }
   ok(a / b)
 }
 
-fn handle_division(a: Int, b: Int) -> Unit {
-  let result: Result<Int> = safe_divide(a, b);
+fn handle_division(a: Num, b: Num) -> Unit {
+  let result: Result<Num> = safe_divide(a, b);
   if is_ok(result) {
-    let value: Int = unwrap(result);
+    let value: Num = unwrap(result);
     print("Result: " + to_string(value));
   }
   if is_err(result) {
@@ -345,19 +345,19 @@ fn handle_division(a: Int, b: Int) -> Unit {
 
 ```sim
 // 创建
-let nums: List<Int> = [1, 2, 3, 4, 5];
+let nums: List<Num> = [1, 2, 3, 4, 5];
 
 // 长度
-let len: Int = list_len(nums);       // 5
+let len: Num = list_len(nums);       // 5
 
 // 按索引取值（返回 Result）
-let first: Result<Int> = list_get(nums, 0);
+let first: Result<Num> = list_get(nums, 0);
 if is_ok(first) {
   print("First: " + to_string(unwrap(first)));  // 1
 }
 
 // 追加元素
-let extended: List<Int> = append(nums, 6);
+let extended: List<Num> = append(nums, 6);
 ```
 
 ### 9.2 列表方法
@@ -365,14 +365,14 @@ let extended: List<Int> = append(nums, 6);
 | 方法 | 签名 | 说明 |
 |------|------|------|
 | `.append(e)` | `(T) → Unit` | 追加元素 |
-| `.get(i)` | `(Int) → Result<T>` | 按索引取值 |
-| `.len()` | `() → Int` | 长度 |
+| `.get(i)` | `(Num) → Result<T>` | 按索引取值 |
+| `.len()` | `() → Num` | 长度 |
 
 ### 9.3 Map
 
 ```sim
 // 整数键
-let scores: Map<Int, String> = {
+let scores: Map<Num, String> = {
   1: "Alice",
   2: "Bob"
 };
@@ -386,7 +386,7 @@ map_put(scores, 3, "Charlie");
 map_remove(scores, 2);
 
 // 字符串键
-let ages: Map<String, Int> = {
+let ages: Map<String, Num> = {
   "Alice": 30,
   "Bob": 25
 };
@@ -407,9 +407,9 @@ let ages: Map<String, Int> = {
 ### 10.1 定义
 
 ```sim
-type Point = { x: Int, y: Int };
+type Point = { x: Num, y: Num };
 
-type Rectangle = { top_left: Point, width: Int, height: Int };
+type Rectangle = { top_left: Point, width: Num, height: Num };
 ```
 
 ### 10.2 创建
@@ -422,18 +422,18 @@ let p1: Point = { x: 10, y: 20 };
 ### 10.3 字段访问
 
 ```sim
-let x: Int = p1.x;                         // 10
-let area: Int = rect.width * rect.height;   // 20000
-let left: Int = rect.top_left.x;            // 嵌套字段访问
+let x: Num = p1.x;                         // 10
+let area: Num = rect.width * rect.height;   // 20000
+let left: Num = rect.top_left.x;            // 嵌套字段访问
 ```
 
 ### 10.4 完整示例
 
 ```sim
-type Point = { x: Int, y: Int };
-type Rectangle = { top_left: Point, width: Int, height: Int };
+type Point = { x: Num, y: Num };
+type Rectangle = { top_left: Point, width: Num, height: Num };
 
-fn make_rect(x: Int, y: Int, w: Int, h: Int) -> Rectangle {
+fn make_rect(x: Num, y: Num, w: Num, h: Num) -> Rectangle {
   let tl: Point = { x: x, y: y };
   { top_left: tl, width: w, height: h }
 }
@@ -468,7 +468,7 @@ if is_ok(content) {
 // 读取为行
 let lines: Result<List<String>> = file_read_lines("output.txt");
 if is_ok(lines) {
-  let count: Int = list_len(unwrap(lines));
+  let count: Num = list_len(unwrap(lines));
   print("Line count: " + to_string(count));
 }
 ```
@@ -481,11 +481,11 @@ if is_ok(lines) {
 
 ```sim
 // math.sim
-export fn add(a: Int, b: Int) -> Int {
+export fn add(a: Num, b: Num) -> Num {
   a + b
 }
 
-export fn multiply(a: Int, b: Int) -> Int {
+export fn multiply(a: Num, b: Num) -> Num {
   a * b
 }
 ```
@@ -496,8 +496,8 @@ export fn multiply(a: Int, b: Int) -> Int {
 // main.sim
 import math from "./math.sim";
 
-let x: Int = math.add(3, 4);       // 7
-let y: Int = math.multiply(5, 6);  // 30
+let x: Num = math.add(3, 4);       // 7
+let y: Num = math.multiply(5, 6);  // 30
 ```
 
 ### 12.3 规则
@@ -517,8 +517,8 @@ let y: Int = math.multiply(5, 6);  // 30
 `spawn` 接受一个**已求值的表达式**，包装为 `Task<T>`。`join` 返回任务结果：
 
 ```sim
-let task: Task<Int> = spawn(add(10, 20));
-let result: Int = join(task);   // 30
+let task: Task<Num> = spawn(add(10, 20));
+let result: Num = join(task);   // 30
 ```
 
 ### 13.2 说明
@@ -542,15 +542,15 @@ print("Hello, " + name + "!");
 ### 14.2 递归：斐波那契
 
 ```sim
-fn fib(n: Int) -> Int {
+fn fib(n: Num) -> Num {
   if n <= 0 { return 0; }
   if n == 1 { return 1; }
   fib(n - 1) + fib(n - 2)
 }
 
-fn print_fib(i: Int, max: Int) -> Unit {
+fn print_fib(i: Num, max: Num) -> Unit {
   if i >= max { return; }
-  let f: Int = fib(i);
+  let f: Num = fib(i);
   print("fib(" + to_string(i) + ") = " + to_string(f));
   print_fib(i + 1, max);
 }
@@ -562,11 +562,11 @@ print_fib(0, 15);
 
 ```sim
 // math.sim — 导出函数
-export fn add(a: Int, b: Int) -> Int {
+export fn add(a: Num, b: Num) -> Num {
   a + b
 }
 
-export fn multiply(a: Int, b: Int) -> Int {
+export fn multiply(a: Num, b: Num) -> Num {
   a * b
 }
 ```
@@ -575,8 +575,8 @@ export fn multiply(a: Int, b: Int) -> Int {
 // main.sim — 导入并使用
 import math from "./math.sim";
 
-let x: Int = math.add(3, 4);       // 7
-let y: Int = math.multiply(5, 6);  // 30
+let x: Num = math.add(3, 4);       // 7
+let y: Num = math.multiply(5, 6);  // 30
 print("add: " + to_string(x));
 print("multiply: " + to_string(y));
 ```
@@ -590,15 +590,15 @@ print("Hello, " + name + "!");
 ### 14.2 递归：斐波那契
 
 ```sim
-fn fib(n: Int) -> Int {
+fn fib(n: Num) -> Num {
   if n <= 0 { return 0; }
   if n == 1 { return 1; }
   fib(n - 1) + fib(n - 2)
 }
 
-fn print_fib(i: Int, max: Int) -> Unit {
+fn print_fib(i: Num, max: Num) -> Unit {
   if i >= max { return; }
-  let f: Int = fib(i);
+  let f: Num = fib(i);
   print("fib(" + to_string(i) + ") = " + to_string(f));
   print_fib(i + 1, max);
 }

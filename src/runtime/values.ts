@@ -3,7 +3,7 @@ import type { Stmt } from '../ast/nodes.js';
 import { Env } from './env.js';
 
 const ValueKind = Object.freeze({
-  INT: 'Int',
+  NUM: 'Num',
   STRING: 'String',
   BOOL: 'Bool',
   UNIT: 'Unit',
@@ -29,21 +29,25 @@ class Value {
   toString(): string {
     return `Value<${this.kind}>`;
   }
+
+  getNumber(): number {
+    throw new TypeError(`Cannot get number from ${this.kind}`);
+  }
 }
 
-class IntValue extends Value {
+class NumValue extends Value {
   value: number;
 
   constructor(value: number) {
-    super(ValueKind.INT);
+    super(ValueKind.NUM);
     if (typeof value !== 'number' || !isFinite(value)) {
-      throw new TypeError(`Int value must be a finite number, got: ${value}`);
+      throw new TypeError(`Num value must be a finite number, got: ${value}`);
     }
-    this.value = Math.trunc(value);
+    this.value = value;
   }
 
   typeName(): string {
-    return 'Int';
+    return 'Num';
   }
 
   toString(): string {
@@ -351,8 +355,8 @@ class TaskValue extends Value {
   }
 }
 
-function int(v: number): IntValue {
-  return new IntValue(v);
+function num(v: number): NumValue {
+  return new NumValue(v);
 }
 
 function string(v: string): StringValue {
@@ -394,7 +398,7 @@ function task(handle: TaskHandle, taskType: TypeAnnotation | null = null): TaskV
 export {
   ValueKind,
   Value,
-  IntValue,
+  NumValue,
   StringValue,
   BoolValue,
   UnitValue,
@@ -405,7 +409,7 @@ export {
   FnValue,
   TaskValue,
   UNIT_VALUE,
-  int,
+  num,
   string,
   bool,
   unit,

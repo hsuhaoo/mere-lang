@@ -6,17 +6,17 @@ const assert = require('assert');
 describe('Basic Arithmetic', () => {
   it('integer addition', () => {
     const src = `
-      let x: Int = 2 + 3;
+      let x: Num = 2 + 3;
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.kind, 'Int');
+    assert.strictEqual(result.kind, 'Num');
     assert.strictEqual(result.value, 5);
   });
 
   it('integer subtraction', () => {
     const src = `
-      let x: Int = 10 - 4;
+      let x: Num = 10 - 4;
       x
     `;
     const result = run(src);
@@ -25,7 +25,7 @@ describe('Basic Arithmetic', () => {
 
   it('integer multiplication', () => {
     const src = `
-      let x: Int = 3 * 7;
+      let x: Num = 3 * 7;
       x
     `;
     const result = run(src);
@@ -34,7 +34,7 @@ describe('Basic Arithmetic', () => {
 
   it('integer division', () => {
     const src = `
-      let x: Int = 20 / 4;
+      let x: Num = 20 / 4;
       x
     `;
     const result = run(src);
@@ -43,7 +43,7 @@ describe('Basic Arithmetic', () => {
 
   it('operator precedence', () => {
     const src = `
-      let x: Int = 2 + 3 * 4;
+      let x: Num = 2 + 3 * 4;
       x
     `;
     const result = run(src);
@@ -52,7 +52,7 @@ describe('Basic Arithmetic', () => {
 
   it('parenthesized expression', () => {
     const src = `
-      let x: Int = (2 + 3) * 4;
+      let x: Num = (2 + 3) * 4;
       x
     `;
     const result = run(src);
@@ -110,7 +110,7 @@ describe('Boolean Logic', () => {
 describe('Variables', () => {
   it('integer variable', () => {
     const src = `
-      let x: Int = 42;
+      let x: Num = 42;
       x
     `;
     const result = run(src);
@@ -137,7 +137,7 @@ describe('Variables', () => {
 
   it('variable shadowing in blocks', () => {
     const src = `
-      let x: Int = 1;
+      let x: Num = 1;
       x
     `;
     const result = run(src);
@@ -150,10 +150,10 @@ describe('Variables', () => {
 describe('Functions', () => {
   it('simple function', () => {
     const src = `
-      fn add(x: Int, y: Int) -> Int {
+      fn add(x: Num, y: Num) -> Num {
         x + y
       }
-      let result: Int = add(3, 4);
+      let result: Num = add(3, 4);
       result
     `;
     const result = run(src);
@@ -162,13 +162,13 @@ describe('Functions', () => {
 
   it('function with return statement', () => {
     const src = `
-      fn abs(x: Int) -> Int {
+      fn abs(x: Num) -> Num {
         if x < 0 {
           return -x;
         }
         x
       }
-      let result: Int = abs(-5);
+      let result: Num = abs(-5);
       result
     `;
     const result = run(src);
@@ -188,13 +188,13 @@ describe('Functions', () => {
 
   it('recursive function', () => {
     const src = `
-      fn factorial(n: Int) -> Int {
+      fn factorial(n: Num) -> Num {
         if n <= 1 {
           return 1;
         }
         n * factorial(n - 1)
       }
-      let result: Int = factorial(5);
+      let result: Num = factorial(5);
       result
     `;
     const result = run(src);
@@ -203,7 +203,7 @@ describe('Functions', () => {
 
   it('fibonacci', () => {
     const src = `
-      fn fib(n: Int) -> Int {
+      fn fib(n: Num) -> Num {
         if n <= 0 {
           return 0;
         }
@@ -212,7 +212,7 @@ describe('Functions', () => {
         }
         fib(n - 1) + fib(n - 2)
       }
-      let result: Int = fib(10);
+      let result: Num = fib(10);
       result
     `;
     const result = run(src);
@@ -225,9 +225,9 @@ describe('Functions', () => {
 describe('Conditionals', () => {
   it('if true branch', () => {
     const src = `
-      let x: Int = 10;
+      let x: Num = 10;
       if x > 5 {
-        let y: Int = 1;
+        let y: Num = 1;
         y
       }
     `;
@@ -237,9 +237,9 @@ describe('Conditionals', () => {
 
   it('if false branch (no else)', () => {
     const src = `
-      let x: Int = 3;
+      let x: Num = 3;
       if x > 5 {
-        let y: Int = 1;
+        let y: Num = 1;
         y
       }
       x
@@ -250,10 +250,10 @@ describe('Conditionals', () => {
 
   it('nested ifs', () => {
     const src = `
-      let x: Int = 10;
+      let x: Num = 10;
       if x > 5 {
         if x > 8 {
-          let y: Int = 2;
+          let y: Num = 2;
           y
         }
       }
@@ -268,7 +268,7 @@ describe('Conditionals', () => {
 describe('Result Type', () => {
   it('ok constructor', () => {
     const src = `
-      let r: Result<Int> = ok(42);
+      let r: Result<Num> = ok(42);
       is_ok(r)
     `;
     const result = run(src);
@@ -277,7 +277,7 @@ describe('Result Type', () => {
 
   it('err constructor', () => {
     const src = `
-      let r: Result<Int> = err("something went wrong");
+      let r: Result<Num> = err("something went wrong");
       is_err(r)
     `;
     const result = run(src);
@@ -286,15 +286,15 @@ describe('Result Type', () => {
 
   it('divide with error handling', () => {
     const src = `
-      fn divide(a: Int, b: Int) -> Result<Int> {
+      fn divide(a: Num, b: Num) -> Result<Num> {
         if b == 0 {
           return err("division by zero");
         }
         ok(a / b)
       }
-      let r: Result<Int> = divide(10, 2);
+      let r: Result<Num> = divide(10, 2);
       if is_ok(r) {
-        let v: Int = unwrap(r);
+        let v: Num = unwrap(r);
         v
       }
     `;
@@ -304,13 +304,13 @@ describe('Result Type', () => {
 
   it('divide by zero', () => {
     const src = `
-      fn divide(a: Int, b: Int) -> Result<Int> {
+      fn divide(a: Num, b: Num) -> Result<Num> {
         if b == 0 {
           return err("division by zero");
         }
         ok(a / b)
       }
-      let r: Result<Int> = divide(10, 0);
+      let r: Result<Num> = divide(10, 0);
       if is_err(r) {
         let msg: String = unwrap_err(r);
         len(msg)
@@ -326,8 +326,8 @@ describe('Result Type', () => {
 describe('Lists', () => {
   it('create and get element', () => {
     const src = `
-      let nums: List<Int> = [1, 2, 3];
-      let first: Int = unwrap(get(nums, 0));
+      let nums: List<Num> = [1, 2, 3];
+      let first: Num = unwrap(get(nums, 0));
       first
     `;
     const result = run(src);
@@ -336,8 +336,8 @@ describe('Lists', () => {
 
   it('list length', () => {
     const src = `
-      let nums: List<Int> = [1, 2, 3, 4, 5];
-      let count: Int = list_len(nums);
+      let nums: List<Num> = [1, 2, 3, 4, 5];
+      let count: Num = list_len(nums);
       count
     `;
     const result = run(src);
@@ -346,9 +346,9 @@ describe('Lists', () => {
 
   it('append to list', () => {
     const src = `
-      let nums: List<Int> = [1, 2];
-      let new_nums: List<Int> = append(nums, 3);
-      let count: Int = list_len(new_nums);
+      let nums: List<Num> = [1, 2];
+      let new_nums: List<Num> = append(nums, 3);
+      let count: Num = list_len(new_nums);
       count
     `;
     const result = run(src);
@@ -357,15 +357,15 @@ describe('Lists', () => {
 
   it('sum of list', () => {
     const src = `
-      fn sum(lst: List<Int>) -> Int {
+      fn sum(lst: List<Num>) -> Num {
         if list_len(lst) == 0 {
           return 0;
         }
-        let head: Int = unwrap(get(lst, 0));
-        let tail: List<Int> = substring_list(lst, 1, list_len(lst) - 1);
+        let head: Num = unwrap(get(lst, 0));
+        let tail: List<Num> = substring_list(lst, 1, list_len(lst) - 1);
         head + sum(tail)
       }
-      let nums: List<Int> = [1, 2, 3, 4, 5];
+      let nums: List<Num> = [1, 2, 3, 4, 5];
       sum(nums)
     `;
     const result = run(src);
@@ -378,8 +378,8 @@ describe('Lists', () => {
 describe('Maps', () => {
   it('create and get', () => {
     const src = `
-      let m: Map<Int, Int> = {1: 10, 2: 20};
-      let v: Int = unwrap(get(m, 1));
+      let m: Map<Num, Num> = {1: 10, 2: 20};
+      let v: Num = unwrap(get(m, 1));
       v
     `;
     const result = run(src);
@@ -388,7 +388,7 @@ describe('Maps', () => {
 
   it('map has', () => {
     const src = `
-      let m: Map<Int, Int> = {1: 10, 2: 20};
+      let m: Map<Num, Num> = {1: 10, 2: 20};
       let has_one: Bool = has(m, 1);
       has_one
     `;
@@ -398,9 +398,9 @@ describe('Maps', () => {
 
   it('map put and get', () => {
     const src = `
-      let m: Map<Int, Int> = {1: 10};
+      let m: Map<Num, Num> = {1: 10};
       put(m, 2, 20);
-      let v: Int = unwrap(get(m, 2));
+      let v: Num = unwrap(get(m, 2));
       v
     `;
     const result = run(src);
@@ -439,11 +439,11 @@ describe('String Operations', () => {
     assert.strictEqual(result.value, 5);
   });
 
-  it('parse_int', () => {
+  it('parse_num', () => {
     const src = `
-      let r: Result<Int> = parse_int("42");
+      let r: Result<Num> = parse_num("42");
       if is_ok(r) {
-        let v: Int = unwrap(r);
+        let v: Num = unwrap(r);
         v
       }
     `;
@@ -466,7 +466,7 @@ describe('String Operations', () => {
 describe('Type Checking', () => {
   it('type mismatch on assignment', () => {
     const src = `
-      let x: Int = "hello";
+      let x: Num = "hello";
       x
     `;
     assert.throws(() => compile(src), /type/i);
@@ -474,7 +474,7 @@ describe('Type Checking', () => {
 
   it('undefined variable', () => {
     const src = `
-      let x: Int = undefined_var;
+      let x: Num = undefined_var;
       x
     `;
     assert.throws(() => compile(src), /undefined|Undefined/i);
@@ -482,10 +482,10 @@ describe('Type Checking', () => {
 
   it('wrong argument count', () => {
     const src = `
-      fn add(x: Int, y: Int) -> Int {
+      fn add(x: Num, y: Num) -> Num {
         x + y
       }
-      let z: Int = add(1);
+      let z: Num = add(1);
       z
     `;
     assert.throws(() => compile(src), /expects.*arguments|argument/i);
@@ -514,8 +514,8 @@ describe('Edge Cases', () => {
 
   it('negative numbers', () => {
     const src = `
-      let x: Int = -5;
-      let y: Int = x + 10;
+      let x: Num = -5;
+      let y: Num = x + 10;
       y
     `;
     const result = run(src);
@@ -524,7 +524,7 @@ describe('Edge Cases', () => {
 
   it('complex expression', () => {
     const src = `
-      let x: Int = (2 + 3) * (4 - 1) / 3;
+      let x: Num = (2 + 3) * (4 - 1) / 3;
       x
     `;
     const result = run(src);
@@ -533,13 +533,13 @@ describe('Edge Cases', () => {
 
   it('chained function calls', () => {
     const src = `
-      fn double(x: Int) -> Int {
+      fn double(x: Num) -> Num {
         x * 2
       }
-      fn square(x: Int) -> Int {
+      fn square(x: Num) -> Num {
         x * x
       }
-      let result: Int = square(double(3));
+      let result: Num = square(double(3));
       result
     `;
     const result = run(src);

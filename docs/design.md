@@ -12,7 +12,7 @@
 
 ## 内置类型
 
-`Int`、`String`、`Bool`、`Unit`、`List<T>`、`Result<T>`、`Map<K,V>`、`Task<T>`
+`Num`、`String`、`Bool`、`Unit`、`List<T>`、`Result<T>`、`Map<K,V>`、`Task<T>`
 
 ## 关键设计决策
 

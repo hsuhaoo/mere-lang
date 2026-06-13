@@ -40,7 +40,7 @@ function test(name, src, expected) {
 function extractValue(v) {
   if (!v) return undefined;
   // New class-based values
-  if (v.kind === 'Int') return v.getNumber();
+  if (v.kind === 'Num') return v.getNumber();
   if (v.kind === 'String') return v.get();
   if (v.kind === 'Bool') return v.get();
   if (v.kind === 'Unit') return undefined; // Unit maps to undefined for comparison
@@ -58,7 +58,7 @@ function extractValue(v) {
 
 // Core tests
 test('Factorial 5!', `
-fn f(n: Int) -> Int {
+fn f(n: Num) -> Num {
   if n <= 1 { return 1; }
   n * f(n - 1)
 }
@@ -66,7 +66,7 @@ f(5)
 `, 120);
 
 test('Fibonacci 10', `
-fn f(n: Int) -> Int {
+fn f(n: Num) -> Num {
   if n <= 0 { return 0; }
   if n == 1 { return 1; }
   f(n - 1) + f(n - 2)
@@ -75,21 +75,21 @@ f(10)
 `, 55);
 
 test('Division success', `
-fn divide(a: Int, b: Int) -> Result<Int> {
+fn divide(a: Num, b: Num) -> Result<Num> {
   if b == 0 { return err("div0"); }
   ok(a / b)
 }
-let r: Result<Int> = divide(10, 2);
+let r: Result<Num> = divide(10, 2);
 if is_err(r) { let m: String = unwrap_err(r); print(m); }
 unwrap(r)
 `, 5);
 
 test('Division by zero', `
-fn divide(a: Int, b: Int) -> Result<Int> {
+fn divide(a: Num, b: Num) -> Result<Num> {
   if b == 0 { return err("div0"); }
   ok(a / b)
 }
-fn handle(r: Result<Int>) -> Int {
+fn handle(r: Result<Num>) -> Num {
   if is_err(r) { return len(unwrap_err(r)); }
   0
 }
@@ -97,12 +97,12 @@ handle(divide(10, 0))
 `, 4);
 
 test('List length', `
-let l: List<Int> = [1, 2, 3, 4, 5];
+let l: List<Num> = [1, 2, 3, 4, 5];
 list_len(l)
 `, 5);
 
 test('Map get', `
-let m: Map<Int, Int> = {1: 10, 2: 20};
+let m: Map<Num, Num> = {1: 10, 2: 20};
 map_get(m, 1)
 `, {ok: true, value: {data: 10}});
 
@@ -112,18 +112,18 @@ len(s)
 `, 5);
 
 test('Operator precedence', `
-let x: Int = 2 + 3 * 4;
+let x: Num = 2 + 3 * 4;
 x
 `, 14);
 
 test('Negative numbers', `
-let x: Int = -5;
-let y: Int = x + 10;
+let x: Num = -5;
+let y: Num = x + 10;
 y
 `, 5);
 
 test('Record fields', `
-type P = { x: Int, y: Int };
+type P = { x: Num, y: Num };
 let p: P = { x: 10, y: 20 };
 p.x + p.y
 `, 30);

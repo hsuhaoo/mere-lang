@@ -10,10 +10,10 @@ import {
 } from '../ast/nodes.js';
 import {
   Value, ValueKind,
-  int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,
+  num as mkNum, string as mkString, bool as mkBool, unit as mkUnit,
   list as mkList, map as mkMap, record as mkRecord,
   result as mkResult, fn as mkFn,
-  IntValue, StringValue, BoolValue, ListValue,
+  NumValue, StringValue, BoolValue, ListValue,
   MapValue, RecordValue, ResultValue, FnValue,
 } from './values.js';
 import { Env } from './env.js';
@@ -100,7 +100,7 @@ class Interpreter {
 
   execExpr(expr: Expr): Value {
     switch (expr.constructor) {
-      case LiteralExpr:     return this.execLiteral((expr as LiteralExpr).value);
+      case LiteralExpr:     return this.execLiteral(expr as LiteralExpr);
       case IdentifierExpr:  return this.rootEnv.lookup((expr as IdentifierExpr).name);
       case BinOpExpr:       return this.execBinOp(expr as BinOpExpr);
       case UnOpExpr:        return this.execUnOp(expr as UnOpExpr);
@@ -125,8 +125,9 @@ class Interpreter {
     }
   }
 
-  execLiteral(value: number | string | boolean | null): Value {
-    if (typeof value === 'number') return mkInt(Math.trunc(value));
+  execLiteral(expr: LiteralExpr): Value {
+    const value = expr.value;
+    if (typeof value === 'number') return mkNum(value);
     if (typeof value === 'string') return mkString(value);
     if (typeof value === 'boolean') return mkBool(value);
     if (value === null) return mkUnit();
@@ -142,19 +143,19 @@ class Interpreter {
         if (left.kind === ValueKind.STRING && right.kind === ValueKind.STRING) {
           return mkString((left as StringValue).get() + (right as StringValue).get());
         }
-        return mkInt((left as IntValue).getNumber() + (right as IntValue).getNumber());
-      case '-': return mkInt((left as IntValue).getNumber() - (right as IntValue).getNumber());
-      case '*': return mkInt((left as IntValue).getNumber() * (right as IntValue).getNumber());
+        return mkNum(left.getNumber() + right.getNumber());
+      case '-': return mkNum(left.getNumber() - right.getNumber());
+      case '*': return mkNum(left.getNumber() * right.getNumber());
       case '/':
-        if ((right as IntValue).getNumber() === 0)
+        if (right.getNumber() === 0)
           throw new RuntimeError('Division by zero', expr.line, expr.column);
-        return mkInt(Math.trunc((left as IntValue).getNumber() / (right as IntValue).getNumber()));
+        return mkNum(left.getNumber() / right.getNumber());
       case '==': return mkBool(this.valuesEqual(left, right));
       case '!=': return mkBool(!this.valuesEqual(left, right));
-      case '<': return mkBool((left as IntValue).getNumber() < (right as IntValue).getNumber());
-      case '>': return mkBool((left as IntValue).getNumber() > (right as IntValue).getNumber());
-      case '<=': return mkBool((left as IntValue).getNumber() <= (right as IntValue).getNumber());
-      case '>=': return mkBool((left as IntValue).getNumber() >= (right as IntValue).getNumber());
+      case '<': return mkBool(left.getNumber() < right.getNumber());
+      case '>': return mkBool(left.getNumber() > right.getNumber());
+      case '<=': return mkBool(left.getNumber() <= right.getNumber());
+      case '>=': return mkBool(left.getNumber() >= right.getNumber());
       case 'and': return mkBool(
         left.kind === ValueKind.BOOL && (left as BoolValue).get() &&
         right.kind === ValueKind.BOOL && (right as BoolValue).get());
@@ -170,7 +171,7 @@ class Interpreter {
     const operand = this.execExpr(expr.operand);
     switch (expr.op) {
       case 'not': return mkBool(operand.kind === ValueKind.BOOL && !(operand as BoolValue).get());
-      case '-': return mkInt(-(operand as IntValue).getNumber());
+      case '-': return mkNum(-operand.getNumber());
       default:
         throw new RuntimeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
     }
@@ -439,7 +440,7 @@ class Interpreter {
     for (const entry of expr.entries) {
       const key = this.execExpr(entry.key);
       const value = this.execExpr(entry.value);
-      entries[String(key.kind === ValueKind.INT ? (key as IntValue).getNumber() : (key as StringValue).get())] = value;
+      entries[String(key.kind === ValueKind.NUM ? key.getNumber() : (key as StringValue).get())] = value;
     }
     return mkMap(entries, null, null);
   }
@@ -533,7 +534,7 @@ class Interpreter {
     if (a.kind !== b.kind) return false;
 
     switch (a.kind) {
-      case ValueKind.INT:     return (a as IntValue).getNumber() === (b as IntValue).getNumber();
+      case ValueKind.NUM:     return (a as NumValue).getNumber() === (b as NumValue).getNumber();
       case ValueKind.STRING:  return (a as StringValue).get() === (b as StringValue).get();
       case ValueKind.BOOL:    return (a as BoolValue).get() === (b as BoolValue).get();
       case ValueKind.UNIT:    return true;

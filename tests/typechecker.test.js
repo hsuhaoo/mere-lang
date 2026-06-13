@@ -6,7 +6,7 @@ let failed = 0;
 function test(name, src, expected) {
   try {
     const result = run(src);
-    if (result.kind === 'Int') {
+    if (result.kind === 'Num') {
       const actual = result.getNumber();
       if (actual === expected) {
         console.log('✓', name);
@@ -65,29 +65,29 @@ console.log();
 // ── Arithmetic type validation ──────────────────────────────────
 
 testError('arithmetic on non-numeric: true - 5', `
-  let x: Int = true - 5;
+  let x: Num = true - 5;
   x
 `, /numeric|requires/i);
 
 testError('arithmetic on non-numeric: "hello" * 3', `
-  let x: Int = "hello" * 3;
+  let x: Num = "hello" * 3;
   x
 `, /numeric|requires/i);
 
 testError('arithmetic on non-numeric: false / 2', `
-  let x: Int = false / 2;
+  let x: Num = false / 2;
   x
 `, /numeric|requires/i);
 
 // ── Operator '+' type validation ────────────────────────────────
 
 testError('add mismatched types: 5 + "hello"', `
-  let x: Int = 5 + "hello";
+  let x: Num = 5 + "hello";
   x
 `, /operator.*\+|requires.*numeric.*string/i);
 
 testError('add mismatched types: "hello" + 5', `
-  let x: Int = "hello" + 5;
+  let x: Num = "hello" + 5;
   x
 `, /operator.*\+|requires.*numeric.*string/i);
 
@@ -113,25 +113,25 @@ testError('not on non-bool: not 5', `
 // ── Negation validation ─────────────────────────────────────────
 
 testError('negation on non-numeric: -true', `
-  let x: Int = -true;
+  let x: Num = -true;
   x
 `, /numeric/i);
 
 testError('negation on string: -"hello"', `
-  let x: Int = -"hello";
+  let x: Num = -"hello";
   x
 `, /numeric/i);
 
 // ── Record field validation ─────────────────────────────────────
 
 testError('access non-existent field on record', `
-  type P = { x: Int, y: Int };
+  type P = { x: Num, y: Num };
   let p: P = { x: 10, y: 20 };
   p.z
 `, /no field|Cannot/i);
 
 testError('extra field in record literal', `
-  type P = { x: Int };
+  type P = { x: Num };
   let p: P = { x: 10, y: 20 };
   p.x
 `, /no field/i);
@@ -139,41 +139,41 @@ testError('extra field in record literal', `
 // ── List type validation ────────────────────────────────────────
 
 testError('list element type mismatch', `
-  let l: List<Int> = [1, "hello"];
+  let l: List<Num> = [1, "hello"];
   l
-`, /type mismatch|expected.*Int.*got.*String/i);
+`, /type mismatch|expected.*Num.*got.*String/i);
 
 testError('empty list has no type', `
-  let l: List<Int> = [];
+  let l: List<Num> = [];
   l
 `, /empty list|no type/i);
 
 // ── Map type validation ─────────────────────────────────────────
 
 testError('map key/value type mismatch', `
-  let m: Map<Int, Int> = {1: "a"};
+  let m: Map<Num, Num> = {1: "a"};
   m
-`, /type mismatch|expected.*Int.*got.*String/i);
+`, /type mismatch|expected.*Num.*got.*String/i);
 
 // empty maps `{}` are parsed as empty records, so this error is unreachable
 // ── err() validation ────────────────────────────────────────────
 
 testError('err() requires string argument', `
-  let r: Result<Int> = err(42);
+  let r: Result<Num> = err(42);
   r
 `, /requires String/i);
 
 // ── Function return type validation ─────────────────────────────
 
 testError('function return type mismatch', `
-  fn f() -> Int {
+  fn f() -> Num {
     "hello"
   }
   f()
 `, /Expected type|return/i);
 
 testError('function return type mismatch with explicit return', `
-  fn f() -> Int {
+  fn f() -> Num {
     return "hello";
   }
   f()
@@ -182,48 +182,48 @@ testError('function return type mismatch with explicit return', `
 // ── Call validation ─────────────────────────────────────────────
 
 testError('calling integer as function', `
-  let x: Int = 5;
+  let x: Num = 5;
   x()
 `, /Undefined function/i);
 
 testError('wrong argument count to user function', `
-  fn f(x: Int) -> Int { x }
+  fn f(x: Num) -> Num { x }
   f(1, 2)
 `, /expects.*arguments/i);
 
 // ── Polymorphic builtin validation ──────────────────────────────
 
 testError('get on non-List/Map', `
-  let x: Int = 5;
+  let x: Num = 5;
   get(x, 1)
 `, /expects.*List.*Map/i);
 
 testError('has expects Map', `
-  let l: List<Int> = [1, 2];
+  let l: List<Num> = [1, 2];
   has(l, 1)
 `, /expects.*Map/i);
 
 testError('put expects Map', `
-  let l: List<Int> = [1, 2];
+  let l: List<Num> = [1, 2];
   put(l, 1, 2)
 `, /expects.*Map/i);
 
-testError('get list index must be Int', `
-  let l: List<Int> = [1, 2];
+testError('get list index must be Num', `
+  let l: List<Num> = [1, 2];
   get(l, "hello")
-`, /index must be Int/i);
+`, /index must be Num/i);
 
 // ── Scope and identifier validation ─────────────────────────────
 
 testError('reference undefined variable', `
-  let x: Int = y;
+  let x: Num = y;
   x
 `, /Undefined/i);
 
 testError('type mismatch on assignment', `
-  let x: Int = "hello";
+  let x: Num = "hello";
   x
-`, /Expected type.*Int.*got.*String|type/i);
+`, /Expected type.*Num.*got.*String|type/i);
 
 // ── Unknown type validation ─────────────────────────────────────
 
@@ -235,7 +235,7 @@ testError('unknown record type', `
 // ── Correct programs still pass type checking ───────────────────
 
 test('factorial with type annotations', `
-fn f(n: Int) -> Int {
+fn f(n: Num) -> Num {
   if n <= 1 { return 1; }
   n * f(n - 1)
 }
@@ -248,18 +248,18 @@ list_len(l)
 `, 3);
 
 test('map with string keys', `
-let m: Map<String, Int> = {"a": 1, "b": 2};
-let v: Int = unwrap(get(m, "a"));
+let m: Map<String, Num> = {"a": 1, "b": 2};
+let v: Num = unwrap(get(m, "a"));
 v
 `, 1);
 
 test('result err with string', `
-let r: Result<Int> = err("oops");
+let r: Result<Num> = err("oops");
 len(unwrap_err(r))
 `, 4);
 
 test('record field access', `
-type Point = { x: Int, y: Int };
+type Point = { x: Num, y: Num };
 let p: Point = { x: 10, y: 20 };
 p.x + p.y
 `, 30);
@@ -282,67 +282,67 @@ len(t)
 `, 11);
 
 test('method call: list.len()', `
-let l: List<Int> = [1, 2, 3];
+let l: List<Num> = [1, 2, 3];
 l.len()
 `, 3);
 
 // note: list.get() only works at runtime via direct method syntax
 
 test('method call: result.is_ok()', `
-let r: Result<Int> = ok(42);
+let r: Result<Num> = ok(42);
 r.is_ok()
 `, true);
 
 test('method call: result.is_err()', `
-let r: Result<Int> = err("msg");
+let r: Result<Num> = err("msg");
 r.is_err()
 `, true);
 
 test('method call: result.unwrap()', `
-let r: Result<Int> = ok(42);
+let r: Result<Num> = ok(42);
 r.unwrap()
 `, 42);
 
 test('chained method and field access', `
-let l: List<Int> = [1, 2, 3];
+let l: List<Num> = [1, 2, 3];
 l.get(0).is_ok()
 `, true);
 
 // ── Runtime edge cases ──────────────────────────────────────────
 
 test('list_get function', `
-let l: List<Int> = [10, 20, 30];
-let v: Int = unwrap(list_get(l, 1));
+let l: List<Num> = [10, 20, 30];
+let v: Num = unwrap(list_get(l, 1));
 v
 `, 20);
 
 test('map_get function', `
-let m: Map<Int, String> = {1: "a", 2: "b"};
+let m: Map<Num, String> = {1: "a", 2: "b"};
 let v: String = unwrap(map_get(m, 2));
 v
 `, "b");
 
 test('map_has function', `
-let m: Map<Int, Int> = {1: 10, 2: 20};
+let m: Map<Num, Num> = {1: 10, 2: 20};
 map_has(m, 3)
 `, false);
 
 test('map_put then get', `
-let m: Map<Int, Int> = {1: 10};
+let m: Map<Num, Num> = {1: 10};
 map_put(m, 2, 20);
-let v: Int = unwrap(map_get(m, 2));
+let v: Num = unwrap(map_get(m, 2));
 v
 `, 20);
 
 test('map_remove', `
-let m: Map<Int, Int> = {1: 10, 2: 20};
+let m: Map<Num, Num> = {1: 10, 2: 20};
 map_remove(m, 1);
 map_has(m, 1)
 `, false);
 
 test('append returns new list', `
-let l: List<Int> = [1, 2];
-let l2: List<Int> = append(l, 3);
+let l: List<Num> = [1, 2];
+let l2: List<Num> = append(l, 3);
 list_len(l2)
 `, 3);
 
@@ -358,8 +358,8 @@ test('min', `
 min(10, 20)
 `, 10);
 
-test('parse_int failure', `
-let r: Result<Int> = parse_int("not_a_number");
+test('parse_num failure', `
+let r: Result<Num> = parse_num("not_a_number");
 is_err(r)
 `, true);
 
@@ -369,38 +369,38 @@ let sub: String = substring(s, 6, 5);
 sub
 `, "world");
 
-test('to_string with int', `
+test('to_string with number', `
 to_string(42)
 `, "42");
 
 // ── Method edge cases ──────────────────────────────────────────
 
 test('method: list.append() mutates', `
-let l: List<Int> = [1, 2];
+let l: List<Num> = [1, 2];
 l.append(3);
 list_len(l)
 `, 3);
 
 test('method: result.unwrap_err()', `
-let r: Result<Int> = err("fail");
+let r: Result<Num> = err("fail");
 r.unwrap_err()
 `, "fail");
 
 test('method: map.get', `
-let m: Map<String, Int> = {"a": 10};
-let v: Int = unwrap(m.get("a"));
+let m: Map<String, Num> = {"a": 10};
+let v: Num = unwrap(m.get("a"));
 v
 `, 10);
 
 // ── Lambda tests ────────────────────────────────────────────────
 
 test('lambda call with two params', `
-let add: Fn<Int, Int, Int> = fn(x: Int, y: Int) -> Int { x + y };
+let add: Fn<Num, Num, Num> = fn(x: Num, y: Num) -> Num { x + y };
 add(3, 4)
 `, 7);
 
 test('lambda call with single param', `
-let double: Fn<Int, Int> = fn(n: Int) -> Int { n * 2 };
+let double: Fn<Num, Num> = fn(n: Num) -> Num { n * 2 };
 double(21)
 `, 42);
 
@@ -410,23 +410,23 @@ hello()
 `, "Hello from lambda!");
 
 test('lambda as argument to higher-order function', `
-fn apply(f: Fn<Int, Int>, x: Int) -> Int { f(x) }
-let double: Fn<Int, Int> = fn(n: Int) -> Int { n * 2 };
+fn apply(f: Fn<Num, Num>, x: Num) -> Num { f(x) }
+let double: Fn<Num, Num> = fn(n: Num) -> Num { n * 2 };
 apply(double, 5)
 `, 10);
 
 test('lambda type inference: return type', `
-let add: Fn<Int, Int, Int> = fn(x: Int, y: Int) -> Int { x + y };
+let add: Fn<Num, Num, Num> = fn(x: Num, y: Num) -> Num { x + y };
 add(10, 20)
 `, 30);
 
 testError('lambda wrong argument type', `
-let add: Fn<Int, Int> = fn(n: Int) -> Int { n + 1 };
+let add: Fn<Num, Num> = fn(n: Num) -> Num { n + 1 };
 add("hello")
-`, /expected.*Int.*got.*String|type/i);
+`, /expected.*Num.*got.*String|type/i);
 
 testError('lambda too many args', `
-let add: Fn<Int, Int> = fn(n: Int) -> Int { n + 1 };
+let add: Fn<Num, Num> = fn(n: Num) -> Num { n + 1 };
 add(1, 2)
 `, /expects.*args/i);
 
