@@ -160,6 +160,12 @@ class TypeChecker {
   }
 
   checkLet(stmt) {
+    if (this.scopeBindings.has(stmt.name)) {
+      throw new TypeError(
+        `Variable '${stmt.name}' is already defined in this scope`,
+        stmt.line, stmt.column
+      );
+    }
     this.checkExpr(stmt.init, stmt.type);
     this.scopeBindings.set(stmt.name, new ScopeEntry(stmt.name, stmt.type));
   }
@@ -258,7 +264,7 @@ class TypeChecker {
         return this.inferRecordCreate(expr, expectedType);
 
       case ListCreateExpr:
-        return this.inferListCreate(expr);
+        return this.inferListCreate(expr, expectedType);
 
       case MapCreateExpr:
         return this.inferMapCreate(expr);
@@ -449,8 +455,8 @@ class TypeChecker {
     if (expr.callee instanceof IdentifierExpr) {
       const fnName = expr.callee.name;
 
-      // Polymorphic get/has/put — dispatch on first arg type
-      if (fnName === 'get' || fnName === 'has' || fnName === 'put') {
+      // Polymorphic builtins — dispatch on first arg type
+      if (fnName === 'len' || fnName === 'get' || fnName === 'has' || fnName === 'put') {
         return this.inferPolyBuiltin(expr, fnName);
       }
 
@@ -664,8 +670,11 @@ class TypeChecker {
     return new TypeAnnotation(typeName, null, expr.line, expr.column);
   }
 
-  inferListCreate(expr) {
+  inferListCreate(expr, expectedType = null) {
     if (expr.elements.length === 0) {
+      if (expectedType && expectedType.name === 'List' && expectedType.typeParams && expectedType.typeParams.length > 0) {
+        return new TypeAnnotation('List', [expectedType.typeParams[0]], expr.line, expr.column);
+      }
       throw new TypeError(`Empty list has no type information`, expr.line, expr.column);
     }
 
@@ -990,6 +999,19 @@ class TypeChecker {
     }
     const firstType = this.inferExprType(expr.args[0]);
 
+    if (fnName === 'len') {
+      if (expr.args.length !== 1) {
+        throw new TypeError(`len expects 1 argument, got ${expr.args.length}`, expr.line, expr.column);
+      }
+      if (firstType.name !== 'String' && firstType.name !== 'List' && firstType.name !== 'Map') {
+        throw new TypeError(
+          `len expects a String, List, or Map, got ${firstType.name}`,
+          expr.line, expr.column
+        );
+      }
+      return new TypeAnnotation('Number');
+    }
+
     if (fnName === 'get') {
       if (expr.args.length !== 2) {
         throw new TypeError(`get expects 2 arguments, got ${expr.args.length}`, expr.line, expr.column);
@@ -1075,7 +1097,6 @@ class TypeChecker {
 
 const BUILTIN_FUNCTIONS = new Map([
   // String builtins
-  ['len', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Number') }],
   ['concat', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
   ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('String') }],
   ['parse_num', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Number')]) }],

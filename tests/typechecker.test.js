@@ -143,9 +143,13 @@ testError('list element type mismatch', `
   l
 `, /type mismatch|expected.*Number.*got.*String/i);
 
-testError('empty list has no type', `
-  let l: List<Number> = [];
-  l
+test('empty list with type annotation', `
+let l: List<Number> = [];
+len(l)
+`, 0);
+
+testError('empty list without type annotation', `
+[]
 `, /empty list|no type/i);
 
 // ── Map type validation ─────────────────────────────────────────
@@ -398,6 +402,16 @@ get(42, 1)
 testError('put on non-map errors', `
 put(42, 1, 2)
 `, /expects.*Map/i);
+
+testError('len on number errors', `
+len(42)
+`, /expects a String, List, or Map|type/i);
+
+testError('redefine variable in same scope', `
+let x: Number = 1;
+let x: String = "a";
+x
+`, /already defined|redefine|shadow/i);
 
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');

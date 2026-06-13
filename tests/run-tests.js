@@ -327,8 +327,8 @@ len(s)
 `, 20);
 
 // ── Edge cases: stdlib edges ────────────────────────────────────
-testError('len on number errors', 'len(42)', /length|function/i);
-testError('len on boolean errors', 'len(true)', /length|function/i);
+testError('len on number errors', 'len(42)', /expects a String, List, or Map/i);
+testError('len on boolean errors', 'len(true)', /expects a String, List, or Map/i);
 
 test('abs negative', `
 abs(-5)
