@@ -5,10 +5,13 @@
 
 // 测试 1: GET /v1/models — 列出可用模型
 fn test_list_models() -> Task<Result<String>> {
+  let headers: Map<String, String> = {
+    "Authorization": "Bearer 1234"
+  };
   let task: Task<Result<String>> = fetch(
     "http://localhost:8000/v1/models",
     "GET",
-    {},
+    headers,
     ""
   );
   return task;
@@ -17,9 +20,10 @@ fn test_list_models() -> Task<Result<String>> {
 // 测试 2: POST /v1/chat/completions — 发送聊天请求
 fn test_chat_completion() -> Task<Result<String>> {
   let headers: Map<String, String> = {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234"
   };
-  let body: String = "{\"model\":\"default\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello, who are you?\"}],\"max_tokens\":100}";
+  let body: String = "{\"model\":\"Qwen3.5-4B-MLX-4bit\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello, who are you?\"}],\"max_tokens\":100}";
   let task: Task<Result<String>> = fetch(
     "http://localhost:8000/v1/chat/completions",
     "POST",
@@ -32,9 +36,10 @@ fn test_chat_completion() -> Task<Result<String>> {
 // 测试 3: POST /v1/chat/completions — 带多个消息的历史对话
 fn test_chat_with_history() -> Task<Result<String>> {
   let headers: Map<String, String> = {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Authorization": "Bearer 1234"
   };
-  let body: String = "{\"model\":\"default\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a helpful assistant.\"},{\"role\":\"user\",\"content\":\"What is Simplex?\"}],\"max_tokens\":200}";
+  let body: String = "{\"model\":\"Qwen3.5-4B-MLX-4bit\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a helpful assistant.\"},{\"role\":\"user\",\"content\":\"What is Simplex?\"}],\"max_tokens\":200}";
   let task: Task<Result<String>> = fetch(
     "http://localhost:8000/v1/chat/completions",
     "POST",

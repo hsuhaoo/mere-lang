@@ -10,7 +10,7 @@ import process from 'process';
 import {
   Value,
   NumberValue, StringValue, BooleanValue, ListValue,
-  MapValue, TaskValue,
+  MapValue, TaskValue, RecordValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
   mkOk, mkErr,
@@ -214,8 +214,26 @@ class Builtins {
       this.registerFn('fetch', 4, (args) => {
         const url = args[0].toRawString();
         const method = args[1].toRawString();
-        const headers = args[2]; // Map<string, string>
+        const headersValue = args[2]; // Record<string, string> | Map<string, string>
         const body = args[3].toRawString();
+        
+        // Convert RecordValue/MapValue to plain JS object for fetch
+        const headers: Record<string, string> = {};
+        if (headersValue instanceof RecordValue) {
+          for (const key of headersValue.fieldNames()) {
+            const val = headersValue.get(key);
+            if (val && val instanceof StringValue) {
+              headers[key] = val.toRawString();
+            }
+          }
+        } else if (headersValue instanceof MapValue) {
+          for (const key of Object.keys((headersValue as any)._entries)) {
+            const val = (headersValue as any)._entries[key];
+            if (val instanceof StringValue) {
+              headers[key] = val.toRawString();
+            }
+          }
+        }
         
         const promise = globalThis.fetch(url, {
           method,
