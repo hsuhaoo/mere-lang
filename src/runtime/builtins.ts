@@ -214,7 +214,7 @@ class Builtins {
       this.registerFn('fetch', 4, (args) => {
         const url = args[0].toRawString();
         const method = args[1].toRawString();
-        const headers = args[2]; // Record<string, string>
+        const headers = args[2]; // Map<string, string>
         const body = args[3].toRawString();
         
         const promise = globalThis.fetch(url, {

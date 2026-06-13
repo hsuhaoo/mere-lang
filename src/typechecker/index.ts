@@ -267,7 +267,7 @@ class TypeChecker {
         return this.inferListCreate(expr, expectedType);
 
       case MapCreateExpr:
-        return this.inferMapCreate(expr);
+        return this.inferMapCreate(expr, expectedType);
 
       case ResultOkExpr:
         return this.inferResultOk(expr, expectedType);
@@ -513,11 +513,11 @@ class TypeChecker {
         const typeVars = new Map();
         // Unify type variables from actual argument types
         for (let i = 0; i < expr.args.length; i++) {
-          const inferredType = this.inferExprType(expr.args[i]);
-          const expectedType = sig.paramTypes[i] instanceof TypeAnnotation
+          const expectedParamType = sig.paramTypes[i] instanceof TypeAnnotation
             ? sig.paramTypes[i]
             : new TypeAnnotation(String(sig.paramTypes[i]));
-          this.unifyTypeVars(expectedType, inferredType, typeVars);
+          const inferredType = this.inferExprType(expr.args[i], expectedParamType);
+          this.unifyTypeVars(expectedParamType, inferredType, typeVars);
         }
         // Bind remaining type vars from expected type context if available
         const resolvedReturn = this.resolveTypeVars(sig.returnType, typeVars, expectedType);
@@ -606,6 +606,15 @@ class TypeChecker {
       );
     }
 
+    // String fields
+    if (objectType.name === 'String') {
+      if (expr.field === 'len') return new TypeAnnotation('Number');
+      throw new TypeError(
+        `String has no field '${expr.field}'`,
+        expr.line, expr.column
+      );
+    }
+
     // Check if it's a known record type (from type declaration)
     const typeDecl = this.typeDecls.get(objectType.name);
     if (typeDecl) {
@@ -665,7 +674,16 @@ class TypeChecker {
       // Fallback: use the first field's key as the type name
       typeName = expr.fields[0].key;
     } else {
+      // Empty record with no expected type — use generic 'Record'
       typeName = 'Record';
+    }
+
+    // For empty records with an expected type (e.g., Record<String,String> for fetch headers),
+    // just return the expected type without checking fields
+    if (expr.fields.length === 0 && expectedType) {
+      if (expectedType.name === typeName) {
+        return expectedType;
+      }
     }
 
     const typeDecl = this.typeDecls.get(typeName);
@@ -715,8 +733,12 @@ class TypeChecker {
     return new TypeAnnotation('List', [elementType], expr.line, expr.column);
   }
 
-  inferMapCreate(expr) {
+  inferMapCreate(expr, expectedType = null) {
     if (expr.entries.length === 0) {
+      // Empty map — use expected type if available
+      if (expectedType && expectedType.name === 'Map' && expectedType.typeParams && expectedType.typeParams.length === 2) {
+        return expectedType;
+      }
       throw new TypeError(`Empty map has no type information`, expr.line, expr.column);
     }
 
@@ -755,8 +777,8 @@ class TypeChecker {
 
   // ── Helper methods ────────────────────────────────────────────
 
-  inferExprType(expr) {
-    return this.inferType(expr);
+  inferExprType(expr, expectedType = null) {
+    return this.inferType(expr, expectedType);
   }
 
   isNumeric(type) {
@@ -1144,7 +1166,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['file_write', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
 
   // Network I/O (async — returns Task, I/O happens on join)
-  ['fetch', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String'), new TypeAnnotation('Record', [new TypeAnnotation('String'), new TypeAnnotation('String')]), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+  ['fetch', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String'), new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('String')]), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
 
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],

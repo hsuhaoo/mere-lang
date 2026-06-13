@@ -160,6 +160,10 @@ class StringValue extends Value {
     return this._value.length;
   }
 
+  get len(): NumberValue {
+    return new NumberValue(this._value.length);
+  }
+
   toString(): string {
     return `"${this._value}"`;
   }

@@ -1,0 +1,96 @@
+// test_fetch_omlx.sim
+// 验证 Simplex fetch builtin 调用本机 oMLX 推理服务器
+// 使用前确保 oMLX 已启动: omlx start
+// 默认端口: 8000
+
+// 测试 1: GET /v1/models — 列出可用模型
+fn test_list_models() -> Task<Result<String>> {
+  let task: Task<Result<String>> = fetch(
+    "http://localhost:8000/v1/models",
+    "GET",
+    {},
+    ""
+  );
+  return task;
+}
+
+// 测试 2: POST /v1/chat/completions — 发送聊天请求
+fn test_chat_completion() -> Task<Result<String>> {
+  let headers: Map<String, String> = {
+    "Content-Type": "application/json"
+  };
+  let body: String = "{\"model\":\"default\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello, who are you?\"}],\"max_tokens\":100}";
+  let task: Task<Result<String>> = fetch(
+    "http://localhost:8000/v1/chat/completions",
+    "POST",
+    headers,
+    body
+  );
+  return task;
+}
+
+// 测试 3: POST /v1/chat/completions — 带多个消息的历史对话
+fn test_chat_with_history() -> Task<Result<String>> {
+  let headers: Map<String, String> = {
+    "Content-Type": "application/json"
+  };
+  let body: String = "{\"model\":\"default\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a helpful assistant.\"},{\"role\":\"user\",\"content\":\"What is Simplex?\"}],\"max_tokens\":200}";
+  let task: Task<Result<String>> = fetch(
+    "http://localhost:8000/v1/chat/completions",
+    "POST",
+    headers,
+    body
+  );
+  return task;
+}
+
+// 主程序
+fn main() -> Unit {
+  print("=== Simplex fetch builtin 验证脚本 ===");
+  print("");
+  print("正在连接 oMLX 服务器 (localhost:8000)...");
+  print("");
+
+  // 测试 1: 列出模型
+  print("--- 测试 1: GET /v1/models ---");
+  let task1: Task<Result<String>> = test_list_models();
+  let result1: Result<String> = join(task1);
+  if result1.isOk {
+    print("成功! 响应长度: " + to_string(result1.value.len));
+    print("响应内容: " + result1.value);
+  }
+  if result1.errMessage.len > 0 {
+    print("失败: " + result1.errMessage);
+  }
+  print("");
+
+  // 测试 2: 聊天补全
+  print("--- 测试 2: POST /v1/chat/completions ---");
+  let task2: Task<Result<String>> = test_chat_completion();
+  let result2: Result<String> = join(task2);
+  if result2.isOk {
+    print("成功! 响应长度: " + to_string(result2.value.len));
+    print("响应内容: " + result2.value);
+  }
+  if result2.errMessage.len > 0 {
+    print("失败: " + result2.errMessage);
+  }
+  print("");
+
+  // 测试 3: 带历史的对话
+  print("--- 测试 3: POST /v1/chat/completions (带历史) ---");
+  let task3: Task<Result<String>> = test_chat_with_history();
+  let result3: Result<String> = join(task3);
+  if result3.isOk {
+    print("成功! 响应长度: " + to_string(result3.value.len));
+    print("响应内容: " + result3.value);
+  }
+  if result3.errMessage.len > 0 {
+    print("失败: " + result3.errMessage);
+  }
+  print("");
+  print("=== 验证完成 ===");
+}
+
+// 调用 main 函数
+main();
