@@ -413,6 +413,12 @@ let x: String = "a";
 x
 `, /already defined|redefine|shadow/i);
 
+testError('lambda cannot access outer let binding', `
+let x: Number = 42;
+let f: Fn<Number> = fn() -> Number { x };
+f()
+`, /Undefined variable/i);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 

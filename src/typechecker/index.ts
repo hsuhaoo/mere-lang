@@ -325,50 +325,69 @@ class TypeChecker {
   // ── Lambda type inference ──────────────────────────────────────
 
   inferLambda(expr) {
-    // Build a scope for lambda params (one push for all params)
-    this.enterScope();
+    // Lambda does NOT capture outer scope — replace scope stack with
+    // an isolated scope containing only the lambda's own params.
+    const savedScopes = this.scopes;
+    this.scopes = [new Map()];
+    this.scopeBindings = this.scopes[0];
+
     const paramTypes = [];
     for (const p of expr.params) {
-      paramTypes.push(p.type);  // already a TypeAnnotation
+      paramTypes.push(p.type);
       this.scopeBindings.set(p.name, new ScopeEntry(p.name, p.type));
     }
 
-    // Infer return type from body
+    // Process body statements and infer return type
     let returnType = expr.returnType;
-    if (!returnType) {
-      const lastStmt = expr.body[expr.body.length - 1];
-      if (lastStmt instanceof ReturnStmt && lastStmt.value) {
-        returnType = this.inferExprType(lastStmt.value);
-      } else if (lastStmt instanceof ExpressionStmt) {
-        returnType = this.inferExprType(lastStmt.expression);
-      } else {
-        returnType = new TypeAnnotation('Unit');
-      }
-    }
+    for (let i = 0; i < expr.body.length; i++) {
+      const stmt = expr.body[i];
 
-    // Check all return statements match
-    for (const stmt of expr.body) {
       if (stmt instanceof ReturnStmt) {
+        // Check return value type matches return type
         if (stmt.value) {
           const retType = this.inferExprType(stmt.value);
-          if (!this.typesMatch(retType, returnType)) {
+          if (!returnType) {
+            returnType = retType;
+          } else if (!this.typesMatch(retType, returnType)) {
             throw new TypeError(
               `Lambda return type: expected ${returnType.toString()} but got ${retType.toString()}`,
               stmt.line, stmt.column
             );
           }
         } else {
-          if (!this.typesMatch(new TypeAnnotation('Unit'), returnType)) {
+          if (returnType && !this.typesMatch(new TypeAnnotation('Unit'), returnType)) {
             throw new TypeError(
               `Lambda return type: expected ${returnType.toString()} but got Unit`,
               stmt.line, stmt.column
             );
           }
+          if (!returnType) {
+            returnType = new TypeAnnotation('Unit');
+          }
         }
+      } else if (i === expr.body.length - 1 && stmt instanceof ExpressionStmt) {
+        // Last expression is the implicit return
+        const actualType = this.inferExprType(stmt.expression);
+        if (!returnType) {
+          returnType = actualType;
+        } else if (!this.typesMatch(actualType, returnType)) {
+          throw new TypeError(
+            `Lambda return type: expected ${returnType.toString()} but got ${actualType.toString()}`,
+            stmt.line, stmt.column
+          );
+        }
+      } else {
+        // Non-return, non-last statements (let bindings, side effects)
+        this.checkStmt(stmt);
       }
     }
 
-    this.exitScope();
+    if (!returnType) {
+      returnType = new TypeAnnotation('Unit');
+    }
+
+    this.scopes = savedScopes;
+    this.scopeBindings = savedScopes.length > 0 ? savedScopes[savedScopes.length - 1] : new Map();
 
     // Fn type params: all param types + return type
     return new TypeAnnotation('Fn', [...paramTypes, returnType], expr.line, expr.column);
@@ -627,8 +646,12 @@ class TypeChecker {
 
   inferBlock(expr) {
     let lastType = new TypeAnnotation('Unit');
-    for (const s of expr.stmts) {
-      lastType = this.checkStmtWithReturn(s);
+    for (let i = 0; i < expr.stmts.length; i++) {
+      if (i === expr.stmts.length - 1) {
+        lastType = this.checkStmtWithReturn(expr.stmts[i]);
+      } else {
+        this.checkStmt(expr.stmts[i]);
+      }
     }
     return lastType;
   }
