@@ -37,11 +37,11 @@ const BUILTINS = new Set(Object.keys(BUILTIN_TYPES));
 // ── Type checking error ─────────────────────────────────────────
 
 class TypeError extends Error {
-  line: any;
-  column: any;
-  name: any;
+  line: number;
+  column: number;
+  name: string;
 
-  constructor(message, line, column) {
+  constructor(message: string, line: number, column: number) {
     super(`Type error [${line}:${column}]: ${message}`);
     this.line = line;
     this.column = column;
@@ -52,13 +52,13 @@ class TypeError extends Error {
 // ── Scope entry ─────────────────────────────────────────────────
 
 class ScopeEntry {
-  name: any;
-  type: any;
-  isMutable: any;
+  name: string;
+  type: TypeAnnotation;
+  isMutable: boolean;
 
-  constructor(name, type, isMutable = false) {
+  constructor(name: string, type: TypeAnnotation, isMutable = false) {
     this.name = name;
-    this.type = type;           // TypeAnnotation
+    this.type = type;
     this.isMutable = isMutable;
   }
 }
@@ -66,14 +66,14 @@ class ScopeEntry {
 // ── Type checker ────────────────────────────────────────────────
 
 class TypeChecker {
-  scopes: any;
-  typeDecls: any;
-  fnDecls: any;
-  errors: any;
-  program: any;
-  imports: any;
-  scopeBindings: any;
-  _typeVarBindings: any;
+  scopes: Map<string, ScopeEntry>[];
+  typeDecls: Map<string, TypeDecl>;
+  fnDecls: Map<string, FnDecl>;
+  errors: TypeError[];
+  program: Program;
+  imports: Map<string, any>;
+  scopeBindings: Map<string, ScopeEntry>;
+  _typeVarBindings: Map<string, TypeAnnotation>;
   constructor() {
     this.scopes = [];           // Stack of scopes
     this.typeDecls = new Map(); // name -> TypeDecl
@@ -81,7 +81,7 @@ class TypeChecker {
     this.errors = [];
   }
 
-  check(program, options: { imports?: Map<string, any> } = {}) {
+  check(program: Program, options: { imports?: Map<string, any> } = {}) {
     this.program = program;
 
     // Import external module exports (from ModuleLoader)
@@ -487,8 +487,7 @@ class TypeChecker {
 
       // Lambda bound via let — lookupIdentifier returns Fn type annotation
       const maybeFn = this.lookupIdentifier(fnName);
-      if (maybeFn && maybeFn.name === 'Fn') {
-        // Fn has params as typeParams: Fn<A, B, C> means params [A, B] returns C
+      if (maybeFn instanceof TypeAnnotation && maybeFn.name === 'Fn') {
         const typeParams = maybeFn.typeParams || [];
         // Last type param is return type, rest are params
         if (expr.args.length !== typeParams.length - 1) {
@@ -588,7 +587,7 @@ class TypeChecker {
 
     // Check if it's a module namespace (e.g., math.add from import)
     const objBinding = this.lookupIdentifier(expr.object.name || 'unknown');
-    if (objBinding && objBinding.name === 'Record' && objectType.typeParams) {
+    if (objBinding instanceof TypeAnnotation && objBinding.name === 'Record' && objectType.typeParams) {
       // Module namespace - look up qualified name in scope
       const qualifiedName = `${expr.object.name}.${expr.field}`;
       const qualifiedBinding = this.scopeBindings.get(qualifiedName);

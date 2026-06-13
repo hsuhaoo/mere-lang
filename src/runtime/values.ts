@@ -1,16 +1,6 @@
-/**
- * Runtime value classes for the Simplex language.
- * Each type is an independent class — no direct mapping to JS primitives.
- * 
- * Design principles:
- * - Concrete types only
- * - No implicit conversions
- * - Explicit type boundaries
- */
-
-// ═══════════════════════════════════════════════════════════════════
-// ValueKind enum
-// ═══════════════════════════════════════════════════════════════════
+import { TypeAnnotation } from '../ast/nodes.js';
+import type { Stmt } from '../ast/nodes.js';
+import { Env } from './env.js';
 
 const ValueKind = Object.freeze({
   INT: 'Int',
@@ -25,66 +15,50 @@ const ValueKind = Object.freeze({
   FN: 'Fn',
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// Base: Value — all types inherit from this
-// ═══════════════════════════════════════════════════════════════════
-
 class Value {
-  kind: any;
+  kind: string;
 
-  constructor(kind) {
+  constructor(kind: string) {
     this.kind = kind;
   }
 
-  /** Type name for display and type-checking */
-  typeName() {
+  typeName(): string {
     return this.kind;
   }
 
-  /** Human-readable string */
-  toString() {
+  toString(): string {
     return `Value<${this.kind}>`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Int — a proper class wrapping a number, never JS number directly
-// ═══════════════════════════════════════════════════════════════════
-
 class IntValue extends Value {
-  value: any;
+  value: number;
 
-  constructor(value) {
+  constructor(value: number) {
     super(ValueKind.INT);
-    // Coerce to a finite integer on construction — never store NaN/Infinity
     if (typeof value !== 'number' || !isFinite(value)) {
       throw new TypeError(`Int value must be a finite number, got: ${value}`);
     }
     this.value = Math.trunc(value);
   }
 
-  typeName() {
+  typeName(): string {
     return 'Int';
   }
 
-  toString() {
+  toString(): string {
     return String(this.value);
   }
 
-  /** Return the underlying JS number. Callers MUST know they are getting an Int. */
-  getNumber() {
+  getNumber(): number {
     return this.value;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// StringValue — a proper class wrapping a string
-// ═══════════════════════════════════════════════════════════════════
-
 class StringValue extends Value {
-  value: any;
+  value: string;
 
-  constructor(value) {
+  constructor(value: string) {
     super(ValueKind.STRING);
     if (typeof value !== 'string') {
       throw new TypeError(`StringValue must be constructed with a string, got: ${value}`);
@@ -92,33 +66,27 @@ class StringValue extends Value {
     this.value = value;
   }
 
-  typeName() {
+  typeName(): string {
     return 'String';
   }
 
-  /** Return string length (for len() builtin). */
-  length() {
+  length(): number {
     return this.value.length;
   }
 
-  toString() {
+  toString(): string {
     return `"${this.value}"`;
   }
 
-  /** Underlying JS string. */
-  get() {
+  get(): string {
     return this.value;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// BoolValue — distinct from JS boolean
-// ═══════════════════════════════════════════════════════════════════
-
 class BoolValue extends Value {
-  value: any;
+  value: boolean;
 
-  constructor(value) {
+  constructor(value: boolean) {
     super(ValueKind.BOOL);
     if (typeof value !== 'boolean') {
       throw new TypeError(`BoolValue must be constructed with a boolean, got: ${value}`);
@@ -126,349 +94,294 @@ class BoolValue extends Value {
     this.value = value;
   }
 
-  typeName() {
+  typeName(): string {
     return 'Bool';
   }
 
-  toString() {
+  toString(): string {
     return String(this.value);
   }
 
-  get() {
+  get(): boolean {
     return this.value;
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// UnitValue — single instance (singleton)
-// ═══════════════════════════════════════════════════════════════════
 
 class UnitValue extends Value {
   constructor() {
     super(ValueKind.UNIT);
   }
 
-  typeName() {
+  typeName(): string {
     return 'Unit';
   }
 
-  toString() {
+  toString(): string {
     return '()';
   }
 }
 
-// Singleton instance — no new UnitValue() ever
 const UNIT_VALUE = new UnitValue();
 
-// ═══════════════════════════════════════════════════════════════════
-// ListValue — typed list, wraps JS array but never exposes it raw
-// ═══════════════════════════════════════════════════════════════════
-
 class ListValue extends Value {
-  _elements: any;
-  _elementType: any;
+  _elements: Value[];
+  _elementType: TypeAnnotation | null;
 
-  constructor(elements = [], elementType = null) {
+  constructor(elements: Value[] = [], elementType: TypeAnnotation | null = null) {
     super(ValueKind.LIST);
-    // elements is a plain array of Value objects
     this._elements = elements;
     this._elementType = elementType;
   }
 
-  typeName() {
+  typeName(): string {
     const elemName = this._elementType ? this._elementType.name : '?';
     return `List<${elemName}>`;
   }
 
-  /** Number of elements. */
-  length() {
+  length(): number {
     return this._elements.length;
   }
 
-  /** Get element by index — returns a Value or undefined. */
-  get(index) {
+  get(index: number): Value | undefined {
     if (index < 0 || index >= this._elements.length) {
       return undefined;
     }
     return this._elements[index];
   }
 
-  /** Set element by index. */
-  set(index, value) {
+  set(index: number, value: Value): void {
     if (index < 0 || index >= this._elements.length) {
       throw new RangeError(`Index ${index} out of range`);
     }
     this._elements[index] = value;
   }
 
-  /** Push a value to the end. */
-  push(value) {
+  push(value: Value): void {
     this._elements.push(value);
   }
 
-  /** Return the underlying array for internal use only. */
-  _getElements() {
+  _getElements(): Value[] {
     return this._elements;
   }
 
-  toString() {
+  toString(): string {
     return `[${this._elements.map(e => e.toString()).join(', ')}]`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// MapValue — typed map, wraps an object but enforces Key -> Value constraints
-// ═══════════════════════════════════════════════════════════════════
-
 class MapValue extends Value {
-  _entries: any;
-  _keyType: any;
-  _valueType: any;
+  _entries: Record<string, Value>;
+  _keyType: TypeAnnotation | null;
+  _valueType: TypeAnnotation | null;
 
-  constructor(entries = {}, keyType = null, valueType = null) {
+  constructor(entries: Record<string, Value> = {}, keyType: TypeAnnotation | null = null, valueType: TypeAnnotation | null = null) {
     super(ValueKind.MAP);
     this._entries = entries;
     this._keyType = keyType;
     this._valueType = valueType;
   }
 
-  typeName() {
+  typeName(): string {
     const k = this._keyType ? this._keyType.name : '?';
     const v = this._valueType ? this._valueType.name : '?';
     return `Map<${k}, ${v}>`;
   }
 
-  /** Get a value by key string. */
-  get(key) {
+  get(key: string): Value | undefined {
     return this._entries[key] !== undefined ? this._entries[key] : undefined;
   }
 
-  /** Check if a key exists. */
-  has(key) {
+  has(key: string): boolean {
     return this._entries.hasOwnProperty(key);
   }
 
-  /** Get all keys. */
-  keys() {
+  keys(): string[] {
     return Object.keys(this._entries);
   }
 
-  /** Get the number of entries. */
-  size() {
+  size(): number {
     return Object.keys(this._entries).length;
   }
 
-  /** Return entries for internal use only. */
-  _getEntries() {
+  _getEntries(): Record<string, Value> {
     return this._entries;
   }
 
-  toString() {
+  toString(): string {
     const pairs = Object.entries(this._entries)
       .map(([k, v]) => `${k}: ${v.toString()}`);
     return `{${pairs.join(', ')}}`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// RecordValue — user-defined record types
-// ═══════════════════════════════════════════════════════════════════
-
 class RecordValue extends Value {
-  _fields: any;
-  _typeName: any;
+  _fields: Record<string, Value>;
+  _typeName: string;
 
-  constructor(fields, typeName) {
+  constructor(fields: Record<string, Value>, typeName: string) {
     super(ValueKind.RECORD);
-    this._fields = fields;       // { fieldName: Value }
+    this._fields = fields;
     this._typeName = typeName;
   }
 
-  typeName() {
+  typeName(): string {
     return this._typeName;
   }
 
-  /** Get a field value by name. */
-  get(fieldName) {
+  get(fieldName: string): Value | undefined {
     return this._fields[fieldName] !== undefined
       ? this._fields[fieldName]
       : undefined;
   }
 
-  /** Check if a field exists. */
-  has(fieldName) {
+  has(fieldName: string): boolean {
     return this._fields.hasOwnProperty(fieldName);
   }
 
-  /** Return fields for internal use only. */
-  _getFields() {
+  _getFields(): Record<string, Value> {
     return this._fields;
   }
 
-  /** List field names in definition order. */
-  fieldNames() {
+  fieldNames(): string[] {
     return Object.keys(this._fields);
   }
 
-  toString() {
+  toString(): string {
     const fields = Object.entries(this._fields)
       .map(([k, v]) => `${k}: ${v.toString()}`);
     return `${this._typeName}{${fields.join(', ')}}`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ResultValue — either Ok or Err, never both
-// ═══════════════════════════════════════════════════════════════════
-
 class ResultValue extends Value {
-  _ok: any;
-  _value: any;
-  _resultType: any;
+  _ok: boolean;
+  _value: Value;
+  _resultType: TypeAnnotation | null;
 
-  constructor(ok, value, resultType = null) {
+  constructor(ok: boolean, value: Value, resultType: TypeAnnotation | null = null) {
     super(ValueKind.RESULT);
     this._ok = ok;
-    this._value = value;        // always a Value (IntValue, StringValue, etc.)
+    this._value = value;
     this._resultType = resultType;
   }
 
-  typeName() {
+  typeName(): string {
     const inner = this._resultType ? this._resultType.name : '?';
     return `Result<${inner}>`;
   }
 
-  /** Is this an Ok value? */
-  isOk() {
+  isOk(): boolean {
     return this._ok;
   }
 
-  /** Is this an Err value? */
-  isErr() {
+  isErr(): boolean {
     return !this._ok;
   }
 
-  /** Get the wrapped Value — valid only when Ok. */
-  getOk() {
+  getOk(): Value {
     if (!this._ok) {
       throw new TypeError('Called getOk() on an Err value');
     }
     return this._value;
   }
 
-  /** Get the error string — valid only when Err. */
-  getErr() {
+  getErr(): Value {
     if (this._ok) {
       throw new TypeError('Called getErr() on an Ok value');
     }
     return this._value;
   }
 
-  toString() {
+  toString(): string {
     return this._ok
       ? `ok(${this._value.toString()})`
       : `err(${this._value.toString()})`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// FnValue — first-class function, captures closure
-// ═══════════════════════════════════════════════════════════════════
-
 class FnValue extends Value {
-  params: any;
-  body: any;
-  closure: any;
+  params: Array<{ name: string; type: TypeAnnotation }>;
+  body: Stmt[];
+  closure: Env;
 
-  constructor(params, body, closure) {
+  constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], closure: Env) {
     super(ValueKind.FN);
-    this.params = params;       // Array of { name, type }
-    this.body = body;           // Array of AST statements
-    this.closure = closure;     // Env captured at definition
+    this.params = params;
+    this.body = body;
+    this.closure = closure;
   }
 
-  typeName() {
+  typeName(): string {
     return 'Fn';
   }
 
-  toString() {
+  toString(): string {
     return `fn(${this.params.map(p => p.name).join(', ')}) -> ...`;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// TaskValue — represents a pending computation
-// ═══════════════════════════════════════════════════════════════════
-
 class TaskValue extends Value {
   handle: any;
-  _taskType: any;
+  _taskType: TypeAnnotation | null;
 
-  constructor(handle, taskType = null) {
+  constructor(handle: any, taskType: TypeAnnotation | null = null) {
     super(ValueKind.TASK);
-    this.handle = handle;       // { resolve, reject } or internal handle
+    this.handle = handle;
     this._taskType = taskType;
   }
 
-  typeName() {
+  typeName(): string {
     const inner = this._taskType ? this._taskType.name : '?';
     return `Task<${inner}>`;
   }
 
-  toString() {
+  toString(): string {
     return 'Task(pending)';
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Convenience constructors — the factory functions
-// ═══════════════════════════════════════════════════════════════════
-
-function int(v) {
+function int(v: number): IntValue {
   return new IntValue(v);
 }
 
-function string(v) {
+function string(v: string): StringValue {
   return new StringValue(v);
 }
 
-function bool(v) {
+function bool(v: boolean): BoolValue {
   return new BoolValue(v);
 }
 
-function unit() {
+function unit(): UnitValue {
   return UNIT_VALUE;
 }
 
-function list(elements, elementType) {
+function list(elements: Value[] = [], elementType: TypeAnnotation | null = null): ListValue {
   return new ListValue(elements, elementType);
 }
 
-function map(entries, keyType, valueType) {
+function map(entries: Record<string, Value> = {}, keyType: TypeAnnotation | null = null, valueType: TypeAnnotation | null = null): MapValue {
   return new MapValue(entries, keyType, valueType);
 }
 
-function record(fields, typeName) {
+function record(fields: Record<string, Value>, typeName: string): RecordValue {
   return new RecordValue(fields, typeName);
 }
 
-function result(ok, value, resultType) {
+function result(ok: boolean, value: Value, resultType: TypeAnnotation | null = null): ResultValue {
   return new ResultValue(ok, value, resultType);
 }
 
-function fn(params, body, closure) {
+function fn(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], closure: Env): FnValue {
   return new FnValue(params, body, closure);
 }
 
-function task(handle, taskType) {
+function task(handle: any, taskType: TypeAnnotation | null = null): TaskValue {
   return new TaskValue(handle, taskType);
 }
 
 export {
-  // Kinds
   ValueKind,
-
-  // Classes
   Value,
   IntValue,
   StringValue,
@@ -480,11 +393,7 @@ export {
   ResultValue,
   FnValue,
   TaskValue,
-
-  // Singleton
   UNIT_VALUE,
-
-  // Factory functions
   int,
   string,
   bool,

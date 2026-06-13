@@ -9,7 +9,7 @@
 import * as fs from 'fs';
 import process from 'process';
 import {
-  ValueKind,
+  Value, ValueKind,
   IntValue, StringValue, BoolValue, ListValue,
   MapValue, ResultValue,
   int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,
@@ -18,8 +18,8 @@ import {
 } from './values.js';
 
 class Builtins {
-  fnMap: any;
-  methodMap: any;
+  fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
+  methodMap: Map<string, { paramArities: number[]; fn: (obj: any, args: any[]) => Value }>;
 
   constructor() {
     this.fnMap = new Map();
@@ -359,28 +359,28 @@ class Builtins {
     });
   }
 
-  registerFn(name, arity, fn) {
+  registerFn(name: string, arity: number, fn: (args: any[]) => Value) {
     this.fnMap.set(name, { arity, fn });
   }
 
-  registerMethod(path, paramArities, fn) {
+  registerMethod(path: string, paramArities: number[], fn: (obj: any, args: any[]) => Value) {
     this.methodMap.set(path, { paramArities, fn });
   }
 
-  getFn(name) {
+  getFn(name: string): { arity: number; fn: (args: any[]) => Value } | undefined {
     return this.fnMap.get(name);
   }
 
-  getMethod(typeName, methodName) {
+  getMethod(typeName: string, methodName: string): { paramArities: number[]; fn: (obj: any, args: any[]) => Value } | undefined {
     const path = `${typeName}.${methodName}`;
     return this.methodMap.get(path);
   }
 
-  isBuiltin(name) {
+  isBuiltin(name: string): boolean {
     return this.fnMap.has(name);
   }
 
-  getBuiltinNames() {
+  getBuiltinNames(): string[] {
     return [...this.fnMap.keys()];
   }
 }

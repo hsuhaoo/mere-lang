@@ -1,16 +1,3 @@
-/**
- * AST Interpreter for the Simplex language.
- * Direct tree traversal execution - no bytecode VM.
- *
- * Design principles:
- * - One pass through the AST
- * - No intermediate representation
- * - Errors converted to Result values where appropriate
- * - All state explicit: env, builtins, scheduler, types
- * - Tail call optimization: tail-recursive calls use a loop
- *   instead of stack frames — infinite depth with O(1) stack
- */
-
 import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
@@ -18,7 +5,8 @@ import {
   ResultOkExpr, ResultErrExpr, UnitExpr,
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
-  TypeAnnotation,
+  TypeAnnotation, Program,
+  Expr, Stmt,
 } from '../ast/nodes.js';
 import {
   Value, ValueKind,
@@ -34,11 +22,11 @@ import { Scheduler } from './scheduler.js';
 import { TypeError } from '../typechecker/index.js';
 
 class RuntimeError extends Error {
-  line: any;
-  column: any;
-  name: any;
+  line: number;
+  column: number;
+  name: string;
 
-  constructor(message, line = 0, column = 0) {
+  constructor(message: string, line = 0, column = 0) {
     super(`Runtime error [${line}:${column}]: ${message}`);
     this.line = line;
     this.column = column;
@@ -47,15 +35,15 @@ class RuntimeError extends Error {
 }
 
 class Interpreter {
-  builtins: any;
-  scheduler: any;
-  rootEnv: any;
-  userFns: any;
-  typeDecls: any;
-  modules: any;
-  currentModule: any;
+  builtins: Builtins;
+  scheduler: Scheduler;
+  rootEnv: Env;
+  userFns: Map<string, FnDecl>;
+  typeDecls: Map<string, TypeDecl>;
+  modules: Map<string, { exports: Map<string, FnDecl> }>;
+  currentModule: string;
 
-  constructor(builtins, scheduler) {
+  constructor(builtins?: Builtins, scheduler?: Scheduler) {
     this.builtins = builtins || new Builtins();
     this.scheduler = scheduler || new Scheduler();
     this.rootEnv = new Env();
@@ -65,14 +53,14 @@ class Interpreter {
     this.currentModule = 'main';
   }
 
-  run(program) {
+  run(program: Program): Value {
     for (const stmt of program.stmts) {
       if (stmt instanceof FnDecl) this.userFns.set(stmt.name, stmt);
       if (stmt instanceof TypeDecl) this.typeDecls.set(stmt.name, stmt);
       if (stmt instanceof ImportStmt) this.loadModule(stmt.name, stmt.from);
     }
 
-    let lastResult = mkUnit();
+    let lastResult: Value = mkUnit();
     for (const stmt of program.stmts) {
       try {
         lastResult = this.execStmt(stmt);
@@ -87,61 +75,57 @@ class Interpreter {
     return lastResult;
   }
 
-  // ── Statement execution ───────────────────────────────────────
-
-  execStmt(stmt) {
+  execStmt(stmt: Stmt): Value {
     switch (stmt.constructor) {
-      case LetStmt:       return this.execLet(stmt);
-      case IfStmt:        return this.execIf(stmt);
+      case LetStmt:       return this.execLet(stmt as LetStmt);
+      case IfStmt:        return this.execIf(stmt as IfStmt);
       case ReturnStmt: {
-        const value = stmt.value ? this.execExpr(stmt.value) : mkUnit();
+        const value = (stmt as ReturnStmt).value ? this.execExpr((stmt as ReturnStmt).value!) : mkUnit();
         throw new ReturnSignal(value);
       }
-      case ExpressionStmt: return this.execExpr(stmt.expression);
+      case ExpressionStmt: return this.execExpr((stmt as ExpressionStmt).expression);
       case FnDecl:
-        this.userFns.set(stmt.name, stmt);
+        this.userFns.set((stmt as FnDecl).name, stmt as FnDecl);
         return mkUnit();
       case TypeDecl:
-        this.typeDecls.set(stmt.name, stmt);
+        this.typeDecls.set((stmt as TypeDecl).name, stmt as TypeDecl);
         return mkUnit();
       case ImportStmt:
       case ExportStmt:
         return mkUnit();
       default:
-        throw new RuntimeError(`Unknown statement: ${stmt.constructor.name}`, stmt.line, stmt.column);
+        throw new RuntimeError(`Unknown statement: ${(stmt as any).constructor.name}`, (stmt as any).line, (stmt as any).column);
     }
   }
 
-  // ── Expression evaluation ─────────────────────────────────────
-
-  execExpr(expr) {
+  execExpr(expr: Expr): Value {
     switch (expr.constructor) {
-      case LiteralExpr:     return this.execLiteral(expr.value);
-      case IdentifierExpr:  return this.rootEnv.lookup(expr.name);
-      case BinOpExpr:       return this.execBinOp(expr);
-      case UnOpExpr:        return this.execUnOp(expr);
-      case CallExpr:        return this.execCall(expr);
-      case MethodCallExpr:  return this.execMethodCall(expr);
-      case FieldAccessExpr: return this.execFieldAccess(expr);
-      case IfExpr:          return this.execIfExpr(expr);
-      case LambdaExpr:      return this.execLambdaExpr(expr);
-      case BlockExpr:       return this.execBlock(expr);
-      case RecordCreateExpr: return this.execRecordCreate(expr);
-      case ListCreateExpr:  return this.execListCreate(expr);
-      case MapCreateExpr:   return this.execMapCreate(expr);
-      case ResultOkExpr:    return mkResult(true, this.execExpr(expr.value), null);
+      case LiteralExpr:     return this.execLiteral((expr as LiteralExpr).value);
+      case IdentifierExpr:  return this.rootEnv.lookup((expr as IdentifierExpr).name);
+      case BinOpExpr:       return this.execBinOp(expr as BinOpExpr);
+      case UnOpExpr:        return this.execUnOp(expr as UnOpExpr);
+      case CallExpr:        return this.execCall(expr as CallExpr);
+      case MethodCallExpr:  return this.execMethodCall(expr as MethodCallExpr);
+      case FieldAccessExpr: return this.execFieldAccess(expr as FieldAccessExpr);
+      case IfExpr:          return this.execIfExpr(expr as IfExpr);
+      case LambdaExpr:      return this.execLambdaExpr(expr as LambdaExpr);
+      case BlockExpr:       return this.execBlock(expr as BlockExpr);
+      case RecordCreateExpr: return this.execRecordCreate(expr as RecordCreateExpr);
+      case ListCreateExpr:  return this.execListCreate(expr as ListCreateExpr);
+      case MapCreateExpr:   return this.execMapCreate(expr as MapCreateExpr);
+      case ResultOkExpr:    return mkResult(true, this.execExpr((expr as ResultOkExpr).value), null);
       case ResultErrExpr: {
-        const msg = this.execExpr(expr.message);
+        const msg = this.execExpr((expr as ResultErrExpr).message);
         return mkResult(false, msg, null);
       }
       case UnitExpr:   return mkUnit();
-      case FnDecl:       return this.execFnLiteral(expr);
+      case FnDecl:       return this.execFnLiteral(expr as FnDecl);
       default:
-        throw new RuntimeError(`Unknown expression: ${expr.constructor.name}`, expr.line, expr.column);
+        throw new RuntimeError(`Unknown expression: ${(expr as any).constructor.name}`, (expr as any).line, (expr as any).column);
     }
   }
 
-  execLiteral(value) {
+  execLiteral(value: number | string | boolean | null): Value {
     if (typeof value === 'number') return mkInt(Math.trunc(value));
     if (typeof value === 'string') return mkString(value);
     if (typeof value === 'boolean') return mkBool(value);
@@ -149,62 +133,58 @@ class Interpreter {
     throw new RuntimeError(`Unknown literal: ${value}`, 0, 0);
   }
 
-  execBinOp(expr) {
+  execBinOp(expr: BinOpExpr): Value {
     const left = this.execExpr(expr.left);
     const right = this.execExpr(expr.right);
 
     switch (expr.op) {
       case '+':
         if (left.kind === ValueKind.STRING && right.kind === ValueKind.STRING) {
-          return mkString(left.get() + right.get());
+          return mkString((left as StringValue).get() + (right as StringValue).get());
         }
-        return mkInt(left.getNumber() + right.getNumber());
-      case '-': return mkInt(left.getNumber() - right.getNumber());
-      case '*': return mkInt(left.getNumber() * right.getNumber());
+        return mkInt((left as IntValue).getNumber() + (right as IntValue).getNumber());
+      case '-': return mkInt((left as IntValue).getNumber() - (right as IntValue).getNumber());
+      case '*': return mkInt((left as IntValue).getNumber() * (right as IntValue).getNumber());
       case '/':
-        if (right.getNumber() === 0)
+        if ((right as IntValue).getNumber() === 0)
           throw new RuntimeError('Division by zero', expr.line, expr.column);
-        return mkInt(Math.trunc(left.getNumber() / right.getNumber()));
+        return mkInt(Math.trunc((left as IntValue).getNumber() / (right as IntValue).getNumber()));
       case '==': return mkBool(this.valuesEqual(left, right));
       case '!=': return mkBool(!this.valuesEqual(left, right));
-      case '<': return mkBool(left.getNumber() < right.getNumber());
-      case '>': return mkBool(left.getNumber() > right.getNumber());
-      case '<=': return mkBool(left.getNumber() <= right.getNumber());
-      case '>=': return mkBool(left.getNumber() >= right.getNumber());
+      case '<': return mkBool((left as IntValue).getNumber() < (right as IntValue).getNumber());
+      case '>': return mkBool((left as IntValue).getNumber() > (right as IntValue).getNumber());
+      case '<=': return mkBool((left as IntValue).getNumber() <= (right as IntValue).getNumber());
+      case '>=': return mkBool((left as IntValue).getNumber() >= (right as IntValue).getNumber());
       case 'and': return mkBool(
-        left.kind === ValueKind.BOOL && left.get() &&
-        right.kind === ValueKind.BOOL && right.get());
+        left.kind === ValueKind.BOOL && (left as BoolValue).get() &&
+        right.kind === ValueKind.BOOL && (right as BoolValue).get());
       case 'or': return mkBool(
-        left.kind === ValueKind.BOOL && left.get() ||
-        right.kind === ValueKind.BOOL && right.get());
+        left.kind === ValueKind.BOOL && (left as BoolValue).get() ||
+        right.kind === ValueKind.BOOL && (right as BoolValue).get());
       default:
         throw new RuntimeError(`Unknown operator: ${expr.op}`, expr.line, expr.column);
     }
   }
 
-  execUnOp(expr) {
+  execUnOp(expr: UnOpExpr): Value {
     const operand = this.execExpr(expr.operand);
     switch (expr.op) {
-      case 'not': return mkBool(operand.kind === ValueKind.BOOL && !operand.get());
-      case '-': return mkInt(-operand.getNumber());
+      case 'not': return mkBool(operand.kind === ValueKind.BOOL && !(operand as BoolValue).get());
+      case '-': return mkInt(-(operand as IntValue).getNumber());
       default:
         throw new RuntimeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
     }
   }
 
-  // ── Function call (non-tail, normal path) ────────────────────
-
-  execCall(expr) {
-    // Lambda as callee
+  execCall(expr: CallExpr): Value {
     if (expr.callee instanceof LambdaExpr) {
       return this._dispatchLambda(expr.callee, expr.args);
     }
 
-    // FieldAccessExpr callee (math.add)
     if (expr.callee instanceof FieldAccessExpr) {
       const obj = this.execExpr(expr.callee.object);
-      if (obj && typeof obj === 'object' && obj._module) {
-        const fnDecl = obj._module.get(expr.callee.field);
+      if (obj && typeof obj === 'object' && (obj as any)._module) {
+        const fnDecl = (obj as any)._module.get(expr.callee.field);
         if (fnDecl) {
           const args = expr.args.map(a => this.execExpr(a));
           return this.callUserFunction(fnDecl, args);
@@ -213,13 +193,11 @@ class Interpreter {
       throw new RuntimeError(`Cannot call '${expr.callee.field}' on non-module object`, expr.line, expr.column);
     }
 
-    // FnDecl callee
     if (expr.callee instanceof FnDecl && !expr.callee.name) {
       const args = expr.args.map(a => this.execExpr(a));
       return this.callUserFunction(expr.callee, args);
     }
 
-    // IdentifierExpr callee
     if (expr.callee instanceof IdentifierExpr) {
       return this._dispatchByIdentifier(expr.callee.name, expr.args, expr);
     }
@@ -227,14 +205,13 @@ class Interpreter {
     throw new RuntimeError(`Cannot call non-identifier`, expr.line, expr.column);
   }
 
-  _dispatchLambda(lambdaExpr, argExprs) {
+  _dispatchLambda(lambdaExpr: LambdaExpr, argExprs: Expr[]): Value {
     const args = argExprs.map(a => this.execExpr(a));
     return this.executeLambda(lambdaExpr, args);
   }
 
-  _dispatchByIdentifier(name, argExprs, expr) {
-    // Check env first
-    let envVal = null;
+  _dispatchByIdentifier(name: string, argExprs: Expr[], expr: CallExpr): Value {
+    let envVal: Value | null = null;
     try { envVal = this.rootEnv.lookup(name); } catch (e) {}
 
     if (envVal) {
@@ -245,7 +222,6 @@ class Interpreter {
       throw new RuntimeError(`'${name}' is not callable`, expr.callee.line, expr.callee.column);
     }
 
-    // Check builtins
     const builtin = this.builtins.getFn(name);
     if (builtin) {
       const args = argExprs.map(a => this.execExpr(a));
@@ -255,7 +231,6 @@ class Interpreter {
       return builtin.fn(args);
     }
 
-    // Check user functions
     const fn = this.userFns.get(name);
     if (fn) {
       const args = argExprs.map(a => this.execExpr(a));
@@ -265,15 +240,7 @@ class Interpreter {
     throw new RuntimeError(`Undefined function: ${name}`, expr.callee.line, expr.callee.column);
   }
 
-  // ── Tail call optimized invocation ───────────────────────────
-
-  /**
-   * Execute a function body with TCO.
-   * The `args` are already-evaluated Value objects.
-   * If the last statement is a function call, we invoke it via `invokeTailCall`
-   * which directly binds args and loops instead of recursing.
-   */
-  _execBody(body) {
+  _execBody(body: Stmt[]): Value | TailCall {
     for (let i = 0; i < body.length; i++) {
       const stmt = body[i];
       const isLast = (i === body.length - 1);
@@ -290,7 +257,6 @@ class Interpreter {
           throw new ReturnSignal(value);
         }
 
-        // Last ExpressionStmt: check for TCO before executing
         if (isLast && stmt instanceof ExpressionStmt) {
           const expr = stmt.expression;
           if (expr instanceof CallExpr) {
@@ -299,7 +265,6 @@ class Interpreter {
               return new TailCall(fn, expr.args.map(a => this.execExpr(a)));
             }
           }
-          // Non-tail-call last expression: return its value
           return this.execExpr(expr);
         }
 
@@ -308,7 +273,6 @@ class Interpreter {
           throw new ReturnSignal(result.returnValue !== undefined ? result.returnValue : mkUnit());
         }
 
-        // Non-last statement or non-expression last statement: track result
         if (isLast) return result;
       } catch (e) {
         if (e instanceof ReturnSignal) throw e;
@@ -318,26 +282,22 @@ class Interpreter {
     return mkUnit();
   }
 
-  /**
-   * Resolve the FnDecl from a CallExpr's callee for TCO.
-   */
-  _resolveTailCallTarget(callExpr) {
+  _resolveTailCallTarget(callExpr: CallExpr): FnDecl | null {
     if (callExpr.callee instanceof IdentifierExpr) {
-      return this.userFns.get(callExpr.callee.name);
+      return this.userFns.get(callExpr.callee.name) || null;
     }
     if (callExpr.callee instanceof FieldAccessExpr) {
       const obj = this.execExpr(callExpr.callee.object);
-      if (obj && typeof obj === 'object' && obj._module) {
-        return obj._module.get(callExpr.callee.field);
+      if (obj && typeof obj === 'object' && (obj as any)._module) {
+        return (obj as any)._module.get(callExpr.callee.field) || null;
       }
     }
     return null;
   }
 
-
-  callUserFunction(fn, args) {
-    let currentFn = fn;
-    let currentArgs = args;
+  callUserFunction(fn: FnDecl, args: Value[]): Value {
+    let currentFn: FnDecl = fn;
+    let currentArgs: Value[] = args;
 
     while (true) {
       const callEnv = new Env(this.rootEnv);
@@ -378,15 +338,13 @@ class Interpreter {
     }
   }
 
-  // ── Method calls (built-in methods, not tail-optimized) ──────
-
-  execMethodCall(expr) {
+  execMethodCall(expr: MethodCallExpr): Value {
     const obj = this.execExpr(expr.object);
     const methodName = expr.method;
     const args = expr.args.map(a => this.execExpr(a));
 
-    if (obj && typeof obj === 'object' && obj._module) {
-      const fnDecl = obj._module.get(methodName);
+    if (obj && typeof obj === 'object' && (obj as any)._module) {
+      const fnDecl = (obj as any)._module.get(methodName);
       if (fnDecl) {
         const argValues = expr.args.map(a => this.execExpr(a));
         return this.callUserFunction(fnDecl, argValues);
@@ -410,17 +368,17 @@ class Interpreter {
     );
   }
 
-  execFieldAccess(expr) {
+  execFieldAccess(expr: FieldAccessExpr): Value {
     const obj = this.execExpr(expr.object);
 
-    if (obj && typeof obj === 'object' && obj._module) {
-      if (obj._module.has(expr.field)) {
-        return obj._module.get(expr.field);
+    if (obj && typeof obj === 'object' && (obj as any)._module) {
+      if ((obj as any)._module.has(expr.field)) {
+        return (obj as any)._module.get(expr.field);
       }
       throw new RuntimeError(`Module has no export '${expr.field}'`, expr.line, expr.column);
     }
 
-    if (obj.kind !== ValueKind.RECORD) {
+    if (!(obj instanceof RecordValue)) {
       throw new RuntimeError(`Cannot access field on non-record type ${obj.typeName()}`, expr.line, expr.column);
     }
     if (!(expr.field in obj._getFields())) {
@@ -429,11 +387,9 @@ class Interpreter {
     return obj.get(expr.field);
   }
 
-  // ── Control flow ──────────────────────────────────────────────
-
-  execIfExpr(expr) {
+  execIfExpr(expr: IfExpr): Value {
     const condition = this.execExpr(expr.condition);
-    if (condition.kind === ValueKind.BOOL && condition.get()) {
+    if (condition.kind === ValueKind.BOOL && (condition as BoolValue).get()) {
       for (const stmt of expr.thenBlock) {
         this.execStmt(stmt);
       }
@@ -441,32 +397,30 @@ class Interpreter {
     return mkUnit();
   }
 
-  execIf(stmt) {
+  execIf(stmt: IfStmt): Value {
     const condition = this.execExpr(stmt.condition);
-    if (condition.kind === ValueKind.BOOL && condition.get()) {
-      return this.execBlock({ stmts: stmt.thenBlock });
+    if (condition.kind === ValueKind.BOOL && (condition as BoolValue).get()) {
+      return this.execBlock({ stmts: stmt.thenBlock } as BlockExpr);
     }
     return mkUnit();
   }
 
-  execBlock(expr) {
-    let lastValue = mkUnit();
+  execBlock(expr: BlockExpr): Value {
+    let lastValue: Value = mkUnit();
     for (const stmt of expr.stmts) {
       lastValue = this.execStmt(stmt);
     }
     return lastValue;
   }
 
-  execLet(stmt) {
+  execLet(stmt: LetStmt): Value {
     const value = stmt.init ? this.execExpr(stmt.init) : mkUnit();
     this.rootEnv.define(stmt.name, value);
     return mkUnit();
   }
 
-  // ── Data constructors ─────────────────────────────────────────
-
-  execRecordCreate(expr) {
-    const fields = {};
+  execRecordCreate(expr: RecordCreateExpr): Value {
+    const fields: Record<string, Value> = {};
     for (const field of expr.fields) {
       fields[field.key] = this.execExpr(field.value);
     }
@@ -475,35 +429,31 @@ class Interpreter {
     return mkRecord(fields, typeDecl ? typeDecl.name : 'Record');
   }
 
-  execListCreate(expr) {
+  execListCreate(expr: ListCreateExpr): Value {
     const elements = expr.elements.map(e => this.execExpr(e));
     return mkList(elements, null);
   }
 
-  execMapCreate(expr) {
-    const entries = {};
+  execMapCreate(expr: MapCreateExpr): Value {
+    const entries: Record<string, Value> = {};
     for (const entry of expr.entries) {
       const key = this.execExpr(entry.key);
       const value = this.execExpr(entry.value);
-      entries[String(key.kind === ValueKind.INT ? key.getNumber() : key.get())] = value;
+      entries[String(key.kind === ValueKind.INT ? (key as IntValue).getNumber() : (key as StringValue).get())] = value;
     }
     return mkMap(entries, null, null);
   }
 
-  execFnLiteral(fnDecl) {
+  execFnLiteral(fnDecl: FnDecl): Value {
     return mkFn(fnDecl.params, fnDecl.body, this.rootEnv);
   }
 
-  execLambdaExpr(expr) {
+  execLambdaExpr(expr: LambdaExpr): Value {
     const closure = new Env(this.rootEnv);
     return new FnValue(expr.params, expr.body, closure);
   }
 
-  /**
-   * Execute a lambda with pre-evaluated arguments.
-   * Lambda expressions don't use TCO — they capture their arguments as values.
-   */
-  executeLambda(lambdaExpr, argValues) {
+  executeLambda(lambdaExpr: LambdaExpr, argValues: Value[]): Value {
     const env = new Env(this.rootEnv);
 
     if (argValues.length !== lambdaExpr.params.length) {
@@ -539,7 +489,7 @@ class Interpreter {
     }
   }
 
-  executeLambdaFromValue(fnValue, name, argValues) {
+  executeLambdaFromValue(fnValue: FnValue, name: string, argValues: Value[]): Value {
     const env = new Env(fnValue.closure);
 
     if (argValues.length !== fnValue.params.length) {
@@ -575,66 +525,66 @@ class Interpreter {
     }
   }
 
-  // ── Module loading ────────────────────────────────────────────
-
-  loadModule(name, path) {
+  loadModule(name: string, path: string) {
     this.modules.set(path, { exports: new Map() });
   }
 
-  // ── Equality ──────────────────────────────────────────────────
-
-  valuesEqual(a, b) {
+  valuesEqual(a: Value, b: Value): boolean {
     if (a.kind !== b.kind) return false;
 
     switch (a.kind) {
-      case ValueKind.INT:     return a.getNumber() === b.getNumber();
-      case ValueKind.STRING:  return a.get() === b.get();
-      case ValueKind.BOOL:    return a.get() === b.get();
+      case ValueKind.INT:     return (a as IntValue).getNumber() === (b as IntValue).getNumber();
+      case ValueKind.STRING:  return (a as StringValue).get() === (b as StringValue).get();
+      case ValueKind.BOOL:    return (a as BoolValue).get() === (b as BoolValue).get();
       case ValueKind.UNIT:    return true;
-      case ValueKind.LIST:
-        if (a.length() !== b.length()) return false;
-        for (let i = 0; i < a.length(); i++) {
-          if (!this.valuesEqual(a.get(i), b.get(i))) return false;
+      case ValueKind.LIST: {
+        const la = a as ListValue;
+        const lb = b as ListValue;
+        if (la.length() !== lb.length()) return false;
+        for (let i = 0; i < la.length(); i++) {
+          if (!this.valuesEqual(la.get(i)!, lb.get(i)!)) return false;
         }
         return true;
+      }
       case ValueKind.RECORD: {
-        if (a.typeName() !== b.typeName()) return false;
-        const keys = a.fieldNames();
-        if (keys.length !== b.fieldNames().length) return false;
+        const ra = a as RecordValue;
+        const rb = b as RecordValue;
+        if (ra.typeName() !== rb.typeName()) return false;
+        const keys = ra.fieldNames();
+        if (keys.length !== rb.fieldNames().length) return false;
         for (const k of keys) {
-          const aVal = a.get(k);
-          const bVal = b.get(k);
+          const aVal = ra.get(k);
+          const bVal = rb.get(k);
           if (!aVal || !bVal || !this.valuesEqual(aVal, bVal)) return false;
         }
         return true;
       }
-      case ValueKind.RESULT:
-        if (a.isOk() !== b.isOk()) return false;
-        if (a.isOk()) return this.valuesEqual(a.getOk(), b.getOk());
-        return this.valuesEqual(a.getErr(), b.getErr());
+      case ValueKind.RESULT: {
+        const rva = a as ResultValue;
+        const rvb = b as ResultValue;
+        if (rva.isOk() !== rvb.isOk()) return false;
+        if (rva.isOk()) return this.valuesEqual(rva.getOk(), rvb.getOk());
+        return this.valuesEqual(rva.getErr(), rvb.getErr());
+      }
       default: return false;
     }
   }
 }
 
-// ── Return signal for early returns ─────────────────────────────
-
 class ReturnSignal extends Error {
-  returnValue: any;
+  returnValue: Value;
 
-  constructor(returnValue) {
+  constructor(returnValue: Value) {
     super('return');
     this.returnValue = returnValue;
   }
 }
 
-// ── Tail call sentinel ──────────────────────────────────────────
-
 class TailCall {
-  fn: any;
-  args: any;
+  fn: FnDecl;
+  args: Value[];
 
-  constructor(fn, args) {
+  constructor(fn: FnDecl, args: Value[]) {
     this.fn = fn;
     this.args = args;
   }

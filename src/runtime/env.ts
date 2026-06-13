@@ -1,26 +1,22 @@
-/**
- * Simplex runtime environment.
- * Lexical scoping with parent chaining.
- * No mutation — variables are bound at declaration and cannot be reassigned.
- */
+import { Value } from './values.js';
 
 class Env {
-  bindings: any;
-  parent: any;
+  bindings: Map<string, Value>;
+  parent: Env | null;
 
-  constructor(parent = null) {
+  constructor(parent: Env | null = null) {
     this.bindings = new Map();
     this.parent = parent;
   }
 
-  define(name, value) {
+  define(name: string, value: Value): void {
     if (this.bindings.has(name)) {
       throw new Error(`Variable '${name}' is already defined in this scope`);
     }
     this.bindings.set(name, value);
   }
 
-  assign(name, value) {
+  assign(name: string, value: Value): void {
     if (this.bindings.has(name)) {
       this.bindings.set(name, value);
       return;
@@ -32,9 +28,9 @@ class Env {
     throw new ReferenceError(`Undefined variable: ${name}`);
   }
 
-  lookup(name) {
+  lookup(name: string): Value {
     if (this.bindings.has(name)) {
-      return this.bindings.get(name);
+      return this.bindings.get(name)!;
     }
     if (this.parent) {
       return this.parent.lookup(name);
@@ -42,17 +38,17 @@ class Env {
     throw new ReferenceError(`Undefined variable: ${name}`);
   }
 
-  has(name) {
+  has(name: string): boolean {
     if (this.bindings.has(name)) return true;
     if (this.parent) return this.parent.has(name);
     return false;
   }
 
-  child() {
+  child(): Env {
     return new Env(this);
   }
 
-  getNames() {
+  getNames(): string[] {
     return [...this.bindings.keys()];
   }
 }
