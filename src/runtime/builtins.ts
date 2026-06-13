@@ -6,15 +6,21 @@
  * Every possible failure returns a Result value.
  */
 
-const {
+import * as fs from 'fs';
+import process from 'process';
+import {
   ValueKind,
   IntValue, StringValue, BoolValue, ListValue,
   MapValue, ResultValue,
-  int: mkInt, string: mkString, bool: mkBool, unit: mkUnit,
-  list: mkList, map: mkMap, result: mkResult,
-} = require('./values');
+  int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,
+  list as mkList, map as mkMap, result as mkResult,
+  task as mkTask,
+} from './values.js';
 
 class Builtins {
+  fnMap: any;
+  methodMap: any;
+
   constructor() {
     this.fnMap = new Map();
     this.methodMap = new Map();
@@ -45,7 +51,7 @@ class Builtins {
       const str = args[0].get();
       const num = parseInt(str, 10);
       if (isNaN(num)) {
-        return mkResult(false, `Cannot parse '${str}' as integer`, null);
+        return mkResult(false, mkString(`Cannot parse '${str}' as integer`), null);
       }
       return mkResult(true, mkInt(num), null);
     });
@@ -64,7 +70,7 @@ class Builtins {
     });
 
     // ── File I/O ──────────────────────────────────────────────────
-    const fs = require('fs');
+    // fs already imported at top
 
     this.registerFn('file_read', 1, (args) => {
       const path = args[0].get();
@@ -72,7 +78,7 @@ class Builtins {
         const content = fs.readFileSync(path, 'utf-8');
         return mkResult(true, mkString(content), null);
       } catch (e) {
-        return mkResult(false, `Cannot read file '${path}': ${e.message}`, null);
+        return mkResult(false, mkString(`Cannot read file '${path}': ${e.message}`), null);
       }
     });
 
@@ -86,7 +92,7 @@ class Builtins {
           null
         ), null);
       } catch (e) {
-        return mkResult(false, `Cannot read file '${path}': ${e.message}`, null);
+        return mkResult(false, mkString(`Cannot read file '${path}': ${e.message}`), null);
       }
     });
 
@@ -97,7 +103,7 @@ class Builtins {
         fs.writeFileSync(path, content);
         return mkResult(true, mkUnit(), null);
       } catch (e) {
-        return mkResult(false, `Cannot write file '${path}': ${e.message}`, null);
+        return mkResult(false, mkString(`Cannot write file '${path}': ${e.message}`), null);
       }
     });
 
@@ -116,13 +122,21 @@ class Builtins {
       const list = args[0];
       const index = args[1].getNumber();
       if (index < 0 || index >= list.length()) {
-        return mkResult(false, `Index ${index} out of bounds`, null);
+        return mkResult(false, mkString(`Index ${index} out of bounds`), null);
       }
       return mkResult(true, list.get(index), null);
     });
 
     this.registerFn('list_len', 1, (args) => {
       return mkInt(args[0].length());
+    });
+
+    this.registerFn('substring_list', 3, (args) => {
+      const list = args[0];
+      const start = args[1].getNumber();
+      const length = args[2].getNumber();
+      const newElements = list._getElements().slice(start, start + length);
+      return mkList(newElements, list._elementType);
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -148,7 +162,7 @@ class Builtins {
       if (args[0].isOk()) {
         throw new Error('Called unwrap_err on ok value');
       }
-      return mkString(args[0].getErr());
+      return args[0].getErr();
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -166,7 +180,7 @@ class Builtins {
       const map = args[0];
       const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
       if (!(key in map._getEntries())) {
-        return mkResult(false, `Key '${key}' not found`, null);
+        return mkResult(false, mkString(`Key '${key}' not found`), null);
       }
       return mkResult(true, map._getEntries()[key], null);
     });
@@ -181,6 +195,48 @@ class Builtins {
       const map = args[0];
       const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
       delete map._getEntries()[key];
+      return mkUnit();
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // Polymorphic builtins (get, has, put)
+    // ═══════════════════════════════════════════════════════════
+
+    this.registerFn('get', 2, (args) => {
+      const obj = args[0];
+      if (obj.kind === ValueKind.LIST) {
+        const index = args[1].getNumber();
+        if (index < 0 || index >= obj.length()) {
+          throw new Error(`Index ${index} out of bounds`);
+        }
+        return obj.get(index);
+      }
+      if (obj.kind === ValueKind.MAP) {
+        const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+        if (!(key in obj._getEntries())) {
+          throw new Error(`Key '${key}' not found`);
+        }
+        return obj._getEntries()[key];
+      }
+      throw new Error(`'get' expects a List or Map, got ${obj.kind}`);
+    });
+
+    this.registerFn('has', 2, (args) => {
+      const obj = args[0];
+      if (obj.kind !== ValueKind.MAP) {
+        throw new Error(`'has' expects a Map, got ${obj.kind}`);
+      }
+      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      return mkBool(obj.has(key));
+    });
+
+    this.registerFn('put', 3, (args) => {
+      const obj = args[0];
+      if (obj.kind !== ValueKind.MAP) {
+        throw new Error(`'put' expects a Map, got ${obj.kind}`);
+      }
+      const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
+      obj._getEntries()[key] = args[2];
       return mkUnit();
     });
 
@@ -206,9 +262,8 @@ class Builtins {
     // It captures the result of expr and returns it via join().
     this.registerFn('spawn', 1, (args) => {
       const result = args[0];  // already evaluated value
-      const { task: mkTask } = require('./values');
       return mkTask({
-        id: this._nextTaskId || 0,
+        id: 0,
         state: 'done',
         result: result,
       }, null);
@@ -252,7 +307,7 @@ class Builtins {
     this.registerMethod('List.get', [1], (obj, args) => {
       const index = args[0].getNumber();
       if (index < 0 || index >= obj.length()) {
-        return mkResult(false, `Index ${index} out of bounds`, null);
+        return mkResult(false, mkString(`Index ${index} out of bounds`), null);
       }
       return mkResult(true, obj.get(index), null);
     });
@@ -277,7 +332,7 @@ class Builtins {
       if (obj.isOk()) {
         throw new Error('Called unwrap_err on ok value');
       }
-      return mkString(obj.getErr());
+      return obj.getErr();
     });
 
     // Map methods
@@ -289,7 +344,7 @@ class Builtins {
     this.registerMethod('Map.get', [1], (obj, args) => {
       const key = String(args[0].kind === ValueKind.INT ? args[0].getNumber() : args[0].get());
       if (!(key in obj._getEntries())) {
-        return mkResult(false, `Key '${key}' not found`, null);
+        return mkResult(false, mkString(`Key '${key}' not found`), null);
       }
       return mkResult(true, obj._getEntries()[key], null);
     });
@@ -330,4 +385,4 @@ class Builtins {
   }
 }
 
-module.exports = { Builtins };
+export { Builtins };

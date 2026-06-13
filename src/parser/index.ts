@@ -36,9 +36,8 @@
  * elem_list   ::= expr (',' expr)*
  */
 
-const { Lexer, LexerError } = require('../lexer');
-const { TokenType } = require('../lexer/tokens');
-const {
+import { TokenType } from '../lexer/tokens.js';
+import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
@@ -46,10 +45,14 @@ const {
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
-} = require('../ast/nodes');
+} from '../ast/nodes.js';
 
 class ParseError extends Error {
-  constructor(message, line, column) {
+  line: any;
+  column: any;
+  name: any;
+
+  constructor(message, line = 0, column = 0) {
     super(`Parse error [${line}:${column}]: ${message}`);
     this.line = line;
     this.column = column;
@@ -58,6 +61,9 @@ class ParseError extends Error {
 }
 
 class Parser {
+  tokens: any;
+  pos: any;
+
   constructor(tokens) {
     this.tokens = tokens;
     this.pos = 0;
@@ -678,4 +684,4 @@ class Parser {
   }
 }
 
-module.exports = { Parser, ParseError };
+export { Parser, ParseError };

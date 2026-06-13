@@ -9,7 +9,7 @@
  * - Explicit type annotations required everywhere
  */
 
-const {
+import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
@@ -17,7 +17,7 @@ const {
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
-} = require('../ast/nodes');
+} from '../ast/nodes.js';
 
 // ── Built-in types ──────────────────────────────────────────────
 
@@ -37,6 +37,10 @@ const BUILTINS = new Set(Object.keys(BUILTIN_TYPES));
 // ── Type checking error ─────────────────────────────────────────
 
 class TypeError extends Error {
+  line: any;
+  column: any;
+  name: any;
+
   constructor(message, line, column) {
     super(`Type error [${line}:${column}]: ${message}`);
     this.line = line;
@@ -48,6 +52,10 @@ class TypeError extends Error {
 // ── Scope entry ─────────────────────────────────────────────────
 
 class ScopeEntry {
+  name: any;
+  type: any;
+  isMutable: any;
+
   constructor(name, type, isMutable = false) {
     this.name = name;
     this.type = type;           // TypeAnnotation
@@ -58,6 +66,16 @@ class ScopeEntry {
 // ── Type checker ────────────────────────────────────────────────
 
 class TypeChecker {
+  scopes: any;
+  typeDecls: any;
+  fnDecls: any;
+  errors: any;
+  program: any;
+  imports: any;
+  scopeBindings: any;
+  _typeVarBindings: any;
+  _expectedType: any;
+
   constructor() {
     this.scopes = [];           // Stack of scopes
     this.typeDecls = new Map(); // name -> TypeDecl
@@ -65,7 +83,7 @@ class TypeChecker {
     this.errors = [];
   }
 
-  check(program, options = {}) {
+  check(program, options: { imports?: Map<string, any> } = {}) {
     this.program = program;
 
     // Import external module exports (from ModuleLoader)
@@ -174,11 +192,6 @@ class TypeChecker {
     // Register 'math' as a record type containing these function fields
     const namespaceType = new TypeAnnotation('Record', fieldTypes.map(f => f.type), stmt.line, stmt.column);
     this.scopeBindings.set(stmt.name, new ScopeEntry(stmt.name, namespaceType));
-  }
-
-  checkLet(stmt) {
-    this.checkExpr(stmt.init, stmt.type);
-    this.scopeBindings.set(stmt.name, new ScopeEntry(stmt.name, stmt.type));
   }
 
   checkIf(stmt) {
@@ -445,6 +458,11 @@ class TypeChecker {
     if (expr.callee instanceof IdentifierExpr) {
       const fnName = expr.callee.name;
 
+      // Polymorphic get/has/put — dispatch on first arg type
+      if (fnName === 'get' || fnName === 'has' || fnName === 'put') {
+        return this.inferPolyBuiltin(expr, fnName);
+      }
+
       // Built-in function
       if (BUILTIN_FUNCTIONS.has(fnName)) {
         fnType = BUILTIN_FUNCTIONS.get(fnName);
@@ -688,12 +706,15 @@ class TypeChecker {
   }
 
   inferResultErr(expr) {
+    const savedExpected = this._expectedType;
     const msgType = this.inferExprType(expr.message);
     if (msgType.name !== 'String') {
       throw new TypeError(`err() requires String argument`, expr.line, expr.column);
     }
-    // err() returns Result<Unit> since we don't know the success type yet
-    return new TypeAnnotation('Result', ['Unit'], expr.line, expr.column);
+    if (savedExpected && savedExpected.name === 'Result' && savedExpected.typeParams && savedExpected.typeParams.length === 1) {
+      return new TypeAnnotation('Result', [savedExpected.typeParams[0]], expr.line, expr.column);
+    }
+    return new TypeAnnotation('Result', [new TypeAnnotation('Unit')], expr.line, expr.column);
   }
 
   // ── Helper methods ────────────────────────────────────────────
@@ -956,13 +977,87 @@ class TypeChecker {
     this.scopes.pop();
     this.scopeBindings = this.scopes[this.scopes.length - 1] || new Map();
   }
+
+  // ── Polymorphic builtins (get, has, put) ────────────────────────
+
+  inferPolyBuiltin(expr, fnName) {
+    if (expr.args.length < 1) {
+      throw new TypeError(`${fnName} expects at least 1 argument`, expr.line, expr.column);
+    }
+    const firstType = this.inferExprType(expr.args[0]);
+
+    if (fnName === 'get') {
+      if (expr.args.length !== 2) {
+        throw new TypeError(`get expects 2 arguments, got ${expr.args.length}`, expr.line, expr.column);
+      }
+      const keyType = this.inferExprType(expr.args[1]);
+
+      if (firstType.name === 'List') {
+        if (keyType.name !== 'Int') {
+          throw new TypeError(`List index must be Int, got ${keyType.name}`, expr.line, expr.column);
+        }
+        const elemType = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$T');
+        return elemType;
+      }
+
+      if (firstType.name === 'Map') {
+        const keyParam = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$K');
+        if (!this.typesMatch(keyType, keyParam)) {
+          throw new TypeError(`Map key must be ${keyParam.toString()}, got ${keyType.toString()}`, expr.line, expr.column);
+        }
+        const valType = firstType.typeParams && firstType.typeParams[1] || new TypeAnnotation('$V');
+        return valType;
+      }
+
+      throw new TypeError(`get expects a List or Map, got ${firstType.name}`, expr.line, expr.column);
+    }
+
+    if (fnName === 'has') {
+      if (expr.args.length !== 2) {
+        throw new TypeError(`has expects 2 arguments, got ${expr.args.length}`, expr.line, expr.column);
+      }
+      const keyType = this.inferExprType(expr.args[1]);
+
+      if (firstType.name !== 'Map') {
+        throw new TypeError(`has expects a Map, got ${firstType.name}`, expr.line, expr.column);
+      }
+      const keyParam = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$K');
+      if (!this.typesMatch(keyType, keyParam)) {
+        throw new TypeError(`Map key must be ${keyParam.toString()}, got ${keyType.toString()}`, expr.line, expr.column);
+      }
+      return new TypeAnnotation('Bool');
+    }
+
+    if (fnName === 'put') {
+      if (expr.args.length !== 3) {
+        throw new TypeError(`put expects 3 arguments, got ${expr.args.length}`, expr.line, expr.column);
+      }
+      const keyType = this.inferExprType(expr.args[1]);
+      const valType = this.inferExprType(expr.args[2]);
+
+      if (firstType.name !== 'Map') {
+        throw new TypeError(`put expects a Map, got ${firstType.name}`, expr.line, expr.column);
+      }
+      const keyParam = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$K');
+      const valParam = firstType.typeParams && firstType.typeParams[1] || new TypeAnnotation('$V');
+      if (!this.typesMatch(keyType, keyParam)) {
+        throw new TypeError(`Map key must be ${keyParam.toString()}, got ${keyType.toString()}`, expr.line, expr.column);
+      }
+      if (!this.typesMatch(valType, valParam)) {
+        throw new TypeError(`Map value must be ${valParam.toString()}, got ${valType.toString()}`, expr.line, expr.column);
+      }
+      return new TypeAnnotation('Unit');
+    }
+
+    throw new TypeError(`Unknown polymorphic builtin: ${fnName}`, expr.line, expr.column);
+  }
 }
 
 // ── Built-in function signatures ────────────────────────────────
 
 const BUILTIN_FUNCTIONS = new Map([
   // String builtins
-  ['len', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Int') }],
+  ['len', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('Int') }],
   ['concat', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
   ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Int'), new TypeAnnotation('Int')], returnType: new TypeAnnotation('String') }],
   ['parse_int', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Int')]) }],
@@ -973,6 +1068,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['append', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$T')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['list_get', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Int')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
   ['list_len', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Int') }],
+  ['substring_list', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Int'), new TypeAnnotation('Int')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
   // Result builtins
   ['is_ok', { paramTypes: [new TypeAnnotation('Result', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Bool') }],
@@ -1025,4 +1121,4 @@ const BUILTIN_METHODS = new Map([
   ['Map.remove', { paramTypes: [new TypeAnnotation('$K')], returnType: new TypeAnnotation('Unit') }],
 ]);
 
-module.exports = { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };
+export { TypeChecker, TypeError, BUILTIN_FUNCTIONS, BUILTIN_METHODS };

@@ -1,4 +1,4 @@
-const { run } = require('../src/index');
+const { run } = require('../dist/index.js');
 
 console.log('=== Simplex Language Test Suite ===');
 console.log();

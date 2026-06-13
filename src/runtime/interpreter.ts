@@ -11,7 +11,7 @@
  *   instead of stack frames — infinite depth with O(1) stack
  */
 
-const {
+import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
@@ -19,22 +19,26 @@ const {
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation,
-} = require('../ast/nodes');
-const {
+} from '../ast/nodes.js';
+import {
   Value, ValueKind,
-  int: mkInt, string: mkString, bool: mkBool, unit: mkUnit,
-  list: mkList, map: mkMap, record: mkRecord,
-  result: mkResult, fn: mkFn,
+  int as mkInt, string as mkString, bool as mkBool, unit as mkUnit,
+  list as mkList, map as mkMap, record as mkRecord,
+  result as mkResult, fn as mkFn,
   IntValue, StringValue, BoolValue, ListValue,
   MapValue, RecordValue, ResultValue, FnValue,
-} = require('./values');
-const { Env } = require('./env');
-const { Builtins } = require('./builtins');
-const { Scheduler } = require('./scheduler');
-const { TypeError } = require('../typechecker');
+} from './values.js';
+import { Env } from './env.js';
+import { Builtins } from './builtins.js';
+import { Scheduler } from './scheduler.js';
+import { TypeError } from '../typechecker/index.js';
 
 class RuntimeError extends Error {
-  constructor(message, line, column) {
+  line: any;
+  column: any;
+  name: any;
+
+  constructor(message, line = 0, column = 0) {
     super(`Runtime error [${line}:${column}]: ${message}`);
     this.line = line;
     this.column = column;
@@ -43,6 +47,14 @@ class RuntimeError extends Error {
 }
 
 class Interpreter {
+  builtins: any;
+  scheduler: any;
+  rootEnv: any;
+  userFns: any;
+  typeDecls: any;
+  modules: any;
+  currentModule: any;
+
   constructor(builtins, scheduler) {
     this.builtins = builtins || new Builtins();
     this.scheduler = scheduler || new Scheduler();
@@ -120,7 +132,7 @@ class Interpreter {
       case ResultOkExpr:    return mkResult(true, this.execExpr(expr.value), null);
       case ResultErrExpr: {
         const msg = this.execExpr(expr.message);
-        return mkResult(false, msg.get(), null);
+        return mkResult(false, msg, null);
       }
       case UnitExpr:   return mkUnit();
       case FnDecl:       return this.execFnLiteral(expr);
@@ -338,7 +350,7 @@ class Interpreter {
       }
 
       for (let i = 0; i < currentFn.params.length; i++) {
-        callEnv.define(currentFn.params[i].name, currentArgs[i], false);
+        callEnv.define(currentFn.params[i].name, currentArgs[i]);
       }
 
       const savedEnv = this.rootEnv;
@@ -432,9 +444,7 @@ class Interpreter {
   execIf(stmt) {
     const condition = this.execExpr(stmt.condition);
     if (condition.kind === ValueKind.BOOL && condition.get()) {
-      for (const s of stmt.thenBlock) {
-        this.execStmt(s);
-      }
+      return this.execBlock({ stmts: stmt.thenBlock });
     }
     return mkUnit();
   }
@@ -504,7 +514,7 @@ class Interpreter {
     }
 
     for (let i = 0; i < lambdaExpr.params.length; i++) {
-      env.define(lambdaExpr.params[i].name, argValues[i], false);
+      env.define(lambdaExpr.params[i].name, argValues[i]);
     }
 
     const savedEnv = this.rootEnv;
@@ -514,7 +524,7 @@ class Interpreter {
       for (const stmt of lambdaExpr.body) {
         const result = this.execStmt(stmt);
         if (result instanceof ReturnSignal) {
-          return result.value;
+          return result.returnValue;
         }
       }
 
@@ -540,7 +550,7 @@ class Interpreter {
     }
 
     for (let i = 0; i < fnValue.params.length; i++) {
-      env.define(fnValue.params[i].name, argValues[i], false);
+      env.define(fnValue.params[i].name, argValues[i]);
     }
 
     const savedEnv = this.rootEnv;
@@ -550,7 +560,7 @@ class Interpreter {
       for (const stmt of fnValue.body) {
         const result = this.execStmt(stmt);
         if (result instanceof ReturnSignal) {
-          return result.value;
+          return result.returnValue;
         }
       }
 
@@ -599,7 +609,9 @@ class Interpreter {
         return true;
       }
       case ValueKind.RESULT:
-        return a.isOk() === b.isOk() && (!a.isOk() || a.getErr() === b.getErr());
+        if (a.isOk() !== b.isOk()) return false;
+        if (a.isOk()) return this.valuesEqual(a.getOk(), b.getOk());
+        return this.valuesEqual(a.getErr(), b.getErr());
       default: return false;
     }
   }
@@ -608,6 +620,8 @@ class Interpreter {
 // ── Return signal for early returns ─────────────────────────────
 
 class ReturnSignal extends Error {
+  returnValue: any;
+
   constructor(returnValue) {
     super('return');
     this.returnValue = returnValue;
@@ -617,10 +631,13 @@ class ReturnSignal extends Error {
 // ── Tail call sentinel ──────────────────────────────────────────
 
 class TailCall {
+  fn: any;
+  args: any;
+
   constructor(fn, args) {
     this.fn = fn;
     this.args = args;
   }
 }
 
-module.exports = { Interpreter, RuntimeError, ReturnSignal, TailCall };
+export { Interpreter, RuntimeError, ReturnSignal, TailCall };

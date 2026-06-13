@@ -5,6 +5,9 @@
  */
 
 class Env {
+  bindings: any;
+  parent: any;
+
   constructor(parent = null) {
     this.bindings = new Map();
     this.parent = parent;
@@ -54,4 +57,4 @@ class Env {
   }
 }
 
-module.exports = { Env };
+export { Env };

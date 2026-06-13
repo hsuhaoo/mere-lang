@@ -3,8 +3,8 @@
  * Exports all public APIs.
  */
 
-const { Lexer, LexerError, Token } = require('./lexer');
-const {
+import { Lexer, LexerError, Token } from './lexer/index.js';
+import {
   LiteralExpr, IdentifierExpr, BinOpExpr, UnOpExpr, CallExpr,
   MethodCallExpr, FieldAccessExpr, IfExpr, BlockExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
@@ -12,15 +12,15 @@ const {
   LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
-} = require('./ast/nodes');
-const { Parser, ParseError } = require('./parser');
-const { TypeChecker, TypeError } = require('./typechecker');
-const { Value, ValueKind } = require('./runtime/values');
-const { Env } = require('./runtime/env');
-const { Builtins } = require('./runtime/builtins');
-const { Scheduler } = require('./runtime/scheduler');
-const { Interpreter, RuntimeError } = require('./runtime/interpreter');
-const { ModuleLoader } = require('./module-loader');
+} from './ast/nodes.js';
+import { Parser, ParseError } from './parser/index.js';
+import { TypeChecker, TypeError } from './typechecker/index.js';
+import { Value, ValueKind } from './runtime/values.js';
+import { Env } from './runtime/env.js';
+import { Builtins } from './runtime/builtins.js';
+import { Scheduler } from './runtime/scheduler.js';
+import { Interpreter, RuntimeError } from './runtime/interpreter.js';
+import { ModuleLoader } from './module-loader.js';
 
 /**
  * High-level compile-and-run API.
@@ -71,7 +71,7 @@ function evalExpr(source) {
   return run(sourceWithReturn);
 }
 
-module.exports = {
+export {
   // Low-level components
   Lexer,
   Parser,

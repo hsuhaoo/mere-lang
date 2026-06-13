@@ -94,4 +94,4 @@ const TokenType = {
   ARROW: '->',
 };
 
-module.exports = { KEYWORDS, TokenType };
+export { KEYWORDS, TokenType };

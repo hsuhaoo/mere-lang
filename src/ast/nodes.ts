@@ -10,7 +10,11 @@
 // ── Expression nodes (can produce a value) ──────────────────────
 
 class LiteralExpr {
-  constructor(value, line, column) {
+  value: any;
+  line: any;
+  column: any;
+
+  constructor(value, line = 0, column = 0) {
     this.value = value;       // number | string | boolean | null
     this.line = line;
     this.column = column;
@@ -18,7 +22,11 @@ class LiteralExpr {
 }
 
 class IdentifierExpr {
-  constructor(name, line, column) {
+  name: any;
+  line: any;
+  column: any;
+
+  constructor(name, line = 0, column = 0) {
     this.name = name;
     this.line = line;
     this.column = column;
@@ -26,7 +34,13 @@ class IdentifierExpr {
 }
 
 class BinOpExpr {
-  constructor(op, left, right, line, column) {
+  op: any;
+  left: any;
+  right: any;
+  line: any;
+  column: any;
+
+  constructor(op, left, right, line = 0, column = 0) {
     this.op = op;             // '+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', 'and', 'or'
     this.left = left;
     this.right = right;
@@ -36,7 +50,12 @@ class BinOpExpr {
 }
 
 class UnOpExpr {
-  constructor(op, operand, line, column) {
+  op: any;
+  operand: any;
+  line: any;
+  column: any;
+
+  constructor(op, operand, line = 0, column = 0) {
     this.op = op;             // 'not', '-' (negation)
     this.operand = operand;
     this.line = line;
@@ -45,7 +64,12 @@ class UnOpExpr {
 }
 
 class CallExpr {
-  constructor(callee, args, line, column) {
+  callee: any;
+  args: any;
+  line: any;
+  column: any;
+
+  constructor(callee, args, line = 0, column = 0) {
     this.callee = callee;     // IdentifierExpr | MethodCallExpr
     this.args = args;         // Array<Expr>
     this.line = line;
@@ -54,7 +78,13 @@ class CallExpr {
 }
 
 class MethodCallExpr {
-  constructor(object, method, args, line, column) {
+  object: any;
+  method: any;
+  args: any;
+  line: any;
+  column: any;
+
+  constructor(object, method, args, line = 0, column = 0) {
     this.object = object;
     this.method = method;     // string
     this.args = args;
@@ -64,7 +94,12 @@ class MethodCallExpr {
 }
 
 class FieldAccessExpr {
-  constructor(object, field, line, column) {
+  object: any;
+  field: any;
+  line: any;
+  column: any;
+
+  constructor(object, field, line = 0, column = 0) {
     this.object = object;
     this.field = field;
     this.line = line;
@@ -73,7 +108,12 @@ class FieldAccessExpr {
 }
 
 class IfExpr {
-  constructor(condition, thenBlock, line, column) {
+  condition: any;
+  thenBlock: any;
+  line: any;
+  column: any;
+
+  constructor(condition, thenBlock, line = 0, column = 0) {
     this.condition = condition;
     this.thenBlock = thenBlock; // Array<Statement>
     this.line = line;
@@ -82,7 +122,11 @@ class IfExpr {
 }
 
 class BlockExpr {
-  constructor(stmts, line, column) {
+  stmts: any;
+  line: any;
+  column: any;
+
+  constructor(stmts, line = 0, column = 0) {
     this.stmts = stmts;       // Array<Statement>
     this.line = line;
     this.column = column;
@@ -90,7 +134,13 @@ class BlockExpr {
 }
 
 class LambdaExpr {
-  constructor(params, returnType, body, line, column) {
+  params: any;
+  returnType: any;
+  body: any;
+  line: any;
+  column: any;
+
+  constructor(params, returnType, body, line = 0, column = 0) {
     this.params = params;     // Array<{name: string, type: TypeAnnotation}>
     this.returnType = returnType; // TypeAnnotation | null
     this.body = body;         // Array<Statement>
@@ -100,7 +150,11 @@ class LambdaExpr {
 }
 
 class RecordCreateExpr {
-  constructor(fields, line, column) {
+  fields: any;
+  line: any;
+  column: any;
+
+  constructor(fields, line = 0, column = 0) {
     this.fields = fields;     // Array<{key: string, value: Expr}>
     this.line = line;
     this.column = column;
@@ -108,7 +162,11 @@ class RecordCreateExpr {
 }
 
 class ListCreateExpr {
-  constructor(elements, line, column) {
+  elements: any;
+  line: any;
+  column: any;
+
+  constructor(elements, line = 0, column = 0) {
     this.elements = elements; // Array<Expr>
     this.line = line;
     this.column = column;
@@ -116,7 +174,11 @@ class ListCreateExpr {
 }
 
 class MapCreateExpr {
-  constructor(entries, line, column) {
+  entries: any;
+  line: any;
+  column: any;
+
+  constructor(entries, line = 0, column = 0) {
     this.entries = entries;   // Array<{key: Expr, value: Expr}>
     this.line = line;
     this.column = column;
@@ -124,7 +186,11 @@ class MapCreateExpr {
 }
 
 class ResultOkExpr {
-  constructor(value, line, column) {
+  value: any;
+  line: any;
+  column: any;
+
+  constructor(value, line = 0, column = 0) {
     this.value = value;
     this.line = line;
     this.column = column;
@@ -132,7 +198,11 @@ class ResultOkExpr {
 }
 
 class ResultErrExpr {
-  constructor(message, line, column) {
+  message: any;
+  line: any;
+  column: any;
+
+  constructor(message, line = 0, column = 0) {
     this.message = message;
     this.line = line;
     this.column = column;
@@ -140,7 +210,10 @@ class ResultErrExpr {
 }
 
 class UnitExpr {
-  constructor(line, column) {
+  line: any;
+  column: any;
+
+  constructor(line = 0, column = 0) {
     this.line = line;
     this.column = column;
   }
@@ -149,7 +222,13 @@ class UnitExpr {
 // ── Statement nodes (statements, not expressions) ───────────────
 
 class LetStmt {
-  constructor(name, type, init, line, column) {
+  name: any;
+  type: any;
+  init: any;
+  line: any;
+  column: any;
+
+  constructor(name, type, init, line = 0, column = 0) {
     this.name = name;         // string
     this.type = type;         // string (type name)
     this.init = init;         // Expr or null (for built-in types without init)
@@ -159,7 +238,14 @@ class LetStmt {
 }
 
 class FnDecl {
-  constructor(name, params, returnType, body, line, column) {
+  name: any;
+  params: any;
+  returnType: any;
+  body: any;
+  line: any;
+  column: any;
+
+  constructor(name, params, returnType, body, line = 0, column = 0) {
     this.name = name;
     this.params = params;     // Array<{name: string, type: string}>
     this.returnType = returnType;
@@ -170,7 +256,11 @@ class FnDecl {
 }
 
 class ReturnStmt {
-  constructor(value, line, column) {
+  value: any;
+  line: any;
+  column: any;
+
+  constructor(value, line = 0, column = 0) {
     this.value = value;       // Expr or null
     this.line = line;
     this.column = column;
@@ -178,7 +268,12 @@ class ReturnStmt {
 }
 
 class IfStmt {
-  constructor(condition, thenBlock, line, column) {
+  condition: any;
+  thenBlock: any;
+  line: any;
+  column: any;
+
+  constructor(condition, thenBlock, line = 0, column = 0) {
     this.condition = condition;
     this.thenBlock = thenBlock; // Array<Statement>
     this.line = line;
@@ -187,7 +282,11 @@ class IfStmt {
 }
 
 class ExpressionStmt {
-  constructor(expression, line, column) {
+  expression: any;
+  line: any;
+  column: any;
+
+  constructor(expression, line = 0, column = 0) {
     this.expression = expression;
     this.line = line;
     this.column = column;
@@ -195,7 +294,12 @@ class ExpressionStmt {
 }
 
 class ImportStmt {
-  constructor(name, from, line, column) {
+  name: any;
+  from: any;
+  line: any;
+  column: any;
+
+  constructor(name, from, line = 0, column = 0) {
     this.name = name;         // string (imported name)
     this.from = from;         // string (module path)
     this.line = line;
@@ -204,7 +308,11 @@ class ImportStmt {
 }
 
 class ExportStmt {
-  constructor(decl, line, column) {
+  decl: any;
+  line: any;
+  column: any;
+
+  constructor(decl, line = 0, column = 0) {
     this.decl = decl;         // FnDecl
     this.line = line;
     this.column = column;
@@ -212,7 +320,12 @@ class ExportStmt {
 }
 
 class TypeDecl {
-  constructor(name, fields, line, column) {
+  name: any;
+  fields: any;
+  line: any;
+  column: any;
+
+  constructor(name, fields, line = 0, column = 0) {
     this.name = name;         // string
     this.fields = fields;     // Array<{name: string, type: string}>
     this.line = line;
@@ -223,7 +336,12 @@ class TypeDecl {
 // ── Type annotations ────────────────────────────────────────────
 
 class TypeAnnotation {
-  constructor(name, typeParams = null, line, column) {
+  name: any;
+  typeParams: any;
+  line: any;
+  column: any;
+
+  constructor(name, typeParams = null, line = 0, column = 0) {
     this.name = name;         // string (e.g., 'Int', 'List', 'Result')
     this.typeParams = typeParams; // Array<string> or null
     this.line = line;
@@ -250,13 +368,16 @@ class TypeAnnotation {
 // ── AST root ────────────────────────────────────────────────────
 
 class Program {
+  stmts: any;
+  modules: any;
+
   constructor(stmts, modules = new Map()) {
     this.stmts = stmts;       // Array<Statement>
     this.modules = modules;   // Map<moduleName, { exports: Map<name, FnDecl> }>
   }
 }
 
-module.exports = {
+export {
   // Expression nodes
   LiteralExpr,
   IdentifierExpr,

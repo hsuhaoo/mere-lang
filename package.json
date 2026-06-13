@@ -2,14 +2,22 @@
   "version": "1.0.0",
   "name": "simplex-lang",
   "description": "A minimal, explicit programming language with no syntax sugar and no implicit behavior.",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "bin": {
     "simplex": "bin/simplex.js"
   },
   "scripts": {
+    "build": "tsgo",
     "test": "node tests/run-tests.js"
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260612.1"
+  },
+  "dependencies": {
+    "typescript": "^6.0.3"
+  }
 }

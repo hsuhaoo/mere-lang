@@ -8,19 +8,22 @@
  * - Path-based module resolution
  */
 
-const fs = require('fs');
-const path = require('path');
-const { Lexer } = require('./lexer');
-const { Parser, ParseError } = require('./parser');
-const { TypeChecker, TypeError } = require('./typechecker');
-const { Interpreter, RuntimeError } = require('./runtime/interpreter');
-const { Builtins } = require('./runtime/builtins');
-const { Scheduler } = require('./runtime/scheduler');
-const { list: mkList, string: mkString } = require('./runtime/values');
+import * as fs from 'fs';
+import * as path from 'path';
+import { Lexer } from './lexer/index.js';
+import { Parser, ParseError } from './parser/index.js';
+import { TypeChecker, TypeError } from './typechecker/index.js';
+import { Interpreter, RuntimeError } from './runtime/interpreter.js';
+import { Builtins } from './runtime/builtins.js';
+import { Scheduler } from './runtime/scheduler.js';
+import { list as mkList, string as mkString } from './runtime/values.js';
 
 class ModuleLoader {
-  constructor(baseDir) {
-    this.baseDir = baseDir || process.cwd();
+  baseDir: any;
+  loadedModules: any;
+
+  constructor(baseDir = process.cwd()) {
+    this.baseDir = baseDir;
     this.loadedModules = new Map(); // path -> { program, exports: Map<name, FnDecl> }
   }
 
@@ -28,7 +31,7 @@ class ModuleLoader {
    * Load and compile a module file. Returns program + exports map.
    * The `key` parameter is the import path used to reference this module.
    */
-  loadModule(filePath, key, parentDir) {
+  loadModule(filePath, key, parentDir = undefined) {
     // Resolve file path relative to baseDir (or parent module's directory)
     const resolveBase = parentDir || this.baseDir;
     const resolved = path.resolve(resolveBase, filePath);
@@ -148,4 +151,4 @@ class ModuleLoader {
   }
 }
 
-module.exports = { ModuleLoader };
+export { ModuleLoader };

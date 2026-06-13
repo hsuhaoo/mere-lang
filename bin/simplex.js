@@ -8,7 +8,7 @@
  *   simplex --version
  */
 
-const { ModuleLoader } = require('../src/module-loader');
+const { ModuleLoader } = require('../dist/module-loader.js');
 const path = require('path');
 
 function main() {

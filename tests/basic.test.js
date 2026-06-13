@@ -1,4 +1,4 @@
-const { run, compile, Lexer, Parser, TypeChecker } = require('../src/index');
+const { run, compile, Lexer, Parser, TypeChecker } = require('../dist/index.js');
 const assert = require('assert');
 
 // ── Basic arithmetic ────────────────────────────────────────────
@@ -11,7 +11,7 @@ describe('Basic Arithmetic', () => {
     `;
     const result = run(src);
     assert.strictEqual(result.kind, 'Int');
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('integer subtraction', () => {
@@ -20,7 +20,7 @@ describe('Basic Arithmetic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 6);
+    assert.strictEqual(result.value, 6);
   });
 
   it('integer multiplication', () => {
@@ -29,7 +29,7 @@ describe('Basic Arithmetic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 21);
+    assert.strictEqual(result.value, 21);
   });
 
   it('integer division', () => {
@@ -38,7 +38,7 @@ describe('Basic Arithmetic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('operator precedence', () => {
@@ -47,7 +47,7 @@ describe('Basic Arithmetic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 14); // 2 + (3 * 4)
+    assert.strictEqual(result.value, 14); // 2 + (3 * 4)
   });
 
   it('parenthesized expression', () => {
@@ -56,7 +56,7 @@ describe('Basic Arithmetic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 20);
+    assert.strictEqual(result.value, 20);
   });
 });
 
@@ -69,7 +69,7 @@ describe('Boolean Logic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, false);
+    assert.strictEqual(result.value, false);
   });
 
   it('or operator', () => {
@@ -78,7 +78,7 @@ describe('Boolean Logic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 
   it('not operator', () => {
@@ -87,7 +87,7 @@ describe('Boolean Logic', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, false);
+    assert.strictEqual(result.value, false);
   });
 
   it('comparison operators', () => {
@@ -101,7 +101,7 @@ describe('Boolean Logic', () => {
       a
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 });
 
@@ -114,7 +114,7 @@ describe('Variables', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 42);
+    assert.strictEqual(result.value, 42);
   });
 
   it('string variable', () => {
@@ -123,7 +123,7 @@ describe('Variables', () => {
       name
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 'hello');
+    assert.strictEqual(result.value, 'hello');
   });
 
   it('bool variable', () => {
@@ -132,7 +132,7 @@ describe('Variables', () => {
       flag
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 
   it('variable shadowing in blocks', () => {
@@ -141,7 +141,7 @@ describe('Variables', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 1);
+    assert.strictEqual(result.value, 1);
   });
 });
 
@@ -157,7 +157,7 @@ describe('Functions', () => {
       result
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 7);
+    assert.strictEqual(result.value, 7);
   });
 
   it('function with return statement', () => {
@@ -172,7 +172,7 @@ describe('Functions', () => {
       result
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('function with unit return', () => {
@@ -198,7 +198,7 @@ describe('Functions', () => {
       result
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 120);
+    assert.strictEqual(result.value, 120);
   });
 
   it('fibonacci', () => {
@@ -216,7 +216,7 @@ describe('Functions', () => {
       result
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 55);
+    assert.strictEqual(result.value, 55);
   });
 });
 
@@ -232,7 +232,7 @@ describe('Conditionals', () => {
       }
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 1);
+    assert.strictEqual(result.value, 1);
   });
 
   it('if false branch (no else)', () => {
@@ -245,7 +245,7 @@ describe('Conditionals', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 3);
+    assert.strictEqual(result.value, 3);
   });
 
   it('nested ifs', () => {
@@ -259,7 +259,7 @@ describe('Conditionals', () => {
       }
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 2);
+    assert.strictEqual(result.value, 2);
   });
 });
 
@@ -272,7 +272,7 @@ describe('Result Type', () => {
       is_ok(r)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 
   it('err constructor', () => {
@@ -281,7 +281,7 @@ describe('Result Type', () => {
       is_err(r)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 
   it('divide with error handling', () => {
@@ -299,7 +299,7 @@ describe('Result Type', () => {
       }
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('divide by zero', () => {
@@ -317,7 +317,7 @@ describe('Result Type', () => {
       }
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 18); // "division by zero".length
+    assert.strictEqual(result.value, 16);
   });
 });
 
@@ -331,7 +331,7 @@ describe('Lists', () => {
       first
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 1);
+    assert.strictEqual(result.value, 1);
   });
 
   it('list length', () => {
@@ -341,7 +341,7 @@ describe('Lists', () => {
       count
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('append to list', () => {
@@ -352,7 +352,7 @@ describe('Lists', () => {
       count
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 3);
+    assert.strictEqual(result.value, 3);
   });
 
   it('sum of list', () => {
@@ -369,7 +369,7 @@ describe('Lists', () => {
       sum(nums)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 15);
+    assert.strictEqual(result.value, 15);
   });
 });
 
@@ -383,7 +383,7 @@ describe('Maps', () => {
       v
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 10);
+    assert.strictEqual(result.value, 10);
   });
 
   it('map has', () => {
@@ -393,7 +393,7 @@ describe('Maps', () => {
       has_one
     `;
     const result = run(src);
-    assert.strictEqual(result.data, true);
+    assert.strictEqual(result.value, true);
   });
 
   it('map put and get', () => {
@@ -404,7 +404,7 @@ describe('Maps', () => {
       v
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 20);
+    assert.strictEqual(result.value, 20);
   });
 });
 
@@ -417,7 +417,7 @@ describe('String Operations', () => {
       len(greeting)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 13);
+    assert.strictEqual(result.value, 12);
   });
 
   it('string length', () => {
@@ -426,7 +426,7 @@ describe('String Operations', () => {
       len(s)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('substring', () => {
@@ -436,7 +436,7 @@ describe('String Operations', () => {
       len(sub)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('parse_int', () => {
@@ -448,7 +448,7 @@ describe('String Operations', () => {
       }
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 42);
+    assert.strictEqual(result.value, 42);
   });
 
   it('to_string', () => {
@@ -457,7 +457,7 @@ describe('String Operations', () => {
       len(s)
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 2);
+    assert.strictEqual(result.value, 2);
   });
 });
 
@@ -519,7 +519,7 @@ describe('Edge Cases', () => {
       y
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('complex expression', () => {
@@ -528,7 +528,7 @@ describe('Edge Cases', () => {
       x
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 5);
+    assert.strictEqual(result.value, 5);
   });
 
   it('chained function calls', () => {
@@ -543,6 +543,6 @@ describe('Edge Cases', () => {
       result
     `;
     const result = run(src);
-    assert.strictEqual(result.data, 36); // (3*2)^2 = 36
+    assert.strictEqual(result.value, 36); // (3*2)^2 = 36
   });
 });

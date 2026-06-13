@@ -10,9 +10,16 @@
  * - No channels; communication via file IO or shared state
  */
 
-const { TaskValue, value: mkTask } = require('./values');
+import { TaskValue, task as mkTask } from './values.js';
 
 class SchedulerTask {
+  id: any;
+  fn: any;
+  resultType: any;
+  state: any;
+  result: any;
+  error: any;
+
   constructor(id, fn, resultType) {
     this.id = id;
     this.fn = fn;
@@ -32,6 +39,11 @@ class SchedulerTask {
 }
 
 class Scheduler {
+  tasks: any;
+  readyQueue: any;
+  nextId: any;
+  running: any;
+
   constructor() {
     this.tasks = new Map();
     this.readyQueue = [];
@@ -47,11 +59,7 @@ class Scheduler {
     this.tasks.set(task.id, task);
     this.readyQueue.push(task);
 
-    const { task: mkTask } = require('./values');
-    return mkTask({
-      handle: task,
-      taskType: resultType,
-    });
+    return mkTask(task, resultType);
   }
 
   /**
@@ -151,4 +159,4 @@ class Scheduler {
   }
 }
 
-module.exports = { Scheduler };
+export { Scheduler };

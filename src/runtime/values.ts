@@ -30,6 +30,8 @@ const ValueKind = Object.freeze({
 // ═══════════════════════════════════════════════════════════════════
 
 class Value {
+  kind: any;
+
   constructor(kind) {
     this.kind = kind;
   }
@@ -50,6 +52,8 @@ class Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class IntValue extends Value {
+  value: any;
+
   constructor(value) {
     super(ValueKind.INT);
     // Coerce to a finite integer on construction — never store NaN/Infinity
@@ -78,6 +82,8 @@ class IntValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class StringValue extends Value {
+  value: any;
+
   constructor(value) {
     super(ValueKind.STRING);
     if (typeof value !== 'string') {
@@ -110,6 +116,8 @@ class StringValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class BoolValue extends Value {
+  value: any;
+
   constructor(value) {
     super(ValueKind.BOOL);
     if (typeof value !== 'boolean') {
@@ -157,6 +165,9 @@ const UNIT_VALUE = new UnitValue();
 // ═══════════════════════════════════════════════════════════════════
 
 class ListValue extends Value {
+  _elements: any;
+  _elementType: any;
+
   constructor(elements = [], elementType = null) {
     super(ValueKind.LIST);
     // elements is a plain array of Value objects
@@ -210,6 +221,10 @@ class ListValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class MapValue extends Value {
+  _entries: any;
+  _keyType: any;
+  _valueType: any;
+
   constructor(entries = {}, keyType = null, valueType = null) {
     super(ValueKind.MAP);
     this._entries = entries;
@@ -260,6 +275,9 @@ class MapValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class RecordValue extends Value {
+  _fields: any;
+  _typeName: any;
+
   constructor(fields, typeName) {
     super(ValueKind.RECORD);
     this._fields = fields;       // { fieldName: Value }
@@ -304,10 +322,14 @@ class RecordValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class ResultValue extends Value {
+  _ok: any;
+  _value: any;
+  _resultType: any;
+
   constructor(ok, value, resultType = null) {
     super(ValueKind.RESULT);
-    this._ok = ok;              // boolean flag
-    this._value = value;        // Value (Ok case) or string (Err case)
+    this._ok = ok;
+    this._value = value;        // always a Value (IntValue, StringValue, etc.)
     this._resultType = resultType;
   }
 
@@ -345,7 +367,7 @@ class ResultValue extends Value {
   toString() {
     return this._ok
       ? `ok(${this._value.toString()})`
-      : `err("${this._value}")`;
+      : `err(${this._value.toString()})`;
   }
 }
 
@@ -354,6 +376,10 @@ class ResultValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class FnValue extends Value {
+  params: any;
+  body: any;
+  closure: any;
+
   constructor(params, body, closure) {
     super(ValueKind.FN);
     this.params = params;       // Array of { name, type }
@@ -375,6 +401,9 @@ class FnValue extends Value {
 // ═══════════════════════════════════════════════════════════════════
 
 class TaskValue extends Value {
+  handle: any;
+  _taskType: any;
+
   constructor(handle, taskType = null) {
     super(ValueKind.TASK);
     this.handle = handle;       // { resolve, reject } or internal handle
@@ -435,7 +464,7 @@ function task(handle, taskType) {
   return new TaskValue(handle, taskType);
 }
 
-module.exports = {
+export {
   // Kinds
   ValueKind,
 

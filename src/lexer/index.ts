@@ -8,7 +8,7 @@
  * - Deterministic: each token has a明确 role
  */
 
-const { KEYWORDS, TokenType } = require('./tokens');
+import { KEYWORDS, TokenType } from './tokens.js';
 
 // Two-character operator mappings - uses TokenType values directly
 const OPERATOR_2CHAR = {
@@ -42,6 +42,11 @@ const OPERATOR_1CHAR = {
 };
 
 class Token {
+  type: any;
+  value: any;
+  line: any;
+  column: any;
+
   constructor(type, value, line, column) {
     this.type = type;
     this.value = value;
@@ -55,7 +60,11 @@ class Token {
 }
 
 class LexerError extends Error {
-  constructor(message, line, column) {
+  line: any;
+  column: any;
+  name: any;
+
+  constructor(message, line = 0, column = 0) {
     super(`[${line}:${column}] ${message}`);
     this.line = line;
     this.column = column;
@@ -64,6 +73,12 @@ class LexerError extends Error {
 }
 
 class Lexer {
+  source: any;
+  pos: any;
+  line: any;
+  column: any;
+  tokens: any;
+
   constructor(source) {
     this.source = source;
     this.pos = 0;
@@ -280,4 +295,4 @@ class Lexer {
   }
 }
 
-module.exports = { Lexer, LexerError, Token };
+export { Lexer, LexerError, Token };
