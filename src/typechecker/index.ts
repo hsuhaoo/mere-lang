@@ -74,8 +74,6 @@ class TypeChecker {
   imports: any;
   scopeBindings: any;
   _typeVarBindings: any;
-  _expectedType: any;
-
   constructor() {
     this.scopes = [];           // Stack of scopes
     this.typeDecls = new Map(); // name -> TypeDecl
@@ -227,7 +225,6 @@ class TypeChecker {
   }
 
   inferType(expr, expectedType = null) {
-    this._expectedType = expectedType;
     switch (expr.constructor) {
       case LiteralExpr:
         return this.inferLiteralType(expr.value);
@@ -245,7 +242,7 @@ class TypeChecker {
         return this.inferUnOp(expr);
 
       case CallExpr:
-        return this.inferCall(expr);
+        return this.inferCall(expr, expectedType);
 
       case MethodCallExpr:
         return this.inferMethodCall(expr);
@@ -269,10 +266,10 @@ class TypeChecker {
         return this.inferMapCreate(expr);
 
       case ResultOkExpr:
-        return this.inferResultOk(expr);
+        return this.inferResultOk(expr, expectedType);
 
       case ResultErrExpr:
-        return this.inferResultErr(expr);
+        return this.inferResultErr(expr, expectedType);
 
       case UnitExpr:
         return new TypeAnnotation('Unit');
@@ -451,7 +448,7 @@ class TypeChecker {
     throw new TypeError(`Unknown unary operator: ${expr.op}`, expr.line, expr.column);
   }
 
-  inferCall(expr) {
+  inferCall(expr, expectedType = null) {
     // Handle: fnName(args)
     let fnType;
 
@@ -477,7 +474,7 @@ class TypeChecker {
           this.unifyTypeVars(expectedType, inferredType, typeVars);
         }
         // Bind remaining type vars from expected type context if available
-        const resolvedReturn = this.resolveTypeVars(sig.returnType, typeVars, this._expectedType);
+        const resolvedReturn = this.resolveTypeVars(sig.returnType, typeVars, expectedType);
         return resolvedReturn;
       }
 
@@ -700,19 +697,18 @@ class TypeChecker {
     return new TypeAnnotation('Map', [keyType, valueType], expr.line, expr.column);
   }
 
-  inferResultOk(expr) {
+  inferResultOk(expr, expectedType = null) {
     const innerType = this.inferExprType(expr.value);
     return new TypeAnnotation('Result', [innerType], expr.line, expr.column);
   }
 
-  inferResultErr(expr) {
-    const savedExpected = this._expectedType;
+  inferResultErr(expr, expectedType = null) {
     const msgType = this.inferExprType(expr.message);
     if (msgType.name !== 'String') {
       throw new TypeError(`err() requires String argument`, expr.line, expr.column);
     }
-    if (savedExpected && savedExpected.name === 'Result' && savedExpected.typeParams && savedExpected.typeParams.length === 1) {
-      return new TypeAnnotation('Result', [savedExpected.typeParams[0]], expr.line, expr.column);
+    if (expectedType && expectedType.name === 'Result' && expectedType.typeParams && expectedType.typeParams.length === 1) {
+      return new TypeAnnotation('Result', [expectedType.typeParams[0]], expr.line, expr.column);
     }
     return new TypeAnnotation('Result', [new TypeAnnotation('Unit')], expr.line, expr.column);
   }
