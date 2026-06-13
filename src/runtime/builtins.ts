@@ -207,16 +207,16 @@ class Builtins {
       if (obj.kind === ValueKind.LIST) {
         const index = args[1].getNumber();
         if (index < 0 || index >= obj.length()) {
-          throw new Error(`Index ${index} out of bounds`);
+          return mkResult(false, mkString(`Index ${index} out of bounds`), null);
         }
-        return obj.get(index);
+        return mkResult(true, obj.get(index), null);
       }
       if (obj.kind === ValueKind.MAP) {
         const key = String(args[1].kind === ValueKind.INT ? args[1].getNumber() : args[1].get());
         if (!(key in obj._getEntries())) {
-          throw new Error(`Key '${key}' not found`);
+          return mkResult(false, mkString(`Key '${key}' not found`), null);
         }
-        return obj._getEntries()[key];
+        return mkResult(true, obj._getEntries()[key], null);
       }
       throw new Error(`'get' expects a List or Map, got ${obj.kind}`);
     });

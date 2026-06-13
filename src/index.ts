@@ -63,14 +63,6 @@ function compile(source) {
   return program;
 }
 
-/**
- * Quick evaluation of a single expression.
- */
-function evalExpr(source) {
-  const sourceWithReturn = `let x: Int = ${source}; x`;
-  return run(sourceWithReturn);
-}
-
 export {
   // Low-level components
   Lexer,
@@ -116,5 +108,4 @@ export {
   // High-level API
   run,
   compile,
-  evalExpr,
 };

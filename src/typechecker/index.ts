@@ -993,7 +993,7 @@ class TypeChecker {
           throw new TypeError(`List index must be Int, got ${keyType.name}`, expr.line, expr.column);
         }
         const elemType = firstType.typeParams && firstType.typeParams[0] || new TypeAnnotation('$T');
-        return elemType;
+        return new TypeAnnotation('Result', [elemType]);
       }
 
       if (firstType.name === 'Map') {
@@ -1002,7 +1002,7 @@ class TypeChecker {
           throw new TypeError(`Map key must be ${keyParam.toString()}, got ${keyType.toString()}`, expr.line, expr.column);
         }
         const valType = firstType.typeParams && firstType.typeParams[1] || new TypeAnnotation('$V');
-        return valType;
+        return new TypeAnnotation('Result', [valType]);
       }
 
       throw new TypeError(`get expects a List or Map, got ${firstType.name}`, expr.line, expr.column);

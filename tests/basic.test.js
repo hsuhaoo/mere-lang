@@ -327,7 +327,7 @@ describe('Lists', () => {
   it('create and get element', () => {
     const src = `
       let nums: List<Int> = [1, 2, 3];
-      let first: Int = get(nums, 0);
+      let first: Int = unwrap(get(nums, 0));
       first
     `;
     const result = run(src);
@@ -361,7 +361,7 @@ describe('Lists', () => {
         if list_len(lst) == 0 {
           return 0;
         }
-        let head: Int = get(lst, 0);
+        let head: Int = unwrap(get(lst, 0));
         let tail: List<Int> = substring_list(lst, 1, list_len(lst) - 1);
         head + sum(tail)
       }
@@ -379,7 +379,7 @@ describe('Maps', () => {
   it('create and get', () => {
     const src = `
       let m: Map<Int, Int> = {1: 10, 2: 20};
-      let v: Int = get(m, 1);
+      let v: Int = unwrap(get(m, 1));
       v
     `;
     const result = run(src);
@@ -400,7 +400,7 @@ describe('Maps', () => {
     const src = `
       let m: Map<Int, Int> = {1: 10};
       put(m, 2, 20);
-      let v: Int = get(m, 2);
+      let v: Int = unwrap(get(m, 2));
       v
     `;
     const result = run(src);
