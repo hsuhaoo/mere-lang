@@ -124,40 +124,7 @@ simplex build input.sim -o output.html --width 1024 --height 768
 
 ## Architecture
 
-```
-simplex/
-├── bin/
-│   └── simplex.js              # CLI entry point (run + build)
-├── src/
-│   ├── index.ts                # Public API (Node.js)
-│   ├── browser-entry.ts        # Public API (browser)
-│   ├── browser-runtime.ts      # Browser interpreter factory
-│   ├── lexer/
-│   │   └── index.ts            # Lexer
-│   ├── parser/
-│   │   └── index.ts            # Recursive descent parser
-│   ├── ast/
-│   │   └── nodes.ts            # AST node classes
-│   ├── typechecker/
-│   │   └── index.ts            # Static type checker
-│   ├── runtime/
-│   │   ├── values.ts           # Value representation
-│   │   ├── env.ts              # Scope management
-│   │   ├── builtins.ts         # Node.js built-in functions
-│   │   ├── browser-builtins.ts # Browser built-in (25× Canvas API)
-│   │   ├── runtime.ts          # Runtime factory (Node/Browser)
-│   │   ├── scheduler.ts        # Task scheduler
-│   │   └── interpreter.ts      # AST interpreter
-│   └── module-loader.ts        # Module loading
-├── shims/                      # Node built-in stubs for browser build
-├── tests/
-│   ├── run-tests.ts            # Runtime tests (67)
-│   ├── typechecker.test.js     # Type checker tests (67)
-│   ├── modules.test.js         # Module system tests (17)
-│   └── browser.test.js         # Browser runtime tests (132)
-└── examples/                   # Example programs
-    └── browser/                # Browser-specific examples
-```
+
 
 ## Language Specification
 
