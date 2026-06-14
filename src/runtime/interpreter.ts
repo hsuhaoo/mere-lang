@@ -298,7 +298,12 @@ class Interpreter {
       let acc = initValue;
       for (let i = 0; i < listValue.length(); i++) {
         const elem = listValue.get(i);
-        acc = this.executeLambdaFromValue(fnValue, 'fold', [acc, listValue.get(i)]);
+        try {
+          acc = this.executeLambdaFromValue(fnValue, 'fold', [acc, elem]);
+        } catch (e) {
+          console.error('FOLD ERROR at i=' + i + ': ' + e);
+          throw e;
+        }
       }
       return acc;
     }
@@ -566,9 +571,16 @@ class Interpreter {
 
     try {
       for (const stmt of fnValue.body) {
-        const result = this.execStmt(stmt);
-        if (result instanceof ReturnSignal) {
-          return result.returnValue;
+        try {
+          const result = this.execStmt(stmt);
+          if (result instanceof ReturnSignal) {
+            return result.returnValue;
+          }
+        } catch (e) {
+          if (e instanceof ReturnSignal) {
+            return e.returnValue;
+          }
+          throw e;
         }
       }
 

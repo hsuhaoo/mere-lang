@@ -1,0 +1,111 @@
+// agent_demo.sim - 简化版 Agent (使用 map/filter/fold)
+// 运行前确保：omlx start (端口 8000，API key: 1234)
+// 运行：node bin/simplex.js examples/agent_demo.sim
+
+// 配置
+let OMLX_URL: String = "http://localhost:8000/v1/chat/completions";
+let MODEL: String = "Qwen3.5-4B-MLX-4bit";
+let API_KEY: String = "1234";
+let SYSTEM_PROMPT: String = "You are a helpful assistant. Be concise.";
+
+// 发送聊天请求
+fn send_chat(messages_json: String) -> Task<Result<String>> {
+  let headers: Map<String, String> = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + API_KEY
+  };
+  let body: String = "{\"model\":\"" + MODEL + "\",\"messages\":" + messages_json + ",\"max_tokens\":512,\"temperature\":0.7}";
+  return fetch(OMLX_URL, "POST", headers, body);
+}
+
+// 提取 JSON 中的 content 字段
+fn extract_content(json: String) -> String {
+  let start: Number = indexOf(json, "\"content\":\"");
+  if start < 0 { return "解析失败"; }
+  let cs: Number = start + 11;
+  let rest: String = substring(json, cs, json.len);
+  let end: Number = indexOf(rest, "\"");
+  if end < 0 { return "解析失败"; }
+  return substring(rest, 0, end);
+}
+
+// 消息构建 - 不要预先 JSON 化
+fn make_msg(role: String, content: String) -> String {
+  return "\"role\":\"" + role + "\",\"content\":\"" + content + "\"";
+}
+
+// 列表转 JSON 数组字符串 - 正确构建对象数组
+fn first_or_empty(s: String) -> String {
+  if s == "[" { return ""; }
+  return ",";
+}
+
+fn list_to_json(items: List<String>) -> String {
+  return fold(items, "[", fn(acc: String, item: String) -> String {
+    let sep: String = first_or_empty(acc);
+    return acc + sep + "{" + item + "}";
+  }) + "]";
+}
+
+// 合并两个列表
+fn append_list(a: List<String>, b: List<String>) -> List<String> {
+  return fold(b, a, fn(acc: List<String>, item: String) -> List<String> { append(acc, item) });
+}
+
+// 主循环
+fn chat_loop(history: List<String>) -> Unit {
+  print("\n> ");
+  let task: Task<Result<String>> = read_line();
+  let result: Result<String> = join(task);
+  
+  if result.errMessage.len > 0 {
+    print("输入错误: " + result.errMessage);
+    return;
+  }
+  
+  let user_input: String = result.value;
+  if user_input == "exit" or user_input == "quit" or user_input == "bye" {
+    print("再见！");
+    return;
+  }
+  
+  // 添加用户消息
+  let user_msg: String = make_msg("user", user_input);
+  let new_history: List<String> = append(history, user_msg);
+  
+  // 构建请求消息: system + history (使用 fold)
+  let sys_msg: String = make_msg("system", SYSTEM_PROMPT);
+  let messages: List<String> = [sys_msg];
+  let full_messages: List<String> = append_list(messages, new_history);
+  let messages_json: String = list_to_json(full_messages);
+  
+  
+  print("思考中...");
+  let resp_task: Task<Result<String>> = send_chat(messages_json);
+  let resp_result: Result<String> = join(resp_task);
+  
+  if resp_result.errMessage.len > 0 {
+    print("请求失败: " + resp_result.errMessage);
+    chat_loop(new_history);
+    return;
+  }
+  
+  let reply: String = extract_content(resp_result.value);
+  print("Assistant: " + reply);
+  
+  // 更新历史
+  let assistant_msg: String = make_msg("assistant", reply);
+  let updated_history: List<String> = append(new_history, assistant_msg);
+  
+  // 递归下一轮
+  chat_loop(updated_history);
+}
+
+fn main() -> Unit {
+  print("=== Simplex Agent (oMLX) ===");
+  print("输入 exit/quit/bye 退出");
+  print("模型: " + MODEL);
+  chat_loop([]);
+}
+
+main();

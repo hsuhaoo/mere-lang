@@ -1,0 +1,11 @@
+// test_fold_str.sim
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  
+  let result: String = fold(items, "", fn(acc: String, s: String) -> String { acc + s });
+  print("Result: " + result);
+  print("Len: " + to_string(result.len));
+}
+
+main();

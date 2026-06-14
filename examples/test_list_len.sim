@@ -1,0 +1,17 @@
+// test_list_len.sim
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  print("Length: " + to_string(len(items)));
+  
+  let first: Result<String> = list_get(items, 0);
+  if first.isOk { print("First: " + first.value); }
+  
+  let second: Result<String> = list_get(items, 1);
+  if second.isOk { print("Second: " + second.value); }
+  
+  let third: Result<String> = list_get(items, 2);
+  if third.isOk { print("Third: " + third.value); }
+}
+
+main();

@@ -1,0 +1,18 @@
+// test_first_or_empty.sim
+
+fn first_or_empty(s: String) -> String {
+  if s == "[" { return ""; }
+  return ",";
+}
+
+fn main() -> Unit {
+  let s1: String = "[";
+  let s2: String = "[{a}";
+  let s3: String = "[{a},{b}";
+  
+  print("first_or_empty('['): '" + first_or_empty(s1) + "'");
+  print("first_or_empty('[{a}'): '" + first_or_empty(s2) + "'");
+  print("first_or_empty('[{a},{b}'): '" + first_or_empty(s3) + "'");
+}
+
+main();

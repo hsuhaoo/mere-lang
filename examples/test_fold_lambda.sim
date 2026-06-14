@@ -1,0 +1,20 @@
+// test_fold_lambda.sim
+
+fn first_or_empty(s: String) -> String {
+  if s == "[" { return ""; }
+  return ",";
+}
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  
+  let result: String = fold(items, "[", fn(acc: String, item: String) -> String {
+    let sep: String = first_or_empty(acc);
+    return acc + sep + "{" + item + "}";
+  }) + "]";
+  
+  print("Result: " + result);
+  print("Len: " + to_string(result.len));
+}
+
+main();

@@ -1,0 +1,10 @@
+// test_fold_simple.sim
+
+fn main() -> Unit {
+  let nums: List<Number> = [1, 2, 3];
+  
+  let sum: Number = fold(nums, 0, fn(acc: Number, x: Number) -> Number { acc + x });
+  print("Sum: " + to_string(sum));
+}
+
+main();

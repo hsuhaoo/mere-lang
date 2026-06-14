@@ -1,0 +1,9 @@
+// test_print.sim
+
+fn main() -> Unit {
+  print("Hello");
+  let x: String = "test";
+  print("x: " + x);
+}
+
+main();

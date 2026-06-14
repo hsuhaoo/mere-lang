@@ -1,0 +1,14 @@
+// test_lambda_body.sim
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  
+  print("Test 1: fold with explicit return");
+  let r1: String = fold(items, "[", fn(acc: String, item: String) -> String {
+    let s: String = acc + item;
+    return s;
+  });
+  print("Done: " + r1);
+}
+
+main();

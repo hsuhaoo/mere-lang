@@ -1,0 +1,17 @@
+// test_fold_debug4.sim
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  
+  print("Start fold");
+  
+  let result: String = fold(items, "[", fn(acc: String, item: String) -> String {
+    let r: String = acc + item;
+    return r;
+  });
+  
+  print("Fold done, result len: " + to_string(result.len));
+  print("Result: " + result);
+}
+
+main();

@@ -1,0 +1,23 @@
+// test_fold_debug.sim
+
+fn first_or_empty(s: String) -> String {
+  if s == "[" { return ""; }
+  return ",";
+}
+
+fn list_to_json(items: List<String>) -> String {
+  return fold(items, "[", fn(acc: String, item: String) -> String {
+    let sep: String = first_or_empty(acc);
+    return acc + sep + "{" + item + "}";
+  }) + "]";
+}
+
+fn main() -> Unit {
+  let items: List<String> = ["a", "b", "c"];
+  
+  let result: String = list_to_json(items);
+  print("Result: " + result);
+  print("Len: " + to_string(result.len));
+}
+
+main();
