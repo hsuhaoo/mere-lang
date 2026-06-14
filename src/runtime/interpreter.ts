@@ -446,6 +446,11 @@ class Interpreter {
       throw new RuntimeError(`String has no field '${expr.field}'`, expr.line, expr.column);
     }
 
+    if (obj instanceof ListValue) {
+      if (expr.field === 'len') return obj.len;
+      throw new RuntimeError(`List has no field '${expr.field}'`, expr.line, expr.column);
+    }
+
     if (!(obj instanceof RecordValue)) {
       throw new RuntimeError(`Cannot access field on non-record type ${obj.typeName()}`, expr.line, expr.column);
     }

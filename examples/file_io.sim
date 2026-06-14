@@ -20,6 +20,6 @@ if content.isOk {
 let lines_task: Task<Result<List<String>>> = file_read_lines("output.txt");
 let lines: Result<List<String>> = join(lines_task);
 if lines.isOk {
-  let line_count: Number = list_len(lines.value);
+  let line_count: Number = lines.value.len;
   print("Line count: " + to_string(line_count));
 }

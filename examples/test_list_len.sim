@@ -2,7 +2,7 @@
 
 fn main() -> Unit {
   let items: List<String> = ["a", "b", "c"];
-  print("Length: " + to_string(len(items)));
+  print("Length: " + to_string(items.len));
   
   let first: Result<String> = list_get(items, 0);
   if first.isOk { print("First: " + first.value); }

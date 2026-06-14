@@ -4,7 +4,7 @@
 // --- List operations ---
 let numbers: List<Number> = [1, 2, 3, 4, 5];
 print("List: [1, 2, 3, 4, 5]");
-print("Length: " + to_string(list_len(numbers)));
+print("Length: " + to_string(numbers.len));
 
 let first: Result<Number> = list_get(numbers, 0);
 if first.isOk {
@@ -12,7 +12,7 @@ if first.isOk {
 }
 
 let extended: List<Number> = append(numbers, 6);
-print("After append 6: length = " + to_string(list_len(extended)));
+print("After append 6: length = " + to_string(extended.len));
 
 // --- Map with Number keys ---
 let scores: Map<Number, String> = {

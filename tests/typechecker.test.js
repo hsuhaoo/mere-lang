@@ -145,7 +145,7 @@ testError('list element type mismatch', `
 
 test('empty list with type annotation', `
 let l: List<Number> = [];
-len(l)
+l.len
 `, 0);
 
 testError('empty list without type annotation', `
@@ -248,7 +248,7 @@ f(5)
 
 test('list of strings', `
 let l: List<String> = ["a", "b", "c"];
-list_len(l)
+l.len
 `, 3);
 
 test('map with string keys', `
@@ -259,7 +259,7 @@ v
 
 test('result err with string', `
 let r: Result<Number> = err("oops");
-len(r.errMessage)
+r.errMessage.len
 `, 4);
 
 test('record field access', `
@@ -271,13 +271,13 @@ p.x + p.y
 test('function call: substring()', `
 let s: String = "hello world";
 let sub: String = substring(s, 0, 5);
-len(sub)
+sub.len
 `, 5);
 
 test('function call: concat()', `
 let s: String = "hello";
 let t: String = concat(s, " world");
-len(t)
+t.len
 `, 11);
 
 test('chained function calls with get', `
@@ -320,7 +320,7 @@ map_has(m2, 1)
 test('append returns new list', `
 let l: List<Number> = [1, 2];
 let l2: List<Number> = append(l, 3);
-list_len(l2)
+l2.len
 `, 3);
 
 test('abs', `
@@ -404,8 +404,9 @@ put(42, 1, 2)
 `, /expects.*Map/i);
 
 testError('len on number errors', `
-len(42)
-`, /expects a String, List, or Map|type/i);
+let x: Number = 42;
+x.len
+`, /Cannot access field 'len' on type Number|type/i);
 
 testError('redefine variable in same scope', `
 let x: Number = 1;

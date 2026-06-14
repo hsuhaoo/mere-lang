@@ -475,7 +475,7 @@ class TypeChecker {
       const fnName = expr.callee.name;
 
       // Polymorphic builtins — dispatch on first arg type
-      if (fnName === 'len' || fnName === 'get' || fnName === 'has' || fnName === 'put') {
+      if (fnName === 'get' || fnName === 'has' || fnName === 'put') {
         return this.inferPolyBuiltin(expr, fnName);
       }
 
@@ -611,6 +611,15 @@ class TypeChecker {
       if (expr.field === 'len') return new TypeAnnotation('Number');
       throw new TypeError(
         `String has no field '${expr.field}'`,
+        expr.line, expr.column
+      );
+    }
+
+    // List fields
+    if (objectType.name === 'List') {
+      if (expr.field === 'len') return new TypeAnnotation('Number');
+      throw new TypeError(
+        `List has no field '${expr.field}'`,
         expr.line, expr.column
       );
     }
@@ -1044,19 +1053,6 @@ class TypeChecker {
     }
     const firstType = this.inferExprType(expr.args[0]);
 
-    if (fnName === 'len') {
-      if (expr.args.length !== 1) {
-        throw new TypeError(`len expects 1 argument, got ${expr.args.length}`, expr.line, expr.column);
-      }
-      if (firstType.name !== 'String' && firstType.name !== 'List' && firstType.name !== 'Map') {
-        throw new TypeError(
-          `len expects a String, List, or Map, got ${firstType.name}`,
-          expr.line, expr.column
-        );
-      }
-      return new TypeAnnotation('Number');
-    }
-
     if (fnName === 'get') {
       if (expr.args.length !== 2) {
         throw new TypeError(`get expects 2 arguments, got ${expr.args.length}`, expr.line, expr.column);
@@ -1152,7 +1148,6 @@ const BUILTIN_FUNCTIONS = new Map([
   // List builtins (as functions)
   ['append', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$T')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['list_get', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
-  ['list_len', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('Number') }],
   ['substring_list', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
   // Map builtins (fully generic)

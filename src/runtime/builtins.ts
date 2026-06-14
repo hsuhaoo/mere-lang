@@ -33,10 +33,6 @@ class Builtins {
     // String builtins
     // ═══════════════════════════════════════════════════════════
 
-    this.registerFn('len', 1, (args) => {
-      return mkNumber(args[0].length());
-    });
-
     this.registerFn('concat', 2, (args) => {
       return args[0].concat(args[1]);
     });
@@ -87,10 +83,6 @@ class Builtins {
         return mkErr(`Index ${index} out of bounds`);
       }
       return mkOk(list.get(index));
-    });
-
-    this.registerFn('list_len', 1, (args) => {
-      return mkNumber(args[0].length());
     });
 
     this.registerFn('substring_list', 3, (args) => {

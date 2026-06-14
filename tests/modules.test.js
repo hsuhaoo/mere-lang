@@ -151,7 +151,7 @@ export fn greet(name: String) -> String { "Hello, " + name }
 import math from "math.sim";
 import str from "string_util.sim";
 let s: String = str.greet("world");
-len(s) + math.add(10, 5)
+s.len + math.add(10, 5)
 `);
 
   const result = runModule('main.sim');

@@ -109,7 +109,7 @@ fn divide(a: Number, b: Number) -> Result<Number> {
   ok(a / b)
 }
 fn handle(r: Result<Number>) -> Number {
-  if not r.isOk { return len(r.errMessage); }
+  if not r.isOk { return r.errMessage.len; }
   0
 }
 handle(divide(10, 0))
@@ -117,7 +117,7 @@ handle(divide(10, 0))
 
 test('List length', `
 let l: List<Number> = [1, 2, 3, 4, 5];
-list_len(l)
+l.len
 `, 5);
 
 test('Map get', `
@@ -127,7 +127,7 @@ map_get(m, 1)
 
 test('String length', `
 let s: String = "hello";
-len(s)
+s.len
 `, 5);
 
 test('Operator precedence', `
@@ -149,7 +149,7 @@ p.x + p.y
 
 test('String concat', `
 let s: String = "Hello" + " World";
-len(s)
+s.len
 `, 11);
 
 test('Boolean and', `
@@ -216,9 +216,9 @@ if x > 5 {
 
 test('Sum of list', `
 fn sum(lst: List<Number>) -> Number {
-  if list_len(lst) == 0 { return 0; }
+  if lst.len == 0 { return 0; }
   let head: Number = get(lst, 0).value;
-  let tail: List<Number> = substring_list(lst, 1, list_len(lst) - 1);
+  let tail: List<Number> = substring_list(lst, 1, lst.len - 1);
   head + sum(tail)
 }
 sum([1, 2, 3, 4, 5])
@@ -238,7 +238,7 @@ r.value
 test('result field: errMessage on ok', `
 let r: Result<Number> = ok(42);
 let s: String = r.errMessage;
-len(s)
+s.len
 `, 0);
 
 test('result field: isOk on err', `
@@ -254,7 +254,7 @@ r.value
 test('result field: errMessage on err', `
 let r: Result<Number> = err("fail");
 let s: String = r.errMessage;
-len(s)
+s.len
 `, 4);
 
 // ── Returns err (not throw) ────────────────────────────────────
@@ -287,45 +287,51 @@ apply(fn (x: Number) -> Number { x * 2 }, 5)
 // ── to_string other types ──────────────────────────────────────
 test('to_string bool', `
 let s: String = to_string(true);
-len(s)
+s.len
 `, 4);
 
 test('to_string unit', `
 let s: String = to_string(());
-len(s)
+s.len
 `, 2);
 
 test('to_string list', `
 let s: String = to_string([1, 2, 3]);
-len(s)
+s.len
 `, 9);
 
 test('to_string ok result', `
 let s: String = to_string(ok(42));
-len(s)
+s.len
 `, 6);
 
 test('to_string err result', `
 let s: String = to_string(err("fail"));
-len(s)
+s.len
 `, 11);
 
 test('to_string map', `
 let m: Map<Number, Number> = {1: 10, 2: 20};
 let s: String = to_string(m);
-len(s)
+s.len
 `, 14);
 
 test('to_string record', `
 type P = { x: Number, y: Number };
 let p: P = { x: 10, y: 20 };
 let s: String = to_string(p);
-len(s)
+s.len
 `, 20);
 
 // ── Edge cases: stdlib edges ────────────────────────────────────
-testError('len on number errors', 'len(42)', /expects a String, List, or Map/i);
-testError('len on boolean errors', 'len(true)', /expects a String, List, or Map/i);
+testError('len on number errors', `
+let x: Number = 42;
+x.len
+`, /Cannot access field 'len' on type Number/i);
+testError('len on boolean errors', `
+let x: Boolean = true;
+x.len
+`, /Cannot access field 'len' on type Boolean/i);
 
 test('abs negative', `
 abs(-5)
@@ -351,7 +357,7 @@ r.value
 test('append to list', `
 let l: List<Number> = [1, 2];
 let l2: List<Number> = append(l, 3);
-list_len(l2)
+l2.len
 `, 3);
 
 test('list_get out of bounds', `
@@ -391,7 +397,7 @@ not r.isOk
 test('file_read_lines existing file', `
 let r: Result<List<String>> = join(file_read_lines("${ioLinesPath}"));
 let lines: List<String> = r.value;
-list_len(lines)
+lines.len
 `, 3);
 
 test('file_read_lines non-existent file', `
@@ -413,7 +419,7 @@ r.value
 
 test('file_read_lines empty file', `
 let r: Result<List<String>> = join(file_read_lines("${ioDir}/empty.txt"));
-list_len(r.value)
+r.value.len
 `, 0);
 
 test('file_write to non-existent directory', `
@@ -486,7 +492,7 @@ let vb: Number = join(tb);
 test('Nested List<List<Number>>', `
 let l: List<List<Number>> = [[1, 2], [3, 4]];
 let inner: List<Number> = get(l, 0).value;
-list_len(inner)
+inner.len
 `, 2);
 
 console.log();

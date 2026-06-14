@@ -254,6 +254,10 @@ class ListValue extends Value {
     return this._elements.length;
   }
 
+  get len(): NumberValue {
+    return new NumberValue(this._elements.length);
+  }
+
   get(index: number): Value | undefined {
     if (index < 0 || index >= this._elements.length) {
       return undefined;
