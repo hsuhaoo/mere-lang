@@ -65,7 +65,7 @@ function build(args) {
 
   if (!fs.existsSync(runtimePath)) {
     console.error('Error: Runtime bundle not found at dist/simplex.browser.js');
-    console.error('Run "npm run build:browser" first, or use "npx simplex build" from project root');
+    console.error('Run "npm run build" first to build the project');
     process.exit(1);
   }
 
