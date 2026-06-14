@@ -5,8 +5,9 @@ import { BrowserBuiltins } from './runtime/browser-builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
 import { Interpreter, RuntimeError } from './runtime/interpreter.js';
 import { createBrowserRuntime } from './browser-runtime.js';
+import { Env } from './runtime/env.js';
 import {
-  Value, Env,
+  Value,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   mkOk, mkErr,
 } from './runtime/values.js';
