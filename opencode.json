@@ -1,0 +1,9 @@
+{
+  "mcp": {
+    "codegraph": {
+      "type": "local",
+      "command": ["npx", "-y", "@colbymchenry/codegraph", "serve", "--mcp"],
+      "enabled": true
+    }
+  }
+}
