@@ -511,13 +511,20 @@ class TypeChecker {
         fnType = BUILTIN_FUNCTIONS.get(fnName);
         const sig = fnType;
         const typeVars = new Map();
-        // Unify type variables from actual argument types
+        // Pass 1: infer types and bind type variables
         for (let i = 0; i < expr.args.length; i++) {
           const expectedParamType = sig.paramTypes[i] instanceof TypeAnnotation
             ? sig.paramTypes[i]
             : new TypeAnnotation(String(sig.paramTypes[i]));
-          const inferredType = this.inferExprType(expr.args[i], expectedParamType);
+          const inferredType = this.inferExprType(expr.args[i]);
           this.unifyTypeVars(expectedParamType, inferredType, typeVars);
+        }
+        // Pass 2: resolve type variables and validate concrete types
+        for (let i = 0; i < expr.args.length; i++) {
+          const resolvedParamType = this.resolveTypeVars(sig.paramTypes[i], typeVars);
+          if (!resolvedParamType.name.startsWith('$')) {
+            this.checkExpr(expr.args[i], resolvedParamType);
+          }
         }
         // Bind remaining type vars from expected type context if available
         const resolvedReturn = this.resolveTypeVars(sig.returnType, typeVars, expectedType);
@@ -1169,6 +1176,33 @@ const BUILTIN_FUNCTIONS = new Map([
 
   // Network I/O (async — returns Task, I/O happens on join)
   ['fetch', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String'), new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('String')]), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+
+  // ── Canvas builtins (browser runtime) ──
+  ['canvas_clear', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_get_width', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
+  ['canvas_get_height', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
+  ['canvas_fill_rect', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_stroke_rect', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_clear_rect', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_fill_text', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_stroke_text', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_measure_text', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
+  ['canvas_set_fill_color', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_stroke_color', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_font', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_line_width', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_begin_path', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_close_path', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_move_to', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_line_to', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_arc', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_stroke', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_fill', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_save', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_restore', { paramTypes: [], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_rotate', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_translate', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_scale', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
 
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],

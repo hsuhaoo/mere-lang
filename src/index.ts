@@ -18,32 +18,44 @@ import { TypeChecker, TypeError } from './typechecker/index.js';
 import { Value } from './runtime/values.js';
 import { Env } from './runtime/env.js';
 import { Builtins } from './runtime/builtins.js';
+import { BrowserBuiltins } from './runtime/browser-builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
 import { Interpreter, RuntimeError } from './runtime/interpreter.js';
 import { ModuleLoader } from './module-loader.js';
+import { createRuntime, RuntimeConfig } from './runtime/runtime.js';
 
 /**
  * High-level compile-and-run API.
  * Takes source code string and returns the result value.
  */
 function run(source, filePath = 'main.sim') {
-  // 1. Lex
   const lexer = new Lexer(source);
   const tokens = lexer.getTokens();
 
-  // 2. Parse
   const parser = new Parser(tokens);
   const program = parser.parse();
 
-  // 3. Type check
   const checker = new TypeChecker();
   checker.check(program);
 
-  // 4. Interpret
-  const scheduler = new Scheduler();
-  const builtins = new Builtins(scheduler);
-  const interpreter = new Interpreter(builtins, scheduler);
+  const interpreter = createRuntime({ target: 'node' });
+  return interpreter.run(program);
+}
 
+/**
+ * Run in browser mode with Canvas support.
+ */
+function runBrowser(source, config: RuntimeConfig = { target: 'browser' }) {
+  const lexer = new Lexer(source);
+  const tokens = lexer.getTokens();
+
+  const parser = new Parser(tokens);
+  const program = parser.parse();
+
+  const checker = new TypeChecker();
+  checker.check(program);
+
+  const interpreter = createRuntime(config);
   return interpreter.run(program);
 }
 
@@ -71,7 +83,9 @@ export {
   Interpreter,
   ModuleLoader,
   Builtins,
+  BrowserBuiltins,
   Scheduler,
+  createRuntime,
 
   // Value system
   Value,
@@ -105,5 +119,6 @@ export {
 
   // High-level API
   run,
+  runBrowser,
   compile,
 };

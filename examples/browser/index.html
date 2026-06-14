@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simplex Canvas Demo</title>
+<style>
+  body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #1a1a2e; }
+  canvas { border: 1px solid #333; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<script src="../../dist/simplex.browser.js"></script>
+<script>
+const { runBrowser } = simplex;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const source = `
+fn draw() {
+  canvas_clear()
+
+  canvas_set_fill_color("#FF6B6B")
+  canvas_fill_rect(50, 50, 200, 150)
+
+  canvas_set_fill_color("#4ECDC4")
+  canvas_fill_rect(300, 50, 200, 150)
+
+  canvas_set_fill_color("white")
+  canvas_set_font("bold 48px sans-serif")
+  canvas_fill_text("Simplex", 120, 300)
+}
+
+draw()
+`;
+
+try {
+  runBrowser(source, {
+    target: 'browser',
+    canvas: ctx,
+    canvasWidth: 800,
+    canvasHeight: 600
+  });
+} catch (e) {
+  console.error('Simplex error:', e);
+  ctx.fillStyle = 'red';
+  ctx.font = '16px monospace';
+  ctx.fillText('Error: ' + e.message, 10, 30);
+}
+</script>
+</body>
+</html>
