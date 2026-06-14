@@ -1,0 +1,20 @@
+// test_div.sim
+
+fn main() -> Unit {
+  let x: Number = 3;
+  let div: Number = x / 2;
+  print("3 / 2 = " + to_string(div));
+  
+  let mult: Number = 2 * div;
+  print("2 * (3/2) = " + to_string(mult));
+  
+  let result: Number = 3 - 2 * (3 / 2);
+  print("3 - 2 * (3/2) = " + to_string(result));
+  
+  let x2: Number = 4;
+  let div2: Number = x2 / 2;
+  print("4 / 2 = " + to_string(div2));
+  print("4 - 2 * (4/2) = " + to_string(4 - 2 * (4 / 2)));
+}
+
+main();

@@ -1144,6 +1144,7 @@ const BUILTIN_FUNCTIONS = new Map([
   // String builtins
   ['concat', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
   ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('String') }],
+  ['indexOf', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
   ['parse_num', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Number')]) }],
   ['to_string', { paramTypes: [new TypeAnnotation('$T')], returnType: new TypeAnnotation('String') }],
   ['print', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
@@ -1155,15 +1156,21 @@ const BUILTIN_FUNCTIONS = new Map([
   ['substring_list', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
   // Map builtins (fully generic)
-  ['map_put', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K'), new TypeAnnotation('$V')], returnType: new TypeAnnotation('Unit') }],
+  ['map_put', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K'), new TypeAnnotation('$V')], returnType: new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]) }],
   ['map_get', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$V')]) }],
   ['map_has', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Boolean') }],
-  ['map_remove', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Unit') }],
+  ['map_remove', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]) }],
+
+  // List higher-order functions
+  ['map', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$U')]) }],
+  ['filter', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('Boolean')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
+  ['fold', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$U'), new TypeAnnotation('Fn', [new TypeAnnotation('$U'), new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('$U') }],
 
   // File I/O (async — returns Task, I/O happens on join)
   ['file_read', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
   ['file_read_lines', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('List', [new TypeAnnotation('String')])])]) }],
   ['file_write', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
+  ['read_line', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
 
   // Network I/O (async — returns Task, I/O happens on join)
   ['fetch', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String'), new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('String')]), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],

@@ -212,6 +212,7 @@ let x: Number = add(3, 4);       // 7
 | `file_read` | `file_read(String) → Task<Result<String>>` | 异步读取文件 |
 | `file_write` | `file_write(String, String) → Task<Result<Unit>>` | 异步写入文件 |
 | `file_read_lines` | `file_read_lines(String) → Task<Result<List<String>>>` | 异步读行 |
+| `read_line` | `read_line() → Task<Result<String>>` | 从标准输入读取一行 |
 
 ---
 

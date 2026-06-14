@@ -235,6 +235,74 @@ class Interpreter {
       return this.scheduler.join(taskValue);
     }
 
+    // join Task → RetT: retrieve the task's result
+    if (name === 'join') {
+      const taskValue = this.execExpr(argExprs[0]);
+      if (!(taskValue instanceof TaskValue)) {
+        throw new RuntimeError('join expects a Task', expr.line, expr.column);
+      }
+      return this.scheduler.join(taskValue);
+    }
+
+    // map List<T> (T -> U) -> List<U>
+    if (name === 'map') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('map expects a List', expr.line, expr.column);
+      }
+      const fnValue = this.execExpr(argExprs[1]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('map expects a function', expr.line, expr.column);
+      }
+      const elements = [];
+      for (let i = 0; i < listValue.length(); i++) {
+        const elem = listValue.get(i);
+        const result = this.executeLambdaFromValue(fnValue, 'map', [elem]);
+        elements.push(result);
+      }
+      return mkList(elements, null);
+    }
+
+    // filter List<T> (T -> Boolean) -> List<T>
+    if (name === 'filter') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('filter expects a List', expr.line, expr.column);
+      }
+      const fnValue = this.execExpr(argExprs[1]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('filter expects a function', expr.line, expr.column);
+      }
+      const elements = [];
+      for (let i = 0; i < listValue.length(); i++) {
+        const elem = listValue.get(i);
+        const result = this.executeLambdaFromValue(fnValue, 'filter', [elem]);
+        if (result.toRawBoolean()) {
+          elements.push(elem);
+        }
+      }
+      return mkList(elements, listValue._elementType);
+    }
+
+    // fold List<T> U (U, T) -> U -> U
+    if (name === 'fold') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('fold expects a List', expr.line, expr.column);
+      }
+      const initValue = this.execExpr(argExprs[1]);
+      const fnValue = this.execExpr(argExprs[2]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('fold expects a function', expr.line, expr.column);
+      }
+      let acc = initValue;
+      for (let i = 0; i < listValue.length(); i++) {
+        const elem = listValue.get(i);
+        acc = this.executeLambdaFromValue(fnValue, 'fold', [acc, listValue.get(i)]);
+      }
+      return acc;
+    }
+
     const builtin = this.builtins.getFn(name);
     if (builtin) {
       const args = argExprs.map(a => this.execExpr(a));

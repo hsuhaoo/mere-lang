@@ -313,8 +313,8 @@ v
 
 test('map_remove', `
 let m: Map<Number, Number> = {1: 10, 2: 20};
-map_remove(m, 1);
-map_has(m, 1)
+let m2: Map<Number, Number> = map_remove(m, 1);
+map_has(m2, 1)
 `, false);
 
 test('append returns new list', `

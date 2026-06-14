@@ -1,0 +1,43 @@
+// test_map_fix.sim - 验证 Map 修复后的不可变性
+
+fn main() -> Unit {
+  let m1: Map<String, Number> = {"a": 1, "b": 2};
+  
+  // map_put 返回新 Map
+  let m2: Map<String, Number> = map_put(m1, "c", 3);
+  
+  // map_remove 返回新 Map
+  let m3: Map<String, Number> = map_remove(m2, "a");
+  
+  print("m1: " + to_string(m1));
+  print("m2: " + to_string(m2));
+  print("m3: " + to_string(m3));
+  
+  // 验证 m1 未被修改
+  if map_has(m1, "c") {
+    print("❌ BUG: m1 被修改了！");
+  }
+  if !map_has(m1, "c") {
+    print("✅ m1 未被修改");
+  }
+  
+  if map_has(m2, "a") {
+    print("✅ m2 保留 a");
+  }
+  if !map_has(m2, "a") {
+    print("❌ m2 丢失 a");
+  }
+  
+  if map_has(m3, "a") {
+    print("❌ m3 保留 a");
+  }
+  if !map_has(m3, "a") {
+    print("✅ m3 移除 a");
+  }
+  
+  // 验证链式操作
+  let m4: Map<String, Number> = map_put(map_remove(m1, "b"), "d", 4);
+  print("m4: " + to_string(m4));
+}
+
+main();

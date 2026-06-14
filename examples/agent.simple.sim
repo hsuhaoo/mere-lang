@@ -1,0 +1,123 @@
+// agent.simple.sim — Simple Simplex Agent (oMLX)
+// 运行前确保：omlx start（默认端口 8000，API key: 1234）
+// 运行：node bin/simplex.js examples/agent.simple.sim
+
+// 配置常量
+let OMLX_URL: String = "http://localhost:8000/v1/chat/completions";
+let MODEL_NAME: String = "Qwen3.5-4B-MLX-4bit";
+let API_KEY: String = "1234";
+
+// 系统提示词
+let SYSTEM_PROMPT: String = "You are a helpful AI assistant. Answer concisely in the user's language.";
+
+// 发送聊天请求到 oMLX
+fn send_chat(messages_json: String) -> Task<Result<String>> {
+  let headers: Map<String, String> = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + API_KEY
+  };
+  let body: String = "{\"model\":\"" + MODEL_NAME + "\",\"messages\":" + messages_json + ",\"max_tokens\":512,\"temperature\":0.7}";
+  return fetch(OMLX_URL, "POST", headers, body);
+}
+
+// 构建单条消息对象 JSON
+fn make_message(role: String, content: String) -> String {
+  return "{\"role\":\"" + role + "\",\"content\":\"" + content + "\"}";
+}
+
+// 主循环：递归处理对话
+fn chat_loop(history: List<String>) -> Unit {
+  // 读取用户输入
+  print("\n> ");
+  let task: Task<Result<String>> = read_line();
+  let result: Result<String> = join(task);
+  
+  if result.errMessage.len > 0 {
+    print("输入错误: " + result.errMessage);
+    return;
+  }
+  
+  let user_input: String = result.value;
+  
+  // 检查退出命令
+  if user_input == "exit" or user_input == "quit" or user_input == "bye" {
+    print("再见！");
+    return;
+  }
+  
+  // 添加用户消息到历史
+  let user_msg: String = make_message("user", user_input);
+  let new_history: List<String> = append(history, user_msg);
+  
+  // 构建完整消息列表：system + history
+  let system_msg: String = make_message("system", SYSTEM_PROMPT);
+  let full_history: List<String> = append(system_msg, new_history);
+  let messages_json: String = list_to_json(full_history);
+  
+  print("思考中...");
+  let response_task: Task<Result<String>> = send_chat(messages_json);
+  let response_result: Result<String> = join(response_task);
+  
+  if response_result.errMessage.len > 0 {
+    print("请求失败: " + response_result.errMessage);
+    // 继续下一轮
+    chat_loop(new_history);
+    return;
+  }
+  
+  // 提取回复内容
+  let assistant_content: String = extract_content(response_result.value);
+  print("Assistant: " + assistant_content);
+  
+  // 添加助手回复到历史
+  let assistant_msg: String = make_message("assistant", assistant_content);
+  let updated_history: List<String> = append(new_history, assistant_msg);
+  
+  // 递归下一轮
+  chat_loop(updated_history);
+}
+
+// 将列表转为 JSON 字符串
+fn list_to_json(items: List<String>) -> String {
+  if len(items) == 0 {
+    return "[]";
+  }
+  let result: String = "[";
+  let i: Number = 0;
+  while i < len(items) {
+    result = result + items.get_item(i);
+    if i + 1 < len(items) {
+      result = result + ",";
+    }
+    i = i + 1;
+  }
+  result = result + "]";
+  return result;
+}
+
+// 提取 JSON 中的 content 字段
+fn extract_content(json: String) -> String {
+  let start: Number = indexOf(json, "\"content\":\"");
+  if start < 0 {
+    return "解析失败: 无 content 字段";
+  }
+  let content_start: Number = start + 11;
+  let end: Number = indexOf(json, "\"", content_start);
+  if end < 0 {
+    return "解析失败: content 未闭合";
+  }
+  return substring(json, content_start, end);
+}
+
+// 入口
+fn main() -> Unit {
+  print("=== Simplex Agent (oMLX) ===");
+  print("输入 exit/quit/bye 退出");
+  print("模型: " + MODEL_NAME);
+  
+  // 初始历史：空
+  let initial_history: List<String> = [];
+  chat_loop(initial_history);
+}
+
+main();

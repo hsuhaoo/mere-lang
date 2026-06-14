@@ -1,0 +1,16 @@
+// test_stdin.sim
+// 测试 read_line builtin
+
+fn main() -> Unit {
+  print("输入一行文字: ");
+  let task: Task<Result<String>> = read_line();
+  let result: Result<String> = join(task);
+  if result.isOk {
+    print("你输入了: " + result.value);
+  }
+  if result.errMessage.len > 0 {
+    print("错误: " + result.errMessage);
+  }
+}
+
+main();

@@ -48,6 +48,12 @@ class Builtins {
       return mkString(str.substring(start, start + length));
     });
 
+    this.registerFn('indexOf', 2, (args) => {
+      const haystack = args[0].toRawString();
+      const needle = args[1].toRawString();
+      return mkNumber(haystack.indexOf(needle));
+    });
+
     this.registerFn('parse_num', 1, (args) => {
       const str = args[0].toRawString();
       const num = parseFloat(str);
@@ -99,8 +105,10 @@ class Builtins {
     // ═══════════════════════════════════════════════════════════
 
     this.registerFn('map_put', 3, (args) => {
-      (args[0] as MapValue).set(args[1], args[2]);
-      return mkUnit();
+      const map = args[0] as MapValue;
+      const key = args[1];
+      const value = args[2];
+      return map.set(key, value);
     });
 
     this.registerFn('map_get', 2, (args) => {
@@ -116,8 +124,9 @@ class Builtins {
     });
 
     this.registerFn('map_remove', 2, (args) => {
-      (args[0] as MapValue).remove(args[1]);
-      return mkUnit();
+      const map = args[0] as MapValue;
+      const key = args[1];
+      return map.remove(key);
     });
 
     // ═══════════════════════════════════════════════════════════
@@ -208,6 +217,19 @@ class Builtins {
         const promise = fs.promises.writeFile(path, content)
           .then(() => mkOk(mkUnit()))
           .catch(e => mkErr(`Cannot write file '${path}': ${e.message}`));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('read_line', 0, (args) => {
+        const promise = new Promise<Value>((resolve) => {
+          process.stdin.once('data', (data) => {
+            const line = data.toString('utf-8').replace(/\n$/, '');
+            resolve(mkOk(mkString(line)));
+          });
+          process.stdin.once('error', (e) => {
+            resolve(mkErr(`stdin error: ${e.message}`));
+          });
+        });
         return this.scheduler!.spawnAsync(promise, null);
       });
 

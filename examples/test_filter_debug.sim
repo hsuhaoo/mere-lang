@@ -1,0 +1,25 @@
+// test_filter_debug.sim
+
+fn main() -> Unit {
+  // 简单测试 filter
+  let nums: List<Number> = [1, 2, 3, 4, 5];
+  
+  // 测试大于 3
+  let gt3: List<Number> = filter(nums, fn(x: Number) -> Boolean { x > 3 });
+  print("filter x > 3: " + to_string(gt3));
+  
+  // 测试等于 2
+  let eq2: List<Number> = filter(nums, fn(x: Number) -> Boolean { x == 2 });
+  print("filter x == 2: " + to_string(eq2));
+  
+  // 测试 x - 2 * (x / 2) 表达式
+  let x: Number = 2;
+  let expr: Number = x - 2 * (x / 2);
+  print("expr for 2: " + to_string(expr));
+  
+  let x2: Number = 3;
+  let expr2: Number = x2 - 2 * (x2 / 2);
+  print("expr for 3: " + to_string(expr2));
+}
+
+main();

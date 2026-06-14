@@ -315,12 +315,16 @@ class MapValue extends Value {
     return this._entries.hasOwnProperty(this._resolveKey(key));
   }
 
-  set(key: Value, value: Value): void {
-    this._entries[this._resolveKey(key)] = value;
+  set(key: Value, value: Value): MapValue {
+    const newEntries = { ...this._entries };
+    newEntries[this._resolveKey(key)] = value;
+    return new MapValue(newEntries, this._keyType, this._valueType);
   }
 
-  remove(key: Value): void {
-    delete this._entries[this._resolveKey(key)];
+  remove(key: Value): MapValue {
+    const newEntries = { ...this._entries };
+    delete newEntries[this._resolveKey(key)];
+    return new MapValue(newEntries, this._keyType, this._valueType);
   }
 
   get(key: string): Value | undefined {

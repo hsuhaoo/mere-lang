@@ -1,0 +1,37 @@
+// test_higher_order.sim - 测试 map/filter/fold
+
+fn main() -> Unit {
+  let nums: List<Number> = [1, 2, 3, 4, 5];
+  
+  // map: x -> x * 2
+  let doubled: List<Number> = map(nums, fn(x: Number) -> Number { x * 2 });
+  print("map x*2: " + to_string(doubled));
+  
+  // filter: x > 2
+  let gt2: List<Number> = filter(nums, fn(x: Number) -> Boolean { x > 2 });
+  print("filter x > 2: " + to_string(gt2));
+  
+  // filter: x < 4
+  let lt4: List<Number> = filter(nums, fn(x: Number) -> Boolean { x < 4 });
+  print("filter x < 4: " + to_string(lt4));
+  
+  // fold: 求和
+  let sum: Number = fold(nums, 0, fn(acc: Number, x: Number) -> Number { acc + x });
+  print("fold sum: " + to_string(sum));
+  
+  // fold: 字符串拼接
+  let strs: List<String> = ["a", "b", "c"];
+  let joined: String = fold(strs, "", fn(acc: String, s: String) -> String { acc + s });
+  print("fold join: " + joined);
+  
+  // 组合使用
+  let result: Number = fold(filter(map(nums, fn(x: Number) -> Number { x * 2 }), fn(x: Number) -> Boolean { x > 5 }), 0, fn(acc: Number, x: Number) -> Number { acc + x });
+  print("combined: " + to_string(result));
+  
+  // 空列表测试
+  let empty: List<Number> = [];
+  let empty_sum: Number = fold(empty, 0, fn(acc: Number, x: Number) -> Number { acc + x });
+  print("empty fold: " + to_string(empty_sum));
+}
+
+main();

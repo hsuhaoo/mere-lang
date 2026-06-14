@@ -269,8 +269,8 @@ not get(m, 99).isOk
 
 test('Map remove', `
 let m: Map<Number, Number> = {1: 10, 2: 20};
-map_remove(m, 1);
-has(m, 1)
+let m2: Map<Number, Number> = map_remove(m, 1);
+has(m2, 1)
 `, false);
 
 // ── Lambda runtime ─────────────────────────────────────────────

@@ -1,0 +1,20 @@
+// test_even.sim
+
+fn main() -> Unit {
+  let x: Number = 2;
+  let div: Number = x / 2;
+  let mult: Number = div * 2;
+  print("x=2: div=" + to_string(div) + ", mult=" + to_string(mult) + ", eq=" + to_string(mult == x));
+  
+  let x2: Number = 3;
+  let div2: Number = x2 / 2;
+  let mult2: Number = div2 * 2;
+  print("x=3: div=" + to_string(div2) + ", mult=" + to_string(mult2) + ", eq=" + to_string(mult2 == x2));
+  
+  let x3: Number = 4;
+  let div3: Number = x3 / 2;
+  let mult3: Number = div3 * 2;
+  print("x=4: div=" + to_string(div3) + ", mult=" + to_string(mult3) + ", eq=" + to_string(mult3 == x3));
+}
+
+main();
