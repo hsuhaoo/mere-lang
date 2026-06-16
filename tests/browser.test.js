@@ -488,6 +488,48 @@ function createTest() {
 // 7. BrowserBuiltins arity checks
 // ════════════════════════════════════════════════════════════
 
+// ── Event builtins ──
+(function() {
+  const { bb } = createTest();
+
+  test('canvas_on_click registered', bb.isBuiltin('canvas_on_click'));
+  test('canvas_on_drag registered', bb.isBuiltin('canvas_on_drag'));
+
+  const clickFn = bb.getFn('canvas_on_click');
+  testEqual('canvas_on_click arity', clickFn.arity, 1);
+  testEqual('canvas_on_drag arity', bb.getFn('canvas_on_drag').arity, 1);
+
+  // Verify _registerHandler stores the callback
+  const mockHandler = { type: 'FnValue', params: [], body: [] };
+  const resultClick = clickFn.fn([mockHandler]);
+  test('canvas_on_click returns Unit', resultClick.isUnit());
+  testEqual('callback stored', bb.callbacks.length >= 1, true);
+  testEqual('stored type is click', bb.callbacks[bb.callbacks.length - 1].type, 'click');
+})();
+
+(function testEventTypeChecker() {
+  try {
+    runBrowser('fn main() { canvas_on_click(fn(x: Number, y: Number) -> Unit { () }) }', { target: 'browser', canvas: null });
+    test('canvas_on_click type-checks with fn(Number,Number)', true);
+  } catch (e) {
+    test('canvas_on_click type-checks with fn(Number,Number): ' + e.message, false);
+  }
+
+  try {
+    runBrowser('fn main() { canvas_on_click(42) }', { target: 'browser' });
+    test('canvas_on_click rejects non-function arg', false);
+  } catch (e) {
+    testEqual('canvas_on_click rejects non-function arg', e.constructor.name, 'TypeError');
+  }
+
+  try {
+    runBrowser('fn main() { canvas_on_drag(fn(x: Number) -> Unit { () }) }', { target: 'browser', canvas: null });
+    test('canvas_on_drag rejects wrong-arity lambda', false);
+  } catch (e) {
+    test('canvas_on_drag rejects wrong-arity lambda', true);
+  }
+})();
+
 (function() {
   const { bb } = createTest();
 

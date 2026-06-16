@@ -9,5 +9,7 @@ export function createBrowserRuntime(
 ): Interpreter {
   const scheduler = new Scheduler();
   const builtins = new BrowserBuiltins(scheduler, canvas || null, width || 0, height || 0);
-  return new Interpreter(builtins, scheduler);
+  const interpreter = new Interpreter(builtins, scheduler);
+  builtins.setInterpreter(interpreter);
+  return interpreter;
 }

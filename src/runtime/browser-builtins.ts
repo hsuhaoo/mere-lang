@@ -7,6 +7,7 @@ import {
   mkOk, mkErr, FnValue,
 } from './values.js';
 import { Scheduler } from './scheduler.js';
+import type { Interpreter } from './interpreter.js';
 
 type CallbackEntry = {
   type: string;
@@ -21,6 +22,9 @@ class BrowserBuiltins {
   canvasHeight: number;
 
   callbacks: CallbackEntry[];
+  interpreter: Interpreter | null;
+  private _listenersSetup: boolean;
+  private _isDragging: boolean;
 
   constructor(
     scheduler?: Scheduler,
@@ -34,7 +38,14 @@ class BrowserBuiltins {
     this.canvasWidth = width || 0;
     this.canvasHeight = height || 0;
     this.callbacks = [];
+    this.interpreter = null;
+    this._listenersSetup = false;
+    this._isDragging = false;
     this.registerBuiltins();
+  }
+
+  setInterpreter(i: Interpreter) {
+    this.interpreter = i;
   }
 
   registerBuiltins() {
@@ -208,7 +219,65 @@ class BrowserBuiltins {
       });
     }
 
+    this.registerFn('canvas_on_click', 1, (args) => {
+      this._registerHandler('click', args[0] as FnValue);
+      this._ensureClickListeners();
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_on_drag', 1, (args) => {
+      this._registerHandler('drag', args[0] as FnValue);
+      this._ensureClickListeners();
+      return mkUnit();
+    });
+
     this.registerCanvasBuiltins();
+  }
+
+  private _ensureClickListeners() {
+    if (this._listenersSetup) return;
+    this._listenersSetup = true;
+    if (!this.ctx) return;
+    const canvas = this.ctx.canvas;
+    if (!canvas) return;
+
+    canvas.addEventListener('click', (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      this._fireCallbacks('click', e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+      this._isDragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      const rect = canvas.getBoundingClientRect();
+      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!this._isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('pointerup', (e: PointerEvent) => {
+      if (!this._isDragging) return;
+      this._isDragging = false;
+      const rect = canvas.getBoundingClientRect();
+      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
+    });
+  }
+
+  private _fireCallbacks(type: string, x: number, y: number) {
+    if (!this.interpreter) return;
+    for (const cb of this.callbacks) {
+      if (cb.type === type) {
+        try {
+          this.interpreter.executeLambdaFromValue(cb.handler, type, [mkNumber(x), mkNumber(y)]);
+        } catch (e) {
+          console.error('Simplex event handler error:', e);
+        }
+      }
+    }
   }
 
   private registerCanvasBuiltins() {

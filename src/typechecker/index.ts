@@ -1203,6 +1203,8 @@ const BUILTIN_FUNCTIONS = new Map([
   ['canvas_rotate', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_translate', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_scale', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_on_click', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_on_drag', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
 
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
