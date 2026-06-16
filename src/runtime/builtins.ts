@@ -178,6 +178,10 @@ class Builtins {
       return mkNumber(Math.min(args[0].toRawNumber(), args[1].toRawNumber()));
     });
 
+    this.registerFn('random', 1, (args) => {
+      return mkNumber(Math.floor(Math.random() * args[0].toRawNumber()));
+    });
+
     // ═══════════════════════════════════════════════════════════
     // I/O builtins (async — returns Task, I/O starts immediately)
     // ═══════════════════════════════════════════════════════════

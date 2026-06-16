@@ -1,0 +1,34 @@
+let colors: List<String> = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#A8E6CF", "#FF8B94"]
+
+fn pick_color() -> String {
+  let i: Number = random(5)
+  list_get(colors, i).value
+}
+
+fn draw_bg() {
+  canvas_clear()
+  canvas_set_fill_color("#1a1a2e")
+  canvas_fill_rect(0, 0, 800, 600)
+  canvas_set_fill_color("rgba(255, 255, 255, 0.6)")
+  canvas_set_font("16px sans-serif")
+  canvas_fill_text("Click to draw circles", 20, 30)
+  canvas_fill_text("Drag to draw lines", 20, 55)
+}
+
+fn on_click(x: Number, y: Number) -> Unit {
+  canvas_set_fill_color(pick_color())
+  canvas_begin_path()
+  canvas_arc(x, y, 15, 0, 6.283)
+  canvas_fill()
+}
+
+fn on_drag(x: Number, y: Number) -> Unit {
+  canvas_set_fill_color(pick_color())
+  canvas_begin_path()
+  canvas_arc(x, y, 5, 0, 6.283)
+  canvas_fill()
+}
+
+draw_bg()
+canvas_on_click(on_click)
+canvas_on_drag(on_drag)

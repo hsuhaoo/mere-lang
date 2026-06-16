@@ -1210,6 +1210,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['max', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['random', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
 ]);
 
 export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };
