@@ -53,6 +53,16 @@ class BrowserBuiltins {
       return args[0].concat(args[1]);
     });
 
+    this.registerFn('concat_all', 2, (args) => {
+      const list = args[0];
+      const sep = args[1].toRawString();
+      const strs = [];
+      for (let i = 0; i < list.length(); i++) {
+        strs.push(list.get(i).toRawString());
+      }
+      return mkString(strs.join(sep));
+    });
+
     this.registerFn('substring', 3, (args) => {
       const str = args[0].toRawString();
       const start = args[1].toRawNumber();
@@ -182,7 +192,39 @@ class BrowserBuiltins {
       return mkNumber(Math.floor(Math.random() * args[0].toRawNumber()));
     });
 
+    this.registerFn('sort', 1, (args) => {
+      const list = args[0];
+      const elems = [];
+      for (let i = 0; i < list.length(); i++) {
+        elems.push(list.get(i));
+      }
+      if (elems.length > 1) {
+        const first = elems[0];
+        if (first.type.name === 'Number') {
+          elems.sort((a, b) => a.toRawNumber() - b.toRawNumber());
+        } else {
+          elems.sort((a, b) => {
+            if (a.toRawString() < b.toRawString()) return -1;
+            if (a.toRawString() > b.toRawString()) return 1;
+            return 0;
+          });
+        }
+      }
+      return new ListValue(elems, list._elementType);
+    });
+
+    this.registerFn('sleep', 1, (args) => {
+      const ms = args[0].toRawNumber();
+      const promise: Promise<Value> = new Promise(resolve => setTimeout(() => resolve(mkUnit()), ms));
+      return this.scheduler!.spawnAsync(promise, null);
+    });
+
     if (this.scheduler) {
+      this.registerFn('next_frame', 0, (args) => {
+        const promise: Promise<Value> = new Promise(resolve => requestAnimationFrame(ts => resolve(mkNumber(ts))));
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
       this.registerFn('fetch', 4, (args) => {
         const url = args[0].toRawString();
         const method = args[1].toRawString();
@@ -301,6 +343,21 @@ class BrowserBuiltins {
       this._registerHandler('drag', args[0] as FnValue);
       this._ensureClickListeners();
       return mkUnit();
+    });
+
+    this.registerFn('record_update', 3, (args) => {
+      const rec = args[0];
+      if (!(rec instanceof RecordValue)) {
+        throw new Error(`'record_update' expects a Record, got ${rec.typeName()}`);
+      }
+      const fieldName = args[1].toRawString();
+      const newValue = args[2];
+      const newFields: Record<string, Value> = {};
+      for (const key of rec.fieldNames()) {
+        newFields[key] = rec.get(key)!;
+      }
+      newFields[fieldName] = newValue;
+      return new RecordValue(newFields, rec.typeName());
     });
 
     this.registerCanvasBuiltins();

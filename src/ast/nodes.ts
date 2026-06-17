@@ -80,15 +80,24 @@ class FieldAccessExpr {
   }
 }
 
+export type ElifBlock = {
+  condition: Expr;
+  thenBlock: Stmt[];
+};
+
 class IfExpr {
   condition: Expr;
   thenBlock: Stmt[];
+  elifBlocks: ElifBlock[];
+  elseBlock: Stmt[] | null;
   line: number;
   column: number;
 
-  constructor(condition: Expr, thenBlock: Stmt[], line = 0, column = 0) {
+  constructor(condition: Expr, thenBlock: Stmt[], elifBlocks: ElifBlock[] = [], elseBlock: Stmt[] | null = null, line = 0, column = 0) {
     this.condition = condition;
     this.thenBlock = thenBlock;
+    this.elifBlocks = elifBlocks;
+    this.elseBlock = elseBlock;
     this.line = line;
     this.column = column;
   }
@@ -256,12 +265,16 @@ class ReturnStmt {
 class IfStmt {
   condition: Expr;
   thenBlock: Stmt[];
+  elifBlocks: ElifBlock[];
+  elseBlock: Stmt[] | null;
   line: number;
   column: number;
 
-  constructor(condition: Expr, thenBlock: Stmt[], line = 0, column = 0) {
+  constructor(condition: Expr, thenBlock: Stmt[], elifBlocks: ElifBlock[] = [], elseBlock: Stmt[] | null = null, line = 0, column = 0) {
     this.condition = condition;
     this.thenBlock = thenBlock;
+    this.elifBlocks = elifBlocks;
+    this.elseBlock = elseBlock;
     this.line = line;
     this.column = column;
   }

@@ -503,6 +503,42 @@ testError('db_delete rejects non-String', `
 db_delete(42)
 `, /String|expected|mismatch/i);
 
+// ── record_update ─────────────────────────────────────────────
+
+test('record_update type-checks', `
+type P = { x: Number, y: Number };
+let p: P = { x: 10, y: 20 };
+let p2: P = record_update(p, "x", 30);
+  p2.x
+`, 30);
+
+test('elif typechecks condition as Boolean', `
+let x: Number = 5;
+if x > 3 { 1 } elif x > 1 { 2 }
+`, 1);
+
+testError('elif rejects non-Boolean condition', `
+let x: Number = 5;
+if x > 3 { 1 } elif 42 { 2 }
+`, /expected|Boolean|mismatch/i);
+
+testError('elif rejects non-Boolean condition after chain', `
+let x: Number = 5;
+if x > 3 { 1 } elif x > 1 { 2 } elif "hello" { 3 }
+`, /expected|Boolean|mismatch/i);
+
+test('else typechecks in if-else', `
+if true { 1 } else { 2 }
+`, 1);
+
+test('else typechecks in if-elif-else', `
+if false { 1 } elif false { 2 } else { 3 }
+`, 3);
+
+test('concat_all typechecks', `
+concat_all(["a", "b"], ",")
+`, "a,b");
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 

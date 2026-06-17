@@ -37,6 +37,16 @@ class Builtins {
       return args[0].concat(args[1]);
     });
 
+    this.registerFn('concat_all', 2, (args) => {
+      const list = args[0];
+      const sep = args[1].toRawString();
+      const strs = [];
+      for (let i = 0; i < list.length(); i++) {
+        strs.push(list.get(i).toRawString());
+      }
+      return mkString(strs.join(sep));
+    });
+
     this.registerFn('substring', 3, (args) => {
       const str = args[0].toRawString();
       const start = args[1].toRawNumber();
@@ -182,6 +192,33 @@ class Builtins {
       return mkNumber(Math.floor(Math.random() * args[0].toRawNumber()));
     });
 
+    this.registerFn('sort', 1, (args) => {
+      const list = args[0];
+      const elems = [];
+      for (let i = 0; i < list.length(); i++) {
+        elems.push(list.get(i));
+      }
+      if (elems.length > 1) {
+        const first = elems[0];
+        if (first.type.name === 'Number') {
+          elems.sort((a, b) => a.toRawNumber() - b.toRawNumber());
+        } else {
+          elems.sort((a, b) => {
+            if (a.toRawString() < b.toRawString()) return -1;
+            if (a.toRawString() > b.toRawString()) return 1;
+            return 0;
+          });
+        }
+      }
+      return new ListValue(elems, list._elementType);
+    });
+
+    this.registerFn('sleep', 1, (args) => {
+      const ms = args[0].toRawNumber();
+      const promise: Promise<Value> = new Promise(resolve => setTimeout(() => resolve(mkUnit()), ms));
+      return this.scheduler!.spawnAsync(promise, null);
+    });
+
     // ═══════════════════════════════════════════════════════════
     // I/O builtins (async — returns Task, I/O starts immediately)
     // ═══════════════════════════════════════════════════════════
@@ -269,6 +306,25 @@ class Builtins {
         return this.scheduler!.spawnAsync(promise, null);
       });
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // Record operations
+    // ═══════════════════════════════════════════════════════════
+
+    this.registerFn('record_update', 3, (args) => {
+      const rec = args[0];
+      if (!(rec instanceof RecordValue)) {
+        throw new Error(`'record_update' expects a Record, got ${rec.typeName()}`);
+      }
+      const fieldName = args[1].toRawString();
+      const newValue = args[2];
+      const newFields: Record<string, Value> = {};
+      for (const key of rec.fieldNames()) {
+        newFields[key] = rec.get(key)!;
+      }
+      newFields[fieldName] = newValue;
+      return new RecordValue(newFields, rec.typeName());
+    });
   }
 
   registerFn(name: string, arity: number, fn: (args: any[]) => Value) {

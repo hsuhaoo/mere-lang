@@ -289,15 +289,44 @@ class Parser {
   parseIf() {
     const ifToken = this.expect(TokenType.IF);
     const condition = this.parseExpr();
+    const thenBlock = this.parseBracedBlock();
+    const { elifBlocks, elseBlock } = this.parseTailBlocks();
+    this.match(TokenType.SEMICOLON);
+    return new IfStmt(condition, thenBlock, elifBlocks, elseBlock, ifToken.line, ifToken.column);
+  }
+
+  parseIfExpr() {
+    const ifToken = this.expect(TokenType.IF);
+    const condition = this.parseExpr();
+    const thenBlock = this.parseBracedBlock();
+    const { elifBlocks, elseBlock } = this.parseTailBlocks();
+    return new IfExpr(condition, thenBlock, elifBlocks, elseBlock, ifToken.line, ifToken.column);
+  }
+
+  parseBracedBlock() {
     this.expect(TokenType.LBRACE);
-
-    const thenBlock = [];
+    const stmts = [];
     while (!this.check(TokenType.RBRACE) && !this.check(TokenType.EOF)) {
-      thenBlock.push(this.parseStmt());
+      stmts.push(this.parseStmt());
     }
-
     this.expect(TokenType.RBRACE);
-    return new IfStmt(condition, thenBlock, ifToken.line, ifToken.column);
+    return stmts;
+  }
+
+  parseTailBlocks() {
+    const elifBlocks = [];
+    while (this.check(TokenType.ELIF)) {
+      this.advance();
+      const condition = this.parseExpr();
+      const thenBlock = this.parseBracedBlock();
+      elifBlocks.push({ condition, thenBlock });
+    }
+    let elseBlock = null;
+    if (this.check(TokenType.ELSE)) {
+      this.advance();
+      elseBlock = this.parseBracedBlock();
+    }
+    return { elifBlocks, elseBlock };
   }
 
   parseReturn() {
@@ -435,6 +464,11 @@ class Parser {
     // Function literal (anonymous)
     if (token.type === TokenType.FN) {
       return this.parseFnLiteral();
+    }
+
+    // If expression
+    if (token.type === TokenType.IF) {
+      return this.parseIfExpr();
     }
 
     // Map literal {key: value, ...} - only if contains colon among braces

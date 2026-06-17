@@ -204,6 +204,17 @@ class TypeChecker {
     for (const s of stmt.thenBlock) {
       this.checkStmt(s);
     }
+    for (const elif of stmt.elifBlocks) {
+      this.checkExpr(elif.condition, new TypeAnnotation('Boolean'));
+      for (const s of elif.thenBlock) {
+        this.checkStmt(s);
+      }
+    }
+    if (stmt.elseBlock) {
+      for (const s of stmt.elseBlock) {
+        this.checkStmt(s);
+      }
+    }
   }
 
   checkReturn(stmt) {
@@ -666,10 +677,27 @@ class TypeChecker {
 
   inferIfExpr(expr) {
     this.checkExpr(expr.condition, new TypeAnnotation('Boolean'));
-    for (const s of expr.thenBlock) {
-      this.checkStmt(s);
+    const thenType = this.inferBlockType(expr.thenBlock);
+    for (const elif of expr.elifBlocks) {
+      this.checkExpr(elif.condition, new TypeAnnotation('Boolean'));
+      this.inferBlockType(elif.thenBlock);
     }
-    return new TypeAnnotation('Unit');
+    if (expr.elseBlock) {
+      this.inferBlockType(expr.elseBlock);
+    }
+    return thenType;
+  }
+
+  inferBlockType(stmts) {
+    let lastType = new TypeAnnotation('Unit');
+    for (let i = 0; i < stmts.length; i++) {
+      if (i === stmts.length - 1) {
+        lastType = this.checkStmtWithReturn(stmts[i]);
+      } else {
+        this.checkStmt(stmts[i]);
+      }
+    }
+    return lastType;
   }
 
   inferBlock(expr) {
@@ -1149,6 +1177,7 @@ class TypeChecker {
 const BUILTIN_FUNCTIONS = new Map([
   // String builtins
   ['concat', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
+  ['concat_all', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('String')]), new TypeAnnotation('String')], returnType: new TypeAnnotation('String') }],
   ['substring', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('String') }],
   ['indexOf', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
   ['parse_num', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('Number')]) }],
@@ -1170,6 +1199,11 @@ const BUILTIN_FUNCTIONS = new Map([
   ['map', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$U')]) }],
   ['filter', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('Boolean')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['fold', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$U'), new TypeAnnotation('Fn', [new TypeAnnotation('$U'), new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('$U') }],
+  ['sort_by', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('$T'), new TypeAnnotation('Number')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
+
+  // Timing (async — returns Task)
+  ['sleep', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Unit')]) }],
+  ['next_frame', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Number')]) }],
 
   // File I/O (async — returns Task, I/O happens on join)
   ['file_read', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
@@ -1215,10 +1249,15 @@ const BUILTIN_FUNCTIONS = new Map([
   ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['random', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
 
+  ['sort', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
+
   // IndexedDB storage (browser only, async — returns Task)
   ['db_store', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
   ['db_load', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
   ['db_delete', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
+
+  // Record update (returns new record with field changed)
+  ['record_update', { paramTypes: [new TypeAnnotation('$Record'), new TypeAnnotation('String'), new TypeAnnotation('$T')], returnType: new TypeAnnotation('$Record') }],
 ]);
 
 export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };

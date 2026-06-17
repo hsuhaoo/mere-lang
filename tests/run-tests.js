@@ -9,6 +9,19 @@ console.log();
 let passed = 0;
 let failed = 0;
 
+function arraysEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (Array.isArray(a[i]) && Array.isArray(b[i])) {
+      if (!arraysEqual(a[i], b[i])) return false;
+    } else if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function test(name, src, expected) {
   try {
     const result = run(src);
@@ -21,6 +34,14 @@ function test(name, src, expected) {
         passed++;
       } else {
         console.log('✗', name, 'expected', expected, 'got', actualOk);
+        failed++;
+      }
+    } else if (Array.isArray(actual) && Array.isArray(expected)) {
+      if (arraysEqual(actual, expected)) {
+        console.log('✓', name);
+        passed++;
+      } else {
+        console.log('✗', name, 'expected', JSON.stringify(expected), 'got', JSON.stringify(actual));
         failed++;
       }
     } else if (actual === expected) {
@@ -65,6 +86,13 @@ function extractValue(v) {
   if (v.isString()) return v.toRawString();
   if (v.isBoolean()) return v.toRawBoolean();
   if (v.isUnit()) return '()';
+  if (v.isList()) {
+    const items = [];
+    for (let i = 0; i < v.length(); i++) {
+      items.push(extractValue(v.get(i)));
+    }
+    return items;
+  }
   if (v.isResult()) {
     return {
       ok: v.isOkValue(),
@@ -532,6 +560,179 @@ let l: List<List<Number>> = [[1, 2], [3, 4]];
 let inner: List<Number> = get(l, 0).value;
 inner.len
 `, 2);
+
+// ── Record update ──────────────────────────────────────────────
+test('record_update changes field value', `
+type P = { x: Number, y: Number };
+let p: P = { x: 10, y: 20 };
+let p2: P = record_update(p, "x", 30);
+p2.x
+`, 30);
+
+test('record_update preserves other fields', `
+type P = { x: Number, y: Number };
+let p: P = { x: 10, y: 20 };
+let p2: P = record_update(p, "x", 30);
+p2.y
+`, 20);
+
+test('record_update returns same record type', `
+type P = { x: Number, y: Number };
+let p: P = { x: 1, y: 2 };
+let p2: P = record_update(p, "y", 99);
+  p2.y
+`, 99);
+
+// ── elif ────────────────────────────────────────────────
+
+test('elif basic: first branch taken', `
+let x: Number = 10;
+if x > 5 {
+  1
+} elif x > 0 {
+  2
+} elif x > -5 {
+  3
+}
+`, 1);
+
+test('elif basic: second branch taken', `
+let x: Number = 1;
+if x > 5 {
+  1
+} elif x > 0 {
+  2
+} elif x > -5 {
+  3
+}
+`, 2);
+
+test('elif basic: third branch taken', `
+let x: Number = -1;
+if x > 5 {
+  1
+} elif x > 0 {
+  2
+} elif x > -5 {
+  3
+}
+`, 3);
+
+test('elif basic: no branch taken', `
+let x: Number = -10;
+if x > 5 {
+  1
+} elif x > 0 {
+  2
+} elif x > -5 {
+  3
+}
+`, '()');
+
+test('elif nested', `
+let x: Number = 5;
+if x > 10 {
+  1
+} elif x > 3 {
+  if x > 4 {
+    2
+  } elif x > 2 {
+    3
+  }
+} elif x > 0 {
+  4
+}
+`, 2);
+
+test('elif as expression in let', `
+let x: Number = 1;
+let result: Number = if x > 5 { 10 } elif x > 0 { 20 } elif x > -5 { 30 };
+result
+`, 20);
+
+test('elif typecheck correct', `
+fn classify(n: Number) -> String {
+  if n > 0 { "pos" } elif n == 0 { "zero" } elif n < 0 { "neg" };
+  "default"
+};
+classify(1)
+`, 'default');
+
+// ── else ────────────────────────────────────────────────
+
+test('else: if false take else', `
+if false { 1 } else { 2 }
+`, 2);
+
+test('else: if true skip else', `
+if true { 1 } else { 2 }
+`, 1);
+
+test('else: elif-else chain', `
+if false { 1 } elif false { 2 } else { 3 }
+`, 3);
+
+test('else: elif true skips else', `
+if false { 1 } elif true { 2 } else { 3 }
+`, 2);
+
+// ── concat_all ───────────────────────────────────────────
+
+test('concat_all joins strings', `
+concat_all(["a", "b", "c"], ", ")
+`, "a, b, c");
+
+test('concat_all single element', `
+concat_all(["hello"], ", ")
+`, "hello");
+
+test('concat_all empty list', `
+let xs: List<String> = [];
+concat_all(xs, ",")
+`, "");
+
+test('concat_all empty separator', `
+concat_all(["a", "b", "c"], "")
+`, "abc");
+
+// ── sort ────────────────────────────────────────────────
+
+test('sort numbers ascending', `
+sort([3, 1, 4, 1, 5, 9, 2, 6])
+`, [1, 1, 2, 3, 4, 5, 6, 9]);
+
+test('sort strings', `
+sort(["c", "a", "b"])
+`, ["a", "b", "c"]);
+
+test('sort single element', `
+sort([42])
+`, [42]);
+
+test('sort empty list', `
+let xs: List<Number> = [];
+sort(xs)
+`, []);
+
+// ── sort_by ──────────────────────────────────────────────
+
+test('sort_by numbers descending', `
+sort_by([1, 5, 3, 2, 4], fn(a: Number, b: Number) -> Number { b - a })
+`, [5, 4, 3, 2, 1]);
+
+test('sort_by strings by length', `
+sort_by(["aa", "b", "ccc"], fn(a: String, b: String) -> Number { a.len - b.len })
+`, ["b", "aa", "ccc"]);
+
+test('sort_by ascending', `
+sort_by([3, 1, 2], fn(a: Number, b: Number) -> Number { a - b })
+`, [1, 2, 3]);
+
+// ── sleep ───────────────────────────────────────────────
+
+test('sleep and join', `
+join(sleep(1))
+`, '()');
 
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');

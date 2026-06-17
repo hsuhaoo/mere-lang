@@ -119,6 +119,7 @@ function createTest() {
   test('append registered', names.includes('append'));
   test('map_put registered', names.includes('map_put'));
   test('abs registered', names.includes('abs'));
+  test('record_update registered', names.includes('record_update'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
   test('db_store registered', names.includes('db_store'));
   test('db_load registered', names.includes('db_load'));

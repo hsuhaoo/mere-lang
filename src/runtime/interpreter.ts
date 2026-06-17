@@ -317,6 +317,27 @@ class Interpreter {
       return acc;
     }
 
+    // sort_by List<T> (T, T -> Number) -> List<T>
+    if (name === 'sort_by') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('sort_by expects a List', expr.line, expr.column);
+      }
+      const fnValue = this.execExpr(argExprs[1]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('sort_by expects a function', expr.line, expr.column);
+      }
+      const elements = [];
+      for (let i = 0; i < listValue.length(); i++) {
+        elements.push(listValue.get(i));
+      }
+      elements.sort((a, b) => {
+        const result = this.executeLambdaFromValue(fnValue, 'sort_by', [a, b]);
+        return result.toRawNumber();
+      });
+      return mkList(elements, listValue._elementType);
+    }
+
     const builtin = this.builtins.getFn(name);
     if (builtin) {
       const args = argExprs.map(a => this.execExpr(a));
@@ -468,13 +489,19 @@ class Interpreter {
     }
     return obj.get(expr.field);
   }
-
   execIfExpr(expr: IfExpr): Value {
     const condition = this.execExpr(expr.condition);
     if (condition.isTruthy()) {
-      for (const stmt of expr.thenBlock) {
-        this.execStmt(stmt);
+      return this.execBlock({ stmts: expr.thenBlock } as BlockExpr);
+    }
+    for (const elif of expr.elifBlocks) {
+      const elifCondition = this.execExpr(elif.condition);
+      if (elifCondition.isTruthy()) {
+        return this.execBlock({ stmts: elif.thenBlock } as BlockExpr);
       }
+    }
+    if (expr.elseBlock) {
+      return this.execBlock({ stmts: expr.elseBlock } as BlockExpr);
     }
     return mkUnit();
   }
@@ -483,6 +510,15 @@ class Interpreter {
     const condition = this.execExpr(stmt.condition);
     if (condition.isTruthy()) {
       return this.execBlock({ stmts: stmt.thenBlock } as BlockExpr);
+    }
+    for (const elif of stmt.elifBlocks) {
+      const elifCondition = this.execExpr(elif.condition);
+      if (elifCondition.isTruthy()) {
+        return this.execBlock({ stmts: elif.thenBlock } as BlockExpr);
+      }
+    }
+    if (stmt.elseBlock) {
+      return this.execBlock({ stmts: stmt.elseBlock } as BlockExpr);
     }
     return mkUnit();
   }
