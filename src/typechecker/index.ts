@@ -1214,6 +1214,11 @@ const BUILTIN_FUNCTIONS = new Map([
   ['max', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['random', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+
+  // IndexedDB storage (browser only, async — returns Task)
+  ['db_store', { paramTypes: [new TypeAnnotation('String'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
+  ['db_load', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
+  ['db_delete', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('Unit')])]) }],
 ]);
 
 export { TypeChecker, TypeError, BUILTIN_FUNCTIONS };

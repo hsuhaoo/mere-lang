@@ -120,6 +120,9 @@ function createTest() {
   test('map_put registered', names.includes('map_put'));
   test('abs registered', names.includes('abs'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
+  test('db_store registered', names.includes('db_store'));
+  test('db_load registered', names.includes('db_load'));
+  test('db_delete registered', names.includes('db_delete'));
 
   test('file_read NOT registered', !names.includes('file_read'));
   test('file_write NOT registered', !names.includes('file_write'));

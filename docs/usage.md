@@ -18,16 +18,21 @@ Simplex 是一个极简、显式的编程语言。关键字分为几类：
 3. [数据类型](#3-数据类型)
 4. [表达式与运算符](#4-表达式与运算符)
 5. [函数](#5-函数)
-6. [Lambda 表达式](#6-lambda-表达式)
-7. [条件](#7-条件)
-8. [错误处理](#8-错误处理)
-9. [数据结构](#9-数据结构)
-10. [自定义记录](#10-自定义记录)
-11. [文件 I/O](#11-文件-io)
-11.3 [网络 I/O](#11-3-网络-io)
-12. [模块系统](#12-模块系统)
-13. [任务与并发](#13-任务与并发)
-14. [完整示例](#14-完整示例)
+6. [网络 I/O](#6-网络-io)
+7. [列表高阶函数](#7-列表高阶函数)
+8. [Lambda 表达式](#8-lambda-表达式)
+9. [条件](#9-条件)
+10. [错误处理](#10-错误处理)
+11. [数据结构](#11-数据结构)
+12. [自定义记录](#12-自定义记录)
+13. [文件 I/O](#13-文件-io)
+14. [模块系统](#14-模块系统)
+15. [任务与并发](#15-任务与并发)
+16. [Canvas 图形 API](#16-canvas-图形-apibrowser)
+17. [事件系统](#17-事件系统browser)
+18. [IndexedDB 存储](#18-indexeddb-存储browser)
+19. [浏览器运行时与 CLI 构建](#19-浏览器运行时与-cli-构建)
+20. [完整示例](#20-完整示例)
 
 ---
 
@@ -211,7 +216,12 @@ let x: Number = add(3, 4);       // 7
 | `file_write` | `file_write(String, String) → Task<Result<Unit>>` | 异步写入文件 |
 | `file_read_lines` | `file_read_lines(String) → Task<Result<List<String>>>` | 异步读行 |
 | `read_line` | `read_line() → Task<Result<String>>` | 从标准输入读取一行 |
-| `fetch` | `fetch(String, FetchOptions) → Task<Result<String>>` | HTTP 请求 |
+| `fetch` | `fetch(String, String, Map<String,String>, String) → Task<Result<String>>` | HTTP 请求（url, method, headers, body） |
+| `random` | `random(Number) → Number` | 返回 `[0, n)` 随机整数 |
+| `db_store` | `db_store(String, String) → Task<Result<Unit>>` | IndexedDB 存储（浏览器） |
+| `db_load` | `db_load(String) → Task<Result<String>>` | IndexedDB 读取（浏览器） |
+| `db_delete` | `db_delete(String) → Task<Result<Unit>>` | IndexedDB 删除（浏览器） |
+| `map` | `map(List<T>, Fn<T, U>) → List<U>` | 列表映射 |
 | `map` | `map(List<T>, Fn<T, U>) → List<U>` | 列表映射 |
 | `filter` | `filter(List<T>, Fn<T, Boolean>) → List<T>` | 列表过滤 |
 | `fold` | `fold(List<T>, U, Fn<U, T, U>) → U` | 列表归约 |
@@ -219,29 +229,34 @@ let x: Number = add(3, 4);       // 7
 
 ---
 
-## 6. 网络与 I/O
+## 6. 网络 I/O
 
 ### 6.1 fetch
 
-发送 HTTP 请求：
+发送 HTTP 请求。4 个位置参数：`fetch(url, method, headers, body)`。
 
 ```sim
 // GET 请求
-let resp: Task<Result<String>> = fetch("https://api.example.com/data", {
-  method: "GET",
-  headers: { "Authorization": "Bearer token" }
-});
+let resp: Task<Result<String>> = fetch(
+  "https://api.example.com/data",
+  "GET",
+  { "Authorization": "Bearer token" },
+  ""
+);
 let body: Result<String> = join(resp);
+
+// POST 请求
+let post_resp: Task<Result<String>> = fetch(
+  "https://api.example.com/data",
+  "POST",
+  {},
+  "Hello server"
+);
 ```
 
-`FetchOptions` 结构体：
-
-```sim
-struct FetchOptions {
-  method: String,   // "GET" | "POST" | "PUT" | "DELETE"，默认 "GET"
-  headers: Map<String, String>,  // 可选
-  body: String,     // 可选，POST/PUT 使用
-};
+**签名**：
+```
+fetch(url: String, method: String, headers: Map<String, String> | Record<String, String>, body: String) -> Task<Result<String>>
 ```
 
 ### 6.2 read_line
@@ -578,17 +593,24 @@ if lines.isOk {
 
 ```sim
 // GET 请求
-let task: Task<Result<String>> = fetch("https://httpbin.org/get", { method: "GET" });
+let task: Task<Result<String>> = fetch(
+  "https://httpbin.org/get",
+  "GET",
+  {},
+  ""
+);
 let result: Result<String> = join(task);
 if result.isOk {
   print("Response: " + result.value);
 }
 
 // POST 请求（带 body）
-let task2: Task<Result<String>> = fetch("https://httpbin.org/post", {
-  method: "POST",
-  body: "Hello server"
-});
+let task2: Task<Result<String>> = fetch(
+  "https://httpbin.org/post",
+  "POST",
+  {},
+  "Hello server"
+);
 let result2: Result<String> = join(task2);
 if result2.isOk {
   print("Response: " + result2.value);
@@ -599,44 +621,21 @@ let headers: Map<String, String> = {
   "User-Agent": "MySimplexApp/1.0",
   "Authorization": "Bearer token123"
 };
-let task3: Task<Result<String>> = fetch("https://api.example.com/data", {
-  method: "GET",
-  headers: headers
-});
+let task3: Task<Result<String>> = fetch(
+  "https://api.example.com/data",
+  "GET",
+  headers,
+  ""
+);
 let result3: Result<String> = join(task3);
 ```
 
 **签名**：
 ```
-fetch(url: String, options: FetchOptions) -> Task<Result<String>>
+fetch(url: String, method: String, headers: Map<String, String> | Record<String, String>, body: String) -> Task<Result<String>>
 ```
 
-`FetchOptions` 结构体：
-
-```sim
-struct FetchOptions {
-  method: String,   // "GET" | "POST" | "PUT" | "DELETE"，默认 "GET"
-  headers: Map<String, String>,  // 可选
-  body: String,     // 可选，POST/PUT 使用
-};
-```
-
-示例：
-
-```sim
-// GET 请求
-let resp: Task<Result<String>> = fetch("https://api.example.com/data", {
-  method: "GET",
-  headers: { "Authorization": "Bearer token" }
-});
-let body: Result<String> = join(resp);
-
-// POST 请求
-let post_resp: Task<Result<String>> = fetch("https://api.example.com/data", {
-  method: "POST",
-  body: "Hello server"
-});
-```
+`headers` 可以是 Map 或 Record。`method` 为 `"GET"` 或 `"HEAD"` 时 `body` 会被忽略。
 
 ---
 
@@ -694,7 +693,199 @@ let result: Number = join(task);   // 30
 
 ---
 
-## 16. 完整示例
+## 16. Canvas 图形 API（浏览器）
+
+Canvas API 仅在浏览器运行时可用。需要在 canvas 上绘图时，先通过 CLI 构建 HTML 文件或直接使用 `runBrowser`。
+
+### 16.1 颜色与样式
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_set_fill_color` | `canvas_set_fill_color(String) → Unit` | 设置填充颜色（CSS 颜色字符串） |
+| `canvas_set_stroke_color` | `canvas_set_stroke_color(String) → Unit` | 设置描边颜色 |
+| `canvas_set_font` | `canvas_set_font(String) → Unit` | 设置字体（如 `"20px Arial"`） |
+| `canvas_set_line_width` | `canvas_set_line_width(Number) → Unit` | 设置线宽 |
+
+### 16.2 矩形
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_clear` | `canvas_clear() → Unit` | 清除整个 canvas |
+| `canvas_fill_rect` | `canvas_fill_rect(x, y, w, h) → Unit` | 填充矩形 |
+| `canvas_stroke_rect` | `canvas_stroke_rect(x, y, w, h) → Unit` | 描边矩形 |
+| `canvas_clear_rect` | `canvas_clear_rect(x, y, w, h) → Unit` | 清除矩形区域 |
+
+### 16.3 文本
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_fill_text` | `canvas_fill_text(String, x, y) → Unit` | 填充文本 |
+| `canvas_stroke_text` | `canvas_stroke_text(String, x, y) → Unit` | 描边文本 |
+| `canvas_measure_text` | `canvas_measure_text(String) → Number` | 测量文本宽度（像素） |
+
+### 16.4 路径
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_begin_path` | `canvas_begin_path() → Unit` | 开始新路径 |
+| `canvas_close_path` | `canvas_close_path() → Unit` | 闭合路径 |
+| `canvas_move_to` | `canvas_move_to(x, y) → Unit` | 移动到指定点 |
+| `canvas_line_to` | `canvas_line_to(x, y) → Unit` | 画线到指定点 |
+| `canvas_arc` | `canvas_arc(x, y, r, startAngle, endAngle) → Unit` | 画圆弧 |
+| `canvas_stroke` | `canvas_stroke() → Unit` | 描边当前路径 |
+| `canvas_fill` | `canvas_fill() → Unit` | 填充当前路径 |
+
+### 16.5 变换
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_save` | `canvas_save() → Unit` | 保存当前状态 |
+| `canvas_restore` | `canvas_restore() → Unit` | 恢复状态 |
+| `canvas_rotate` | `canvas_rotate(angle: Number) → Unit` | 旋转（弧度） |
+| `canvas_translate` | `canvas_translate(x, y) → Unit` | 平移 |
+| `canvas_scale` | `canvas_scale(x, y) → Unit` | 缩放 |
+
+### 16.6 尺寸
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_get_width` | `canvas_get_width() → Number` | 获取 canvas 宽度 |
+| `canvas_get_height` | `canvas_get_height() → Number` | 获取 canvas 高度 |
+
+### 16.7 示例
+
+```sim
+fn draw() {
+  canvas_set_fill_color("skyblue");
+  canvas_fill_rect(50, 50, 200, 150);
+  canvas_set_fill_color("white");
+  canvas_set_font("24px sans-serif");
+  canvas_fill_text("Hello Canvas!", 70, 120);
+}
+draw()
+```
+
+---
+
+## 17. 事件系统（浏览器）
+
+通过 `canvas_on_click` 和 `canvas_on_drag` 注册事件处理器。处理器必须是 `Number, Number → Unit` 类型的函数（接收 canvas 坐标）。
+
+### 17.1 API
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `canvas_on_click` | `canvas_on_click(Fn<Number, Number, Unit>) → Unit` | 注册点击事件处理器 |
+| `canvas_on_drag` | `canvas_on_drag(Fn<Number, Number, Unit>) → Unit` | 注册拖动事件处理器 |
+
+### 17.2 示例
+
+```sim
+fn handle_click(x: Number, y: Number) -> Unit {
+  canvas_set_fill_color("red");
+  canvas_fill_rect(x - 10, y - 10, 20, 20);
+}
+
+fn handle_drag(x: Number, y: Number) -> Unit {
+  canvas_set_fill_color("blue");
+  canvas_begin_path();
+  canvas_arc(x, y, 5, 0, 6.283);
+  canvas_fill();
+}
+
+let _: Unit = canvas_on_click(handle_click);
+let _: Unit = canvas_on_drag(handle_drag);
+```
+
+**注意**：Event handler 必须是命名函数（`fn`），不支持 lambda。命名函数可以访问顶层 `let` 变量。
+
+---
+
+## 18. IndexedDB 存储（浏览器）
+
+浏览器运行时提供简单的 IndexedDB 持久化存储。所有操作返回 `Task<Result<...>>`，需要使用 `join` 获取结果。
+
+数据库名 `simplex_store`，使用单一的 `data` 对象存储。
+
+### 18.1 API
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `db_store` | `db_store(key: String, value: String) → Task<Result<Unit>>` | 存储键值对 |
+| `db_load` | `db_load(key: String) → Task<Result<String>>` | 按 key 加载值 |
+| `db_delete` | `db_delete(key: String) → Task<Result<Unit>>` | 删除 key |
+
+### 18.2 示例
+
+```sim
+let t1: Task<Result<Unit>> = db_store("name", "Alice");
+let r1: Result<Unit> = join(t1);
+if r1.isOk {
+  print("saved");
+}
+
+let t2: Task<Result<String>> = db_load("name");
+let r2: Result<String> = join(t2);
+if r2.isOk {
+  print("loaded: " + r2.value);
+}
+
+let t3: Task<Result<Unit>> = db_delete("name");
+let _: Result<Unit> = join(t3);
+```
+
+---
+
+## 19. 浏览器运行时与 CLI 构建
+
+### 19.1 构建自包含 HTML
+
+```bash
+node bin/simplex.js build examples/my_app.sim
+```
+
+生成 `my_app.sim.html`，是包含运行时和 canvas 的自包含 HTML 文件。Canvas 自动全屏铺满视口。
+
+指定输出路径：
+
+```bash
+node bin/simplex.js build examples/my_app.sim --output dist/index.html
+```
+
+### 19.2 直接运行
+
+在 Node.js 中可通过 `runBrowser` API 执行 Simplex 源码（带 canvas 上下文）：
+
+```js
+const { runBrowser } = require('simplex-lang');
+const canvas = document.getElementById('myCanvas');
+runBrowser(sourceCode, { target: 'browser', canvas });
+```
+
+### 19.3 内置函数
+
+以下函数仅在浏览器运行时可用：
+
+- 所有 `canvas_*` 函数（见第 16 节）
+- `canvas_on_click` / `canvas_on_drag`（见第 17 节）
+- `db_store` / `db_load` / `db_delete`（见第 18 节）
+- `fetch(url, method, headers, body) → Task<Result<String>>`
+
+### 19.4 Node 与浏览器差异
+
+| 函数 | Node | 浏览器 |
+|------|------|--------|
+| `file_read` / `file_write` / `file_read_lines` | ✅ | ❌ |
+| `canvas_*` | ❌ | ✅ |
+| `canvas_on_click` / `canvas_on_drag` | ❌ | ✅ |
+| `db_store` / `db_load` / `db_delete` | ❌ | ✅ |
+| `fetch` | ✅ | ✅ |
+| `read_line` | ✅ | ❌ |
+| `random` | ✅ | ✅ |
+
+---
+
+## 20. 完整示例
 
 ### 16.1 Hello World
 
@@ -751,8 +942,16 @@ print("multiply: " + to_string(y));
 ## 附录：运行
 
 ```bash
-node bin/simplex.js examples/hello.sim
+# Node.js 运行
+node bin/simplex.js run examples/hello.sim
+
+# 构建浏览器 HTML
+node bin/simplex.js build examples/browser/events.sim
+
+# 运行测试
 node tests/run-tests.js
+node tests/typechecker.test.js
+node tests/browser.test.js
 ```
 
 ## License

@@ -223,6 +223,74 @@ class BrowserBuiltins {
       });
     }
 
+    // ── IndexedDB storage (async — returns Task) ──
+    if (this.scheduler) {
+      this.registerFn('db_store', 2, (args) => {
+        const key = args[0].toRawString();
+        const value = args[1].toRawString();
+        const promise = new Promise<Value>((resolve) => {
+          const req = indexedDB.open('simplex_store', 1);
+          req.onupgradeneeded = () => {
+            req.result.createObjectStore('data');
+          };
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('data', 'readwrite');
+            tx.objectStore('data').put(value, key);
+            tx.oncomplete = () => { db.close(); resolve(mkOk(mkUnit())); };
+            tx.onerror = () => { db.close(); resolve(mkErr(`db_store failed: ${tx.error?.message || 'unknown'}`)); };
+          };
+          req.onerror = () => resolve(mkErr(`db_store open failed: ${req.error?.message || 'unknown'}`));
+        });
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('db_load', 1, (args) => {
+        const key = args[0].toRawString();
+        const promise = new Promise<Value>((resolve) => {
+          const req = indexedDB.open('simplex_store', 1);
+          req.onupgradeneeded = () => {
+            req.result.createObjectStore('data');
+          };
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('data', 'readonly');
+            const getReq = tx.objectStore('data').get(key);
+            getReq.onsuccess = () => {
+              db.close();
+              if (getReq.result !== undefined) {
+                resolve(mkOk(mkString(String(getReq.result))));
+              } else {
+                resolve(mkErr(`Key '${key}' not found`));
+              }
+            };
+            getReq.onerror = () => { db.close(); resolve(mkErr(`db_load failed: ${getReq.error?.message || 'unknown'}`)); };
+          };
+          req.onerror = () => resolve(mkErr(`db_load open failed: ${req.error?.message || 'unknown'}`));
+        });
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
+      this.registerFn('db_delete', 1, (args) => {
+        const key = args[0].toRawString();
+        const promise = new Promise<Value>((resolve) => {
+          const req = indexedDB.open('simplex_store', 1);
+          req.onupgradeneeded = () => {
+            req.result.createObjectStore('data');
+          };
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction('data', 'readwrite');
+            tx.objectStore('data').delete(key);
+            tx.oncomplete = () => { db.close(); resolve(mkOk(mkUnit())); };
+            tx.onerror = () => { db.close(); resolve(mkErr(`db_delete failed: ${tx.error?.message || 'unknown'}`)); };
+          };
+          req.onerror = () => resolve(mkErr(`db_delete open failed: ${req.error?.message || 'unknown'}`));
+        });
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+    }
+
     this.registerFn('canvas_on_click', 1, (args) => {
       this._registerHandler('click', args[0] as FnValue);
       this._ensureClickListeners();

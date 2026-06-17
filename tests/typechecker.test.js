@@ -489,6 +489,20 @@ fn apply(f: Fn<String, Number>) -> Number { f("hi") };
 apply(greet)
 `, /expected|but got|mismatch/i);
 
+// ── IndexedDB storage builtins (compile-time type validation only) ──
+
+testError('db_load rejects non-String', `
+db_load(42)
+`, /String|Number|expected|mismatch/i);
+
+testError('db_store rejects wrong arg types', `
+db_store(1, true)
+`, /String|expected|mismatch/i);
+
+testError('db_delete rejects non-String', `
+db_delete(42)
+`, /String|expected|mismatch/i);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 
