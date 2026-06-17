@@ -43,7 +43,7 @@ import {
   FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
-  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
+  LetStmt, MutDeclStmt, AssignStmt, WhileStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
 } from '../ast/nodes.js';
@@ -143,6 +143,22 @@ class Parser {
     // If statement (top-level)
     if (this.check(TokenType.IF)) {
       return this.parseIf();
+    }
+
+    // While loop (top-level)
+    if (this.check(TokenType.WHILE)) {
+      return this.parseWhile();
+    }
+
+    // Assignment: IDENTIFIER = expr ;
+    if (this.check(TokenType.IDENTIFIER)) {
+      const savedPos = this.pos;
+      this.advance();
+      if (this.check(TokenType.ASSIGN)) {
+        this.pos = savedPos;
+        return this.parseAssignStmt();
+      }
+      this.pos = savedPos;
     }
 
     // Bare expression statement (for top-level expressions)
@@ -271,11 +287,36 @@ class Parser {
       return this.parseReturn();
     }
 
+    // While loop
+    if (this.check(TokenType.WHILE)) {
+      return this.parseWhile();
+    }
+
+    // Assignment: IDENTIFIER = expr ;
+    if (this.check(TokenType.IDENTIFIER)) {
+      const savedPos = this.pos;
+      this.advance();
+      if (this.check(TokenType.ASSIGN)) {
+        this.pos = savedPos;
+        return this.parseAssignStmt();
+      }
+      this.pos = savedPos;
+    }
+
     return this.parseExprStmt();
+  }
+
+  parseAssignStmt() {
+    const nameToken = this.expect(TokenType.IDENTIFIER);
+    this.expect(TokenType.ASSIGN);
+    const value = this.parseExpr();
+    this.match(TokenType.SEMICOLON);
+    return new AssignStmt(nameToken.value, value, nameToken.line, nameToken.column);
   }
 
   parseLet() {
     const letToken = this.expect(TokenType.LET);
+    const isMutable = !!this.match(TokenType.MUT);
     const nameToken = this.expect(TokenType.IDENTIFIER);
     this.expect(TokenType.COLON);
     const type = this.parseType();
@@ -283,6 +324,9 @@ class Parser {
     const init = this.parseExpr();
     this.match(TokenType.SEMICOLON);
 
+    if (isMutable) {
+      return new MutDeclStmt(nameToken.value, type, init, letToken.line, letToken.column);
+    }
     return new LetStmt(nameToken.value, type, init, letToken.line, letToken.column);
   }
 
@@ -311,6 +355,14 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return stmts;
+  }
+
+  parseWhile() {
+    const whileToken = this.expect(TokenType.WHILE);
+    const condition = this.parseExpr();
+    const body = this.parseBracedBlock();
+    this.match(TokenType.SEMICOLON);
+    return new WhileStmt(condition, body, whileToken.line, whileToken.column);
   }
 
   parseTailBlocks() {

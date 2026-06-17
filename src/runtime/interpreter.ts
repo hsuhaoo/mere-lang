@@ -3,7 +3,7 @@ import {
   FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
-  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
+  LetStmt, MutDeclStmt, AssignStmt, WhileStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
   Expr, Stmt,
@@ -82,6 +82,9 @@ class Interpreter {
   execStmt(stmt: Stmt): Value {
     switch (stmt.constructor) {
       case LetStmt:       return this.execLet(stmt as LetStmt);
+      case MutDeclStmt:   return this.execMutDecl(stmt as MutDeclStmt);
+      case AssignStmt:    return this.execAssign(stmt as AssignStmt);
+      case WhileStmt:     return this.execWhile(stmt as WhileStmt);
       case IfStmt:        return this.execIf(stmt as IfStmt);
       case ReturnStmt: {
         const value = (stmt as ReturnStmt).value ? this.execExpr((stmt as ReturnStmt).value!) : mkUnit();
@@ -534,6 +537,35 @@ class Interpreter {
   execLet(stmt: LetStmt): Value {
     const value = stmt.init ? this.execExpr(stmt.init) : mkUnit();
     this.rootEnv.define(stmt.name, value);
+    return mkUnit();
+  }
+
+  execMutDecl(stmt: MutDeclStmt): Value {
+    const value = stmt.init ? this.execExpr(stmt.init) : mkUnit();
+    this.rootEnv.define(stmt.name, value);
+    return mkUnit();
+  }
+
+  execAssign(stmt: AssignStmt): Value {
+    const value = this.execExpr(stmt.value);
+    this.rootEnv.assign(stmt.name, value);
+    return mkUnit();
+  }
+
+  execWhile(stmt: WhileStmt): Value {
+    while (true) {
+      const condition = this.execExpr(stmt.condition);
+      if (!condition.isTruthy()) break;
+      for (const s of stmt.body) {
+        try {
+          const result = this.execStmt(s);
+          if (result instanceof ReturnSignal) throw result;
+        } catch (e) {
+          if (e instanceof ReturnSignal) throw e;
+          throw e;
+        }
+      }
+    }
     return mkUnit();
   }
 

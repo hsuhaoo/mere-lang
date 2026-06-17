@@ -14,7 +14,7 @@ import {
   FieldAccessExpr, IfExpr, BlockExpr, LambdaExpr,
   RecordCreateExpr, ListCreateExpr, MapCreateExpr,
   ResultOkExpr, ResultErrExpr, UnitExpr,
-  LetStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
+  LetStmt, MutDeclStmt, AssignStmt, WhileStmt, FnDecl, ReturnStmt, IfStmt, ExpressionStmt,
   ImportStmt, ExportStmt, TypeDecl,
   TypeAnnotation, Program,
 } from '../ast/nodes.js';
@@ -140,6 +140,12 @@ class TypeChecker {
     switch (stmt.constructor) {
       case LetStmt:
         return this.checkLet(stmt);
+      case MutDeclStmt:
+        return this.checkMutDecl(stmt);
+      case AssignStmt:
+        return this.checkAssign(stmt);
+      case WhileStmt:
+        return this.checkWhile(stmt);
       case IfStmt:
         return this.checkIf(stmt);
       case ReturnStmt:
@@ -168,6 +174,45 @@ class TypeChecker {
     }
     this.checkExpr(stmt.init, stmt.type);
     this.scopeBindings.set(stmt.name, new ScopeEntry(stmt.name, stmt.type));
+  }
+
+  checkMutDecl(stmt) {
+    if (this.scopeBindings.has(stmt.name)) {
+      throw new TypeError(
+        `Variable '${stmt.name}' is already defined in this scope`,
+        stmt.line, stmt.column
+      );
+    }
+    this.checkExpr(stmt.init, stmt.type);
+    this.scopeBindings.set(stmt.name, new ScopeEntry(stmt.name, stmt.type, true));
+  }
+
+  checkAssign(stmt) {
+    const name = stmt.name;
+    let entry = null;
+    for (let i = this.scopes.length - 1; i >= 0; i--) {
+      if (this.scopes[i].has(name)) {
+        entry = this.scopes[i].get(name);
+        break;
+      }
+    }
+    if (!entry) {
+      throw new TypeError(`Undefined variable: '${name}'`, stmt.line, stmt.column);
+    }
+    if (!entry.isMutable) {
+      throw new TypeError(
+        `Cannot assign to immutable variable '${name}'`,
+        stmt.line, stmt.column
+      );
+    }
+    this.checkExpr(stmt.value, entry.type);
+  }
+
+  checkWhile(stmt) {
+    this.checkExpr(stmt.condition, new TypeAnnotation('Boolean'));
+    for (const s of stmt.body) {
+      this.checkStmt(s);
+    }
   }
 
   checkImport(stmt) {
@@ -1021,7 +1066,7 @@ class TypeChecker {
       return new TypeAnnotation('Unit');
     }
 
-    if (stmt instanceof LetStmt) {
+    if (stmt instanceof LetStmt || stmt instanceof MutDeclStmt || stmt instanceof AssignStmt || stmt instanceof WhileStmt) {
       return new TypeAnnotation('Unit');
     }
 

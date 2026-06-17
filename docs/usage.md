@@ -2,7 +2,7 @@
 
 Simplex 是一个极简、显式的编程语言。关键字分为几类：
 
-- **控制流**：`fn`、`let`、`if`、`elif`、`else`、`return`
+- **控制流**：`fn`、`let`、`if`、`elif`、`else`、`while`、`return`
 - **类型**：`type`
 - **模块**：`import`、`export`
 - **字面量**：`true`、`false`、`unit`、`ok`、`err`
@@ -57,6 +57,7 @@ print("Hello");               // 语句可以不用分号
 - 语句以分号 `;` 结尾，但末尾分号可选
 - 表达式以最后一个表达式作为返回值
 - 大括号 `{ }` 用于函数体、条件块、块表达式
+- `let mut` 声明可变量，`x = expr` 原地赋值（详情见 [§5.5](#55-可变量)）
 
 ---
 
@@ -232,6 +233,21 @@ let x: Number = add(3, 4);       // 7
 | `concat_all` | `concat_all(List<String>) → String` | 拼接列表中所有字符串 |
 | `indexOf` | `indexOf(String, String) → Result<Number>` | 查找子串位置 |
 
+### 5.5 可变量
+
+Simplex 默认不可变，但支持 `let mut` 声明可变量并用 `=` 赋值：
+
+```sim
+let mut x: Number = 10;
+x = x + 5;          // 15
+let mut name: String = "hello";
+name = name + " world";
+```
+
+- `let mut x: T = expr` 声明可变量
+- `x = expr` 原地赋值（仅可变量可用）
+- 尝试对不可变变量赋值会在类型检查时报错
+
 ---
 
 ## 6. 网络 I/O
@@ -395,6 +411,22 @@ if x > 100 {
 ```sim
 let y: Number = if x > 5 { 100 } else { 0 };
 ```
+
+### 9.3 while 循环
+
+```sim
+let mut i: Number = 0;
+let mut sum: Number = 0;
+while i < 10 {
+  sum = sum + i;
+  i = i + 1;
+}
+print(to_string(sum));
+```
+
+- 条件必须是 Boolean
+- 循环体零次或多次执行
+- 只在 `let mut` 变量上配合赋值才有意义
 
 ---
 

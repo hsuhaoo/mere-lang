@@ -7,6 +7,8 @@
 const KEYWORDS = {
   fn: 'FN',
   let: 'LET',
+  mut: 'MUT',
+  while: 'WHILE',
   if: 'IF',
   elif: 'ELIF',
   else: 'ELSE',
@@ -52,6 +54,8 @@ const TokenType = {
   // Keywords (uppercase keys → uppercase values)
   FN: 'FN',
   LET: 'LET',
+  MUT: 'MUT',
+  WHILE: 'WHILE',
   IF: 'IF',
   ELIF: 'ELIF',
   ELSE: 'ELSE',

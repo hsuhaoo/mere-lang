@@ -734,6 +734,108 @@ test('sleep and join', `
 join(sleep(1))
 `, '()');
 
+// ── Mutable variables (let mut) ──────────────────────────
+
+test('let mut number assign', `
+let mut x: Number = 10;
+x = 20;
+x
+`, 20);
+
+test('let mut increment', `
+let mut x: Number = 0;
+x = x + 1;
+x = x + 1;
+x = x + 1;
+x
+`, 3);
+
+test('let mut string', `
+let mut s: String = "hello";
+s = s + " world";
+s
+`, "hello world");
+
+test('let mut boolean', `
+let mut b: Boolean = true;
+b = false;
+b
+`, false);
+
+test('let mut in function body', `
+fn test_mut() -> Number {
+  let mut x: Number = 0;
+  x = 42;
+  x
+}
+test_mut()
+`, 42);
+
+test('let mut overwrite in function', `
+fn accum(n: Number) -> Number {
+  let mut sum: Number = 0;
+  sum = n;
+  sum = sum + 1;
+  sum
+}
+accum(5)
+`, 6);
+
+testError('assign to immutable variable', `
+let x: Number = 5;
+x = 6;
+`, 'Cannot assign to immutable');
+
+testError('assign to undefined variable', `
+undefined_var = 42;
+`, 'Undefined variable');
+
+// ── while loop ─────────────────────────────────────────
+
+test('while basic sum', `
+let mut sum: Number = 0;
+let mut i: Number = 0;
+while i < 5 {
+  sum = sum + i;
+  i = i + 1;
+}
+sum
+`, 10);
+
+test('while condition false on entry', `
+let mut x: Number = 42;
+while false {
+  x = 0;
+}
+x
+`, 42);
+
+test('while with boolean condition', `
+let mut run: Boolean = true;
+let mut count: Number = 0;
+while run {
+  count = count + 1;
+  if count >= 3 {
+    run = false;
+  }
+}
+count
+`, 3);
+
+test('while nested if/else', `
+let mut x: Number = 0;
+let mut i: Number = 0;
+while i < 5 {
+  if i == 0 {
+    x = x + 1;
+  } else {
+    x = x - 1;
+  }
+  i = i + 1;
+}
+x
+`, -3);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 

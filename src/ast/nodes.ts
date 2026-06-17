@@ -225,6 +225,36 @@ class LetStmt {
   }
 }
 
+class MutDeclStmt {
+  name: string;
+  type: TypeAnnotation;
+  init: Expr | null;
+  line: number;
+  column: number;
+
+  constructor(name: string, type: TypeAnnotation, init: Expr | null, line = 0, column = 0) {
+    this.name = name;
+    this.type = type;
+    this.init = init;
+    this.line = line;
+    this.column = column;
+  }
+}
+
+class AssignStmt {
+  name: string;
+  value: Expr;
+  line: number;
+  column: number;
+
+  constructor(name: string, value: Expr, line = 0, column = 0) {
+    this.name = name;
+    this.value = value;
+    this.line = line;
+    this.column = column;
+  }
+}
+
 class FnDecl {
   name: string;
   params: Array<{ name: string; type: TypeAnnotation }>;
@@ -244,6 +274,20 @@ class FnDecl {
     this.name = name;
     this.params = params;
     this.returnType = returnType;
+    this.body = body;
+    this.line = line;
+    this.column = column;
+  }
+}
+
+class WhileStmt {
+  condition: Expr;
+  body: Stmt[];
+  line: number;
+  column: number;
+
+  constructor(condition: Expr, body: Stmt[], line = 0, column = 0) {
+    this.condition = condition;
     this.body = body;
     this.line = line;
     this.column = column;
@@ -397,6 +441,9 @@ type Expr =
 
 type Stmt =
   | LetStmt
+  | MutDeclStmt
+  | AssignStmt
+  | WhileStmt
   | FnDecl
   | ReturnStmt
   | IfStmt
@@ -422,6 +469,9 @@ export {
   ResultErrExpr,
   UnitExpr,
   LetStmt,
+  MutDeclStmt,
+  AssignStmt,
+  WhileStmt,
   FnDecl,
   ReturnStmt,
   IfStmt,
