@@ -40,6 +40,7 @@ class Interpreter {
   builtins: Builtins;
   scheduler: Scheduler;
   rootEnv: Env;
+  programRootEnv: Env;
   userFns: Map<string, FnDecl>;
   typeDecls: Map<string, TypeDecl>;
   modules: Map<string, { exports: Map<string, FnDecl> }>;
@@ -49,6 +50,7 @@ class Interpreter {
     this.scheduler = scheduler || new Scheduler();
     this.builtins = builtins || new Builtins(this.scheduler);
     this.rootEnv = new Env();
+    this.programRootEnv = this.rootEnv;
     this.userFns = new Map();
     this.typeDecls = new Map();
     this.modules = new Map();
@@ -86,9 +88,12 @@ class Interpreter {
         throw new ReturnSignal(value);
       }
       case ExpressionStmt: return this.execExpr((stmt as ExpressionStmt).expression);
-      case FnDecl:
-        this.userFns.set((stmt as FnDecl).name, stmt as FnDecl);
+      case FnDecl: {
+        const fnDecl = stmt as FnDecl;
+        this.userFns.set(fnDecl.name, fnDecl);
+        this.rootEnv.define(fnDecl.name, new FnValue(fnDecl.params, fnDecl.body, this.programRootEnv));
         return mkUnit();
+      }
       case TypeDecl:
         this.typeDecls.set((stmt as TypeDecl).name, stmt as TypeDecl);
         return mkUnit();
@@ -211,6 +216,10 @@ class Interpreter {
     if (envVal) {
       if (envVal instanceof FnValue) {
         const args = argExprs.map(a => this.execExpr(a));
+        // Named user functions need outer-scope access via callUserFunction
+        if (this.userFns.has(name)) {
+          return this.callUserFunction(this.userFns.get(name)!, args);
+        }
         return this.executeLambdaFromValue(envVal, name, args);
       }
       throw new RuntimeError(`'${name}' is not callable`, expr.callee.line, expr.callee.column);
@@ -386,7 +395,7 @@ class Interpreter {
     let currentArgs: Value[] = args;
 
     while (true) {
-      const callEnv = new Env(this.rootEnv);
+      const callEnv = new Env(this.programRootEnv);
 
       if (currentArgs.length !== currentFn.params.length) {
         throw new RuntimeError(
@@ -558,7 +567,10 @@ class Interpreter {
   }
 
   executeLambdaFromValue(fnValue: FnValue, name: string, argValues: Value[]): Value {
-    const env = new Env();
+    // Use captured defining env for named functions, isolated env for lambdas
+    const env = fnValue._definingEnv
+      ? new Env(fnValue._definingEnv)
+      : new Env();
 
     if (argValues.length !== fnValue.params.length) {
       throw new RuntimeError(
@@ -575,8 +587,15 @@ class Interpreter {
     this.rootEnv = env;
 
     try {
-      for (const stmt of fnValue.body) {
+      for (let i = 0; i < fnValue.body.length; i++) {
+        const stmt = fnValue.body[i];
+        const isLast = (i === fnValue.body.length - 1);
+
         try {
+          if (isLast && stmt instanceof ExpressionStmt) {
+            const expr = stmt.expression;
+            return this.execExpr(expr);
+          }
           const result = this.execStmt(stmt);
           if (result instanceof ReturnSignal) {
             return result.returnValue;
@@ -587,11 +606,6 @@ class Interpreter {
           }
           throw e;
         }
-      }
-
-      const lastStmt = fnValue.body[fnValue.body.length - 1];
-      if (lastStmt instanceof ExpressionStmt) {
-        return this.execExpr(lastStmt.expression);
       }
 
       return mkUnit();

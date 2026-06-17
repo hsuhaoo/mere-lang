@@ -8,7 +8,7 @@ fn pick_color() -> String {
 fn draw_bg() {
   canvas_clear()
   canvas_set_fill_color("#1a1a2e")
-  canvas_fill_rect(0, 0, 800, 600)
+  canvas_fill_rect(0, 0, canvas_get_width(), canvas_get_height())
   canvas_set_fill_color("rgba(255, 255, 255, 0.6)")
   canvas_set_font("16px sans-serif")
   canvas_fill_text("Click to draw circles", 20, 30)

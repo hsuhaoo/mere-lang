@@ -75,6 +75,44 @@ function extractValue(v) {
   return v.toString();
 }
 
+// ── Named function as first-class value ──────────────────────────
+
+test('named fn passed to fn param at runtime', `
+fn foo(x: Number, y: Number) -> Number { x + y };
+fn call(f: Fn<Number, Number, Number>) -> Number { f(3, 4) };
+call(foo)
+`, 7);
+
+test('named fn as value accesses top-level let', `
+let base: Number = 10;
+fn add_base(n: Number) -> Number { n + base };
+fn call(f: Fn<Number, Number>) -> Number { f(5) };
+call(add_base)
+`, 15);
+
+test('named fn passed to named fn via Fn type', `
+let factor: Number = 3;
+fn mul(n: Number) -> Number { n * factor };
+fn apply(f: Fn<Number, Number>, x: Number) -> Number { f(x) };
+apply(mul, 4)
+`, 12);
+
+// ── Lambda calling named function (scope bridging) ──────────────
+
+test('lambda callback calls named fn that accesses top-level let', `
+let offset: Number = 100;
+fn add_offset(n: Number) -> Number { n + offset };
+let f: Fn<Number, Number> = fn(x: Number) -> Number { add_offset(x) };
+f(50)
+`, 150);
+
+test('chained: named fn -> named fn -> top-level let', `
+let greeting: String = "Hello, ";
+fn greet(name: String) -> String { greeting + name };
+fn shout(s: String) -> String { greet(s) + "!" };
+shout("World")
+`, "Hello, World!");
+
 // Core tests
 test('Factorial 5!', `
 fn f(n: Number) -> Number {

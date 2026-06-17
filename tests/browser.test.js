@@ -372,6 +372,140 @@ function createTest() {
 })();
 
 // ════════════════════════════════════════════════════════════
+// 4b. Named function as event handler (scope + side-effect tests)
+// ════════════════════════════════════════════════════════════
+
+(function testNamedFnEventHandler() {
+  {
+    const calls = [];
+    const ctx = {
+      calls: calls,
+      fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
+      clearRect: function() { calls.push('clearRect'); },
+      fillRect: function(x, y, w, h) { calls.push('fillRect:'+x+','+y+','+w+','+h); },
+      fillText: function(t, x, y) { calls.push('fillText:'+t+','+x+','+y); },
+      arc: function(x, y, r, a1, a2) { calls.push('arc:'+x+','+y+','+r); },
+      fill: function() { calls.push('fill'); },
+      beginPath: function() { calls.push('beginPath'); },
+      setFillStyle: function(c) { calls.push('setFillStyle:'+c); },
+      getContext: function() { return this; },
+      measureText: function() { return {width: 10}; },
+      save: function() {},
+      restore: function() {},
+      rotate: function() {},
+      translate: function() {},
+      scale: function() {},
+      strokeRect: function() {},
+      clearRectExact: function() {},
+    };
+    try {
+      runBrowser(`
+        let colors: List<String> = ["#FF6B6B"];
+        fn pick_color() -> String { list_get(colors, 0).value }
+        fn on_click(x: Number, y: Number) -> Unit {
+          canvas_set_fill_color(pick_color());
+          canvas_begin_path();
+          canvas_arc(x, y, 10, 0, 6.283);
+          canvas_fill()
+        }
+        canvas_on_click(on_click)
+      `, { target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600 });
+      test('named fn handler: compile + register ok', true);
+    } catch (e) {
+      console.log('\u2717 named fn handler compile ERROR:', e.message);
+      failed++;
+    }
+  }
+})();
+
+(function testLambdaHandlerCallsNamedFnWithTopLevelLet() {
+  {
+    const calls = [];
+    const ctx = {
+      calls: calls,
+      fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
+      clearRect: function() { calls.push('clearRect'); },
+      fillRect: function(x, y, w, h) { calls.push('fillRect:'+x+','+y+','+w+','+h); },
+      fillText: function(t, x, y) { calls.push('fillText:'+t+','+x+','+y); },
+      arc: function(x, y, r, a1, a2) { calls.push('arc:'+x+','+y+','+r); },
+      fill: function() { calls.push('fill'); },
+      beginPath: function() { calls.push('beginPath'); },
+      setFillStyle: function(c) { calls.push('setFillStyle:'+c); },
+      getContext: function() { return this; },
+      measureText: function() { return {width: 10}; },
+      save: function() {},
+      restore: function() {},
+      rotate: function() {},
+      translate: function() {},
+      scale: function() {},
+      strokeRect: function() {},
+      clearRectExact: function() {},
+    };
+    try {
+      runBrowser(`
+        let color: String = "#4ECDC4";
+        fn draw_circle(x: Number, y: Number) -> Unit {
+          canvas_set_fill_color(color);
+          canvas_begin_path();
+          canvas_arc(x, y, 8, 0, 6.283);
+          canvas_fill()
+        }
+        canvas_on_click(fn(x: Number, y: Number) -> Unit { draw_circle(x, y) })
+      `, { target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600 });
+      test('lambda -> named fn -> top-level let: compile ok', true);
+    } catch (e) {
+      console.log('\u2717 lambda -> named fn -> let compile ERROR:', e.message);
+      failed++;
+    }
+  }
+})();
+
+(function testNamedFnLastExpressionSideEffectOnce() {
+  {
+    const calls = [];
+    const ctx = {
+      calls: calls,
+      fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
+      clearRect: function() { calls.push('clearRect'); },
+      fillRect: function(x, y, w, h) { calls.push('fillRect:'+x+','+y+','+w+','+h); },
+      fillText: function(t, x, y) { calls.push('fillText:'+t+','+x+','+y); },
+      arc: function() { calls.push('arc'); },
+      fill: function() { calls.push('fill'); },
+      beginPath: function() { calls.push('beginPath'); },
+      closePath: function() { calls.push('closePath'); },
+      stroke: function() { calls.push('stroke'); },
+      setFillStyle: function(c) { calls.push('setFillStyle:'+c); },
+      getContext: function() { return this; },
+      measureText: function() { return {width: 10}; },
+      save: function() {},
+      restore: function() {},
+      rotate: function() {},
+      translate: function() {},
+      scale: function() {},
+      strokeRect: function() {},
+      clearRectExact: function() {},
+    };
+    try {
+      runBrowser(`
+        fn draw() {
+          canvas_clear();
+          canvas_fill_rect(0, 0, 100, 50);
+          canvas_fill_text("once", 10, 30)
+        }
+        draw()
+      `, { target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600 });
+      test('named fn side-effect: calls count === 3', calls.length === 3);
+      test('named fn side-effect: clearRect', calls[0] === 'clearRect');
+      test('named fn side-effect: fillRect', calls[1] === 'fillRect:0,0,100,50');
+      test('named fn side-effect: fillText exactly once', calls[2] === 'fillText:once,10,30');
+    } catch (e) {
+      console.log('\u2717 named fn side-effect ERROR:', e.message);
+      failed++;
+    }
+  }
+})();
+
+// ════════════════════════════════════════════════════════════
 // 5. Type checker — canvas builtin signatures
 // ════════════════════════════════════════════════════════════
 
@@ -527,6 +661,20 @@ function createTest() {
     test('canvas_on_drag rejects wrong-arity lambda', false);
   } catch (e) {
     test('canvas_on_drag rejects wrong-arity lambda', true);
+  }
+
+  try {
+    runBrowser('fn on_click(x: Number) -> Unit { () }; fn main() { canvas_on_click(on_click) }', { target: 'browser', canvas: null });
+    test('canvas_on_click rejects named fn with wrong arity', false);
+  } catch (e) {
+    test('canvas_on_click rejects named fn with wrong arity', true);
+  }
+
+  try {
+    runBrowser('fn on_click(x: Number, y: Number) -> Number { 42 }; fn main() { canvas_on_click(on_click) }', { target: 'browser', canvas: null });
+    test('canvas_on_click rejects named fn with wrong return type', false);
+  } catch (e) {
+    test('canvas_on_click rejects named fn with wrong return type', true);
   }
 })();
 

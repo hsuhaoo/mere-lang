@@ -1,5 +1,6 @@
 import { TypeAnnotation } from '../ast/nodes.js';
 import type { Stmt } from '../ast/nodes.js';
+import type { Env } from './env.js';
 
 class Value {
   type: TypeAnnotation;
@@ -473,11 +474,13 @@ const FN_TYPE = new TypeAnnotation('Fn');
 class FnValue extends Value {
   params: Array<{ name: string; type: TypeAnnotation }>;
   body: Stmt[];
+  _definingEnv: Env | null;
 
-  constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[]) {
+  constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], definingEnv: Env | null = null) {
     super(FN_TYPE);
     this.params = params;
     this.body = body;
+    this._definingEnv = definingEnv;
   }
 
   toString(): string {

@@ -22,7 +22,9 @@ export function createRuntime(config: RuntimeConfig): Interpreter {
       config.canvasWidth || 0,
       config.canvasHeight || 0
     );
-    return new Interpreter(builtins, scheduler);
+    const interpreter = new Interpreter(builtins, scheduler);
+    builtins.setInterpreter(interpreter);
+    return interpreter;
   }
 
   const builtins = new Builtins(scheduler);

@@ -463,6 +463,32 @@ let f: Fn<Number> = fn() -> Number {
 f()
 `, /expected|but got/i);
 
+// ── Named function as first-class value ─────────────────────────
+
+test('named fn passed to fn param type-checks', `
+fn foo(x: Number, y: Number) -> Number { x + y };
+fn call(f: Fn<Number, Number, Number>) -> Number { f(3, 4) };
+call(foo)
+`, 7);
+
+testError('named fn with wrong Fn type rejected', `
+fn foo(x: Number) -> Number { x + 1 };
+let f: Fn<Number, Number, Number> = foo;
+f(1, 2)
+`, /expected|but got|mismatch/i);
+
+testError('named fn passed to fn expecting different Fn signature rejected', `
+fn foo(x: Number) -> Unit { () };
+fn bar(f: Fn<Number, Number, Unit>) -> Unit { () };
+bar(foo)
+`, /expected|but got|mismatch/i);
+
+testError('named fn passed to fn expecting wrong param type rejected', `
+fn greet(n: Number) -> Number { n + 1 };
+fn apply(f: Fn<String, Number>) -> Number { f("hi") };
+apply(greet)
+`, /expected|but got|mismatch/i);
+
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
 

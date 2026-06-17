@@ -314,9 +314,12 @@ class TypeChecker {
       return BUILTIN_FUNCTIONS.get(name);
     }
 
-    // Check if it's a known function
+    // Check if it's a known function — return full Fn type for first-class use
     if (this.fnDecls.has(name)) {
-      return this.fnDecls.get(name).returnType;
+      const fn = this.fnDecls.get(name);
+      const paramTypes = fn.params.map(p => p.type);
+      const returnType = fn.returnType || new TypeAnnotation('Unit');
+      return new TypeAnnotation('Fn', [...paramTypes, returnType]);
     }
 
     throw new TypeError(`Undefined variable: ${name}`, 0, 0);

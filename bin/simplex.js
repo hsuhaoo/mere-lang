@@ -82,21 +82,27 @@ function build(args) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${opts.title}</title>
 <style>
-  body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: ${opts.background}; }
-  ${hasCanvas ? 'canvas { border: 1px solid #333; }' : ''}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: ${opts.background}; }
+  ${hasCanvas ? 'canvas { display: block; width: 100%; height: 100%; }' : ''}
   .error { color: #ff4444; font-family: monospace; white-space: pre; padding: 20px; }
 </style>
 </head>
 <body>
-${hasCanvas ? `<canvas id="canvas" width="${opts.width}" height="${opts.height}"></canvas>` : '<div id="output"></div>'}
+${hasCanvas ? '<canvas id="canvas"></canvas>' : '<div id="output"></div>'}
 <script>${runtime}
 const { runBrowser } = simplex;
 const source = \`${escaped}\`;
 try {
   ${hasCanvas
     ? `const canvas = document.getElementById('canvas');
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
   const ctx = canvas.getContext('2d');
-  runBrowser(source, { target: 'browser', canvas: ctx, canvasWidth: ${opts.width}, canvasHeight: ${opts.height} });`
+  runBrowser(source, { target: 'browser', canvas: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height });`
     : `const result = runBrowser(source, { target: 'browser', canvas: null });
   document.getElementById('output').textContent = String(result);`
   }
