@@ -4,7 +4,7 @@
 
 ## 五个原则
 
-1. **极简**：关键字极少 — 核心控制流 `fn`、`let`、`if`、`return`；类型 `type`；模块 `import`、`export`；字面量 `true`、`false`、`unit`、`ok`、`err`；逻辑 `and`、`or`、`not`；模块语法 `from`；预留 `in`
+1. **极简**：关键字极少 — 核心控制流 `fn`、`let`、`if`、`return`；类型 `type`；模块 `import`、`export`；字面量 `true`、`false`、`unit`、`ok`、`err`；逻辑 `and`、`or`、`not`；模块语法 `from`
 2. **显式**：没有类型转换、默认参数、隐式状态捕获或异常
 3. **具体**：编译时类型已知，仅内置参数化类型，用户自定义类型仅限记录
 4. **确定**：每个 token 有单一含义，解析器是确定性递归下降

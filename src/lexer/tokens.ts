@@ -21,7 +21,6 @@ const KEYWORDS = {
   or: 'OR',
   not: 'NOT',
   from: 'FROM',
-  in: 'IN',   // reserved for future `for item in list`
 };
 
 // ── Delimiter / operator tokens ─────────────────────────────────
@@ -65,7 +64,6 @@ const TokenType = {
   OR: 'OR',
   NOT: 'NOT',
   FROM: 'FROM',
-  IN: 'IN',
 
   // Delimiters
   LBRACE: '{',
