@@ -893,35 +893,44 @@ draw()
 
 ## 17. 事件系统（浏览器）
 
-通过 `canvas_on_click` 和 `canvas_on_drag` 注册事件处理器。处理器必须是 `Number, Number → Unit` 类型的函数（接收 canvas 坐标）。
+通过 `canvas_wait_click` 和 `canvas_wait_drag` 等待用户输入。两者都返回 `Task<Map<String, Number>>`，使用 `join` 等待事件并获取坐标数据。
 
 ### 17.1 API
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `canvas_on_click` | `canvas_on_click(Fn<Number, Number, Unit>) → Unit` | 注册点击事件处理器 |
-| `canvas_on_drag` | `canvas_on_drag(Fn<Number, Number, Unit>) → Unit` | 注册拖动事件处理器 |
+| `canvas_wait_click` | `canvas_wait_click() → Task<Map<String, Number>>` | 等待点击，返回 `{x, y}` |
+| `canvas_wait_drag` | `canvas_wait_drag() → Task<Map<String, Number>>` | 等待拖拽完成，返回 `{from_x, from_y, to_x, to_y}` |
 
 ### 17.2 示例
 
 ```sim
-fn handle_click(x: Number, y: Number) -> Unit {
+fn main() -> Unit {
+  let event: Map<String, Number> = join(canvas_wait_click());
+  let x: Number = map_get(event, "x").value;
+  let y: Number = map_get(event, "y").value;
+
   canvas_set_fill_color("red");
   canvas_fill_rect(x - 10, y - 10, 20, 20);
-}
 
-fn handle_drag(x: Number, y: Number) -> Unit {
-  canvas_set_fill_color("blue");
-  canvas_begin_path();
-  canvas_arc(x, y, 5, 0, 6.283);
-  canvas_fill();
+  main();
 }
-
-let _: Unit = canvas_on_click(handle_click);
-let _: Unit = canvas_on_drag(handle_drag);
 ```
 
-**注意**：Event handler 必须是命名函数（`fn`），不支持 lambda。命名函数可以访问顶层 `let` 变量。
+事件通过 Task 串入游戏主循环，无需回调注册——去掉闭包依赖，state 以参数形式一路传递。
+
+```sim
+type GameState = { ..., click_x: Number, click_y: Number };
+
+fn main_loop(state: GameState) -> GameState {
+  let event: Map<String, Number> = join(canvas_wait_click());
+  let x: Number = map_get(event, "x").value;
+  let y: Number = map_get(event, "y").value;
+  let state2: GameState = record_update(state, "click_x", x);
+  let state3: GameState = record_update(state2, "click_y", y);
+  main_loop(state3);
+}
+```
 
 ---
 
@@ -991,7 +1000,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 以下函数仅在浏览器运行时可用：
 
 - 所有 `canvas_*` 函数（见第 16 节）
-- `canvas_on_click` / `canvas_on_drag`（见第 17 节）
+- `canvas_wait_click` / `canvas_wait_drag`（见第 17 节）
 - `db_store` / `db_load` / `db_delete`（见第 18 节）
 - `fetch(url, method, headers, body) → Task<Result<String>>`
 - `sleep(ms) → Task<Unit>`（见第 15 节）
@@ -1003,7 +1012,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 |------|------|--------|
 | `file_read` / `file_write` / `file_read_lines` | ✅ | ❌ |
 | `canvas_*` | ❌ | ✅ |
-| `canvas_on_click` / `canvas_on_drag` | ❌ | ✅ |
+| `canvas_wait_click` / `canvas_wait_drag` | ❌ | ✅ |
 | `db_store` / `db_load` / `db_delete` | ❌ | ✅ |
 | `fetch` | ✅ | ✅ |
 | `read_line` | ✅ | ❌ |

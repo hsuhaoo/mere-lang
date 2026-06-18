@@ -569,6 +569,12 @@ class TypeChecker {
       if (BUILTIN_FUNCTIONS.has(fnName)) {
         fnType = BUILTIN_FUNCTIONS.get(fnName);
         const sig = fnType;
+        if (expr.args.length !== sig.paramTypes.length) {
+          throw new TypeError(
+            `Expected ${sig.paramTypes.length} arguments but got ${expr.args.length}`,
+            expr.line, expr.column
+          );
+        }
         const typeVars = new Map();
         // Pass 1: infer types and bind type variables
         for (let i = 0; i < expr.args.length; i++) {
@@ -1287,8 +1293,8 @@ const BUILTIN_FUNCTIONS = new Map([
   ['canvas_rotate', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_translate', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_scale', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
-  ['canvas_on_click', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
-  ['canvas_on_drag', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_wait_click', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('Number')])]) }],
+  ['canvas_wait_drag', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('Number')])]) }],
 
   // Image loading/drawing
   ['canvas_load_image', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],

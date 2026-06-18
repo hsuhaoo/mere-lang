@@ -130,6 +130,8 @@ function createTest() {
   test('audio_resume registered', names.includes('audio_resume'));
   test('audio_set_volume registered', names.includes('audio_set_volume'));
   test('audio_set_loop registered', names.includes('audio_set_loop'));
+  test('canvas_wait_click registered', names.includes('canvas_wait_click'));
+  test('canvas_wait_drag registered', names.includes('canvas_wait_drag'));
   test('map_keys registered', names.includes('map_keys'));
   test('map_values registered', names.includes('map_values'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
@@ -425,20 +427,21 @@ function createTest() {
 // 4b. Named function as event handler (scope + side-effect tests)
 // ════════════════════════════════════════════════════════════
 
-(function testNamedFnEventHandler() {
+(function testCanvasWaitClickReturnsTask() {
   {
-    const calls = [];
     const ctx = {
-      calls: calls,
       fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
-      clearRect: function() { calls.push('clearRect'); },
-      fillRect: function(x, y, w, h) { calls.push('fillRect:'+x+','+y+','+w+','+h); },
-      fillText: function(t, x, y) { calls.push('fillText:'+t+','+x+','+y); },
-      arc: function(x, y, r, a1, a2) { calls.push('arc:'+x+','+y+','+r); },
-      fill: function() { calls.push('fill'); },
-      beginPath: function() { calls.push('beginPath'); },
-      setFillStyle: function(c) { calls.push('setFillStyle:'+c); },
+      canvas: { getBoundingClientRect: () => ({ left: 0, top: 0 }) },
       getContext: function() { return this; },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      setPointerCapture: () => {},
+      clearRect: function() {},
+      fillRect: function() {},
+      fillText: function() {},
+      arc: function() {},
+      fill: function() {},
+      beginPath: function() {},
       measureText: function() { return {width: 10}; },
       save: function() {},
       restore: function() {},
@@ -449,64 +452,38 @@ function createTest() {
       clearRectExact: function() {},
     };
     try {
-      runBrowser(`
-        let colors: List<String> = ["#FF6B6B"];
-        fn pick_color() -> String { list_get(colors, 0).value }
-        fn on_click(x: Number, y: Number) -> Unit {
-          canvas_set_fill_color(pick_color());
-          canvas_begin_path();
-          canvas_arc(x, y, 10, 0, 6.283);
-          canvas_fill()
-        }
-        canvas_on_click(on_click)
-      `, { target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600 });
-      test('named fn handler: compile + register ok', true);
+      const result = runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
+        target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600,
+      });
+      test('canvas_wait_click type-checks and returns Task', true);
     } catch (e) {
-      console.log('\u2717 named fn handler compile ERROR:', e.message);
+      console.log('\u2717 canvas_wait_click compile ERROR:', e.message);
       failed++;
     }
   }
 })();
 
-(function testLambdaHandlerCallsNamedFnWithTopLevelLet() {
+(function testCanvasWaitClickNoCanvas() {
   {
-    const calls = [];
-    const ctx = {
-      calls: calls,
-      fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
-      clearRect: function() { calls.push('clearRect'); },
-      fillRect: function(x, y, w, h) { calls.push('fillRect:'+x+','+y+','+w+','+h); },
-      fillText: function(t, x, y) { calls.push('fillText:'+t+','+x+','+y); },
-      arc: function(x, y, r, a1, a2) { calls.push('arc:'+x+','+y+','+r); },
-      fill: function() { calls.push('fill'); },
-      beginPath: function() { calls.push('beginPath'); },
-      setFillStyle: function(c) { calls.push('setFillStyle:'+c); },
-      getContext: function() { return this; },
-      measureText: function() { return {width: 10}; },
-      save: function() {},
-      restore: function() {},
-      rotate: function() {},
-      translate: function() {},
-      scale: function() {},
-      strokeRect: function() {},
-      clearRectExact: function() {},
-    };
     try {
-      runBrowser(`
-        let color: String = "#4ECDC4";
-        fn draw_circle(x: Number, y: Number) -> Unit {
-          canvas_set_fill_color(color);
-          canvas_begin_path();
-          canvas_arc(x, y, 8, 0, 6.283);
-          canvas_fill()
-        }
-        canvas_on_click(fn(x: Number, y: Number) -> Unit { draw_circle(x, y) })
-      `, { target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600 });
-      test('lambda -> named fn -> top-level let: compile ok', true);
+      runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
+        target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
+      });
+      test('canvas_wait_click type-checks without canvas', true);
     } catch (e) {
-      console.log('\u2717 lambda -> named fn -> let compile ERROR:', e.message);
+      console.log('\u2717 canvas_wait_click (no canvas) ERROR:', e.message);
       failed++;
     }
+  }
+})();
+
+(function testCanvasWaitClickRejectsArgs() {
+  try {
+    compile('fn main() -> Unit { canvas_wait_click(42) }');
+    console.log('\u2717 typecheck err: canvas_wait_click arg should fail');
+    failed++;
+  } catch (e) {
+    test('canvas_wait_click rejects args', /Expected 0 arguments/.test(e.message));
   }
 })();
 
@@ -680,81 +657,8 @@ function createTest() {
 })();
 
 // ════════════════════════════════════════════════════════════
-// 6. Callback registration (future event system extension point)
-// ════════════════════════════════════════════════════════════
-
-(function() {
-  const { bb } = createTest();
-  const mockFn = { params: [], body: [] };
-  bb._registerHandler('click', mockFn);
-  bb._registerHandler('keydown', mockFn);
-
-  test('callback: registered count', bb.callbacksList.length === 2);
-  testEqual('callback[0] type', bb.callbacksList[0].type, 'click');
-  testEqual('callback[1] type', bb.callbacksList[1].type, 'keydown');
-  test('callback[0] handler is mockFn', bb.callbacksList[0].handler === mockFn);
-  test('callback[1] handler is mockFn', bb.callbacksList[1].handler === mockFn);
-})();
-
-// ════════════════════════════════════════════════════════════
 // 7. BrowserBuiltins arity checks
 // ════════════════════════════════════════════════════════════
-
-// ── Event builtins ──
-(function() {
-  const { bb } = createTest();
-
-  test('canvas_on_click registered', bb.isBuiltin('canvas_on_click'));
-  test('canvas_on_drag registered', bb.isBuiltin('canvas_on_drag'));
-
-  const clickFn = bb.getFn('canvas_on_click');
-  testEqual('canvas_on_click arity', clickFn.arity, 1);
-  testEqual('canvas_on_drag arity', bb.getFn('canvas_on_drag').arity, 1);
-
-  // Verify _registerHandler stores the callback
-  const mockHandler = { type: 'FnValue', params: [], body: [] };
-  const resultClick = clickFn.fn([mockHandler]);
-  test('canvas_on_click returns Unit', resultClick.isUnit());
-  testEqual('callback stored', bb.callbacks.length >= 1, true);
-  testEqual('stored type is click', bb.callbacks[bb.callbacks.length - 1].type, 'click');
-})();
-
-(function testEventTypeChecker() {
-  try {
-    runBrowser('fn main() { canvas_on_click(fn(x: Number, y: Number) -> Unit { () }) }', { target: 'browser', canvas: null });
-    test('canvas_on_click type-checks with fn(Number,Number)', true);
-  } catch (e) {
-    test('canvas_on_click type-checks with fn(Number,Number): ' + e.message, false);
-  }
-
-  try {
-    runBrowser('fn main() { canvas_on_click(42) }', { target: 'browser' });
-    test('canvas_on_click rejects non-function arg', false);
-  } catch (e) {
-    testEqual('canvas_on_click rejects non-function arg', e.constructor.name, 'TypeError');
-  }
-
-  try {
-    runBrowser('fn main() { canvas_on_drag(fn(x: Number) -> Unit { () }) }', { target: 'browser', canvas: null });
-    test('canvas_on_drag rejects wrong-arity lambda', false);
-  } catch (e) {
-    test('canvas_on_drag rejects wrong-arity lambda', true);
-  }
-
-  try {
-    runBrowser('fn on_click(x: Number) -> Unit { () }; fn main() { canvas_on_click(on_click) }', { target: 'browser', canvas: null });
-    test('canvas_on_click rejects named fn with wrong arity', false);
-  } catch (e) {
-    test('canvas_on_click rejects named fn with wrong arity', true);
-  }
-
-  try {
-    runBrowser('fn on_click(x: Number, y: Number) -> Number { 42 }; fn main() { canvas_on_click(on_click) }', { target: 'browser', canvas: null });
-    test('canvas_on_click rejects named fn with wrong return type', false);
-  } catch (e) {
-    test('canvas_on_click rejects named fn with wrong return type', true);
-  }
-})();
 
 (function() {
   const { bb } = createTest();
@@ -773,6 +677,7 @@ function createTest() {
     canvas_load_image: 1, canvas_draw_image: 5, canvas_image_loaded: 1,
     audio_load: 1, audio_play: 1, audio_stop: 1, audio_pause: 1, audio_resume: 1,
     audio_set_volume: 2, audio_set_loop: 2,
+    canvas_wait_click: 0, canvas_wait_drag: 0,
     map_keys: 1, map_values: 1,
   };
 

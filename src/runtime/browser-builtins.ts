@@ -4,15 +4,10 @@ import {
   MapValue, TaskValue, RecordValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
-  mkOk, mkErr, FnValue,
+  mkOk, mkErr,
 } from './values.js';
 import { Scheduler } from './scheduler.js';
 import type { Interpreter } from './interpreter.js';
-
-type CallbackEntry = {
-  type: string;
-  handler: FnValue;
-};
 
 class BrowserBuiltins {
   fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
@@ -21,10 +16,9 @@ class BrowserBuiltins {
   canvasWidth: number;
   canvasHeight: number;
 
-  callbacks: CallbackEntry[];
   interpreter: Interpreter | null;
-  private _listenersSetup: boolean;
-  private _isDragging: boolean;
+  private _clickResolve: ((value: Value) => void) | null;
+  private _dragState: { fromX: number; fromY: number; resolve: (value: Value) => void } | null;
   private _images: Map<number, HTMLImageElement>;
   private _imageIdCounter: number;
   private _imageUrlToId: Map<string, number>;
@@ -43,10 +37,9 @@ class BrowserBuiltins {
     this.ctx = canvas || null;
     this.canvasWidth = width || 0;
     this.canvasHeight = height || 0;
-    this.callbacks = [];
     this.interpreter = null;
-    this._listenersSetup = false;
-    this._isDragging = false;
+    this._clickResolve = null;
+    this._dragState = null;
     this._images = new Map();
     this._imageIdCounter = 0;
     this._imageUrlToId = new Map();
@@ -355,16 +348,64 @@ class BrowserBuiltins {
       });
     }
 
-    this.registerFn('canvas_on_click', 1, (args) => {
-      this._registerHandler('click', args[0] as FnValue);
-      this._ensureClickListeners();
-      return mkUnit();
+    this.registerFn('canvas_wait_click', 0, (args) => {
+      const promise = new Promise<Value>((resolve) => {
+        if (!this.ctx) {
+          resolve(mkErr('No canvas context'));
+          return;
+        }
+        const canvas = this.ctx.canvas;
+        const handler = (e: MouseEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          canvas.removeEventListener('click', handler);
+          resolve(mkMap({
+            x: mkNumber(e.clientX - rect.left),
+            y: mkNumber(e.clientY - rect.top),
+          }));
+        };
+        canvas.addEventListener('click', handler);
+      });
+      return this.scheduler!.spawnAsync(promise, null);
     });
 
-    this.registerFn('canvas_on_drag', 1, (args) => {
-      this._registerHandler('drag', args[0] as FnValue);
-      this._ensureClickListeners();
-      return mkUnit();
+    this.registerFn('canvas_wait_drag', 0, (args) => {
+      const promise = new Promise<Value>((resolve) => {
+        if (!this.ctx) {
+          resolve(mkErr('No canvas context'));
+          return;
+        }
+        const canvas = this.ctx.canvas;
+        let fromX: number, fromY: number;
+
+        const onPointerDown = (e: PointerEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          fromX = e.clientX - rect.left;
+          fromY = e.clientY - rect.top;
+          canvas.addEventListener('pointermove', onPointerMove);
+          canvas.addEventListener('pointerup', onPointerUp);
+          canvas.setPointerCapture(e.pointerId);
+        };
+
+        const onPointerMove = (e: PointerEvent) => {
+          // tracking only — no callback needed with Task style
+        };
+
+        const onPointerUp = (e: PointerEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          canvas.removeEventListener('pointerdown', onPointerDown);
+          canvas.removeEventListener('pointermove', onPointerMove);
+          canvas.removeEventListener('pointerup', onPointerUp);
+          resolve(mkMap({
+            from_x: mkNumber(fromX),
+            from_y: mkNumber(fromY),
+            to_x: mkNumber(e.clientX - rect.left),
+            to_y: mkNumber(e.clientY - rect.top),
+          }));
+        };
+
+        canvas.addEventListener('pointerdown', onPointerDown);
+      });
+      return this.scheduler!.spawnAsync(promise, null);
     });
 
     this.registerFn('record_update', 3, (args) => {
@@ -477,52 +518,6 @@ class BrowserBuiltins {
     });
 
     this.registerCanvasBuiltins();
-  }
-
-  private _ensureClickListeners() {
-    if (this._listenersSetup) return;
-    this._listenersSetup = true;
-    if (!this.ctx) return;
-    const canvas = this.ctx.canvas;
-    if (!canvas) return;
-
-    canvas.addEventListener('click', (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      this._fireCallbacks('click', e.clientX - rect.left, e.clientY - rect.top);
-    });
-
-    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      this._isDragging = true;
-      canvas.setPointerCapture(e.pointerId);
-      const rect = canvas.getBoundingClientRect();
-      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
-    });
-
-    canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (!this._isDragging) return;
-      const rect = canvas.getBoundingClientRect();
-      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
-    });
-
-    canvas.addEventListener('pointerup', (e: PointerEvent) => {
-      if (!this._isDragging) return;
-      this._isDragging = false;
-      const rect = canvas.getBoundingClientRect();
-      this._fireCallbacks('drag', e.clientX - rect.left, e.clientY - rect.top);
-    });
-  }
-
-  private _fireCallbacks(type: string, x: number, y: number) {
-    if (!this.interpreter) return;
-    for (const cb of this.callbacks) {
-      if (cb.type === type) {
-        try {
-          this.interpreter.executeLambdaFromValue(cb.handler, type, [mkNumber(x), mkNumber(y)]);
-        } catch (e) {
-          console.error('Simplex event handler error:', e);
-        }
-      }
-    }
   }
 
   private registerCanvasBuiltins() {
@@ -715,25 +710,6 @@ class BrowserBuiltins {
 
   getBuiltinNames(): string[] {
     return [...this.fnMap.keys()];
-  }
-
-  /**
-   * Register a callback for a future event system.
-   * type: event name (e.g. "click", "keydown")
-   * handler: FnValue to execute when event fires
-   *
-   * When the event system is implemented, callers will:
-   *   1. Call _registerHandler to store the callback
-   *   2. Listen for DOM/browser events
-   *   3. On event, construct a fresh Interpreter with the handler's env
-   *      and call executeLambdaFromValue(handler, type, args)
-   */
-  _registerHandler(type: string, handler: FnValue) {
-    this.callbacks.push({ type, handler });
-  }
-
-  get callbacksList(): readonly CallbackEntry[] {
-    return this.callbacks;
   }
 }
 
