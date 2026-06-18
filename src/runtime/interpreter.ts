@@ -76,6 +76,13 @@ class Interpreter {
         }
       }
     }
+
+    // Auto-call main() if present — this lets scripts define fn main() { ... }
+    // and have it run without an explicit call.
+    if (this.userFns.has('main')) {
+      lastResult = this.execCall(new CallExpr(new IdentifierExpr('main'), []));
+    }
+
     return lastResult;
   }
 

@@ -120,6 +120,18 @@ function createTest() {
   test('map_put registered', names.includes('map_put'));
   test('abs registered', names.includes('abs'));
   test('record_update registered', names.includes('record_update'));
+  test('canvas_load_image registered', names.includes('canvas_load_image'));
+  test('canvas_draw_image registered', names.includes('canvas_draw_image'));
+  test('canvas_image_loaded registered', names.includes('canvas_image_loaded'));
+  test('audio_load registered', names.includes('audio_load'));
+  test('audio_play registered', names.includes('audio_play'));
+  test('audio_stop registered', names.includes('audio_stop'));
+  test('audio_pause registered', names.includes('audio_pause'));
+  test('audio_resume registered', names.includes('audio_resume'));
+  test('audio_set_volume registered', names.includes('audio_set_volume'));
+  test('audio_set_loop registered', names.includes('audio_set_loop'));
+  test('map_keys registered', names.includes('map_keys'));
+  test('map_values registered', names.includes('map_values'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
   test('db_store registered', names.includes('db_store'));
   test('db_load registered', names.includes('db_load'));
@@ -327,6 +339,40 @@ function createTest() {
   // get_width/height return 0 when no canvas
   testEqual('canvas_get_width (no canvas)', bb.getFn('canvas_get_width').fn([]).toRawNumber(), 0);
   testEqual('canvas_get_height (no canvas)', bb.getFn('canvas_get_height').fn([]).toRawNumber(), 0);
+
+  // canvas_draw_image returns Unit when no canvas
+  expectUnit('canvas_draw_image (no canvas)', bb.getFn('canvas_draw_image'), [
+    { toRawNumber: () => 1 }, { toRawNumber: () => 0 }, { toRawNumber: () => 0 },
+    { toRawNumber: () => 100 }, { toRawNumber: () => 100 },
+  ]);
+
+  // canvas_image_loaded returns Boolean (no real image loaded)
+  const loadedResult = bb.getFn('canvas_image_loaded').fn([{ toRawNumber: () => 0 }]);
+  test('canvas_image_loaded returns Boolean', loadedResult.isBoolean());
+  testEqual('canvas_image_loaded = false (no real image)', loadedResult.toRawBoolean(), false);
+
+  // audio functions return Unit even without canvas/audio
+  expectUnit('audio_play (no audio)', bb.getFn('audio_play'), [{ toRawNumber: () => 1 }]);
+  expectUnit('audio_stop (no audio)', bb.getFn('audio_stop'), [{ toRawNumber: () => 1 }]);
+  expectUnit('audio_pause (no audio)', bb.getFn('audio_pause'), [{ toRawNumber: () => 1 }]);
+  expectUnit('audio_resume (no audio)', bb.getFn('audio_resume'), [{ toRawNumber: () => 1 }]);
+  expectUnit('audio_set_volume (no audio)', bb.getFn('audio_set_volume'), [
+    { toRawNumber: () => 1 }, { toRawNumber: () => 0.5 },
+  ]);
+  expectUnit('audio_set_loop (no audio)', bb.getFn('audio_set_loop'), [
+    { toRawNumber: () => 1 }, { toRawString: () => 'true' },
+  ]);
+
+  // map_keys/map_values return empty list for empty map
+  const emptyMap = {
+    _entries: {},
+    hasByValueKey: () => false,
+  };
+  const keysResult = bb.getFn('map_keys').fn([emptyMap]);
+  test('map_keys (empty) returns List', keysResult.isList ? keysResult.isList() : Array.isArray(keysResult));
+  testEqual('map_keys (empty) length', keysResult.length(), 0);
+  const valsResult = bb.getFn('map_values').fn([emptyMap]);
+  testEqual('map_values (empty) length', valsResult.length(), 0);
 })();
 
 // ════════════════════════════════════════════════════════════
@@ -603,6 +649,34 @@ function createTest() {
   } catch (e) {
     test('typecheck err: canvas_rotate wrong arg type', true);
   }
+
+  // canvas_load_image / canvas_draw_image — valid
+  try {
+    runBrowser('fn main() { canvas_load_image("data:,"); canvas_draw_image(0, 0, 0, 100, 50) }', {
+      target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
+    });
+    test('typecheck: canvas_load_image + draw_image valid', true);
+  } catch (e) {
+    console.log('\u2717 typecheck canvas_load_image + draw_image:', e.message);
+    failed++;
+  }
+
+  // canvas_load_image — invalid (needs String)
+  try {
+    compile('fn main() { canvas_load_image(42) }');
+    console.log('\u2717 typecheck err: canvas_load_image number should fail');
+    failed++;
+  } catch (e) {
+    test('typecheck err: canvas_load_image(42) rejected', true);
+  }
+
+  try {
+    compile('fn main() { canvas_draw_image("id", 0, 0, 100, 50) }');
+    console.log('\u2717 typecheck err: canvas_draw_image string id should fail');
+    failed++;
+  } catch (e) {
+    test('typecheck err: canvas_draw_image string id rejected', true);
+  }
 })();
 
 // ════════════════════════════════════════════════════════════
@@ -696,6 +770,10 @@ function createTest() {
     canvas_save: 0, canvas_restore: 0,
     canvas_rotate: 1, canvas_translate: 2, canvas_scale: 2,
     canvas_get_width: 0, canvas_get_height: 0,
+    canvas_load_image: 1, canvas_draw_image: 5, canvas_image_loaded: 1,
+    audio_load: 1, audio_play: 1, audio_stop: 1, audio_pause: 1, audio_resume: 1,
+    audio_set_volume: 2, audio_set_loop: 2,
+    map_keys: 1, map_values: 1,
   };
 
   for (const [name, expected] of Object.entries(arities)) {

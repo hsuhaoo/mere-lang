@@ -131,6 +131,16 @@ class Builtins {
       return map.remove(key);
     });
 
+    this.registerFn('map_keys', 1, (args) => {
+      const map = args[0] as MapValue;
+      return mkList(Object.keys(map._entries || {}).map(k => mkString(k)), null);
+    });
+
+    this.registerFn('map_values', 1, (args) => {
+      const map = args[0] as MapValue;
+      return mkList(Object.values(map._entries || {}), null);
+    });
+
     // ═══════════════════════════════════════════════════════════
     // Polymorphic builtins (get, has, put)
     // ═══════════════════════════════════════════════════════════

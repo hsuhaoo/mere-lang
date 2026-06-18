@@ -1239,6 +1239,8 @@ const BUILTIN_FUNCTIONS = new Map([
   ['map_get', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$V')]) }],
   ['map_has', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Boolean') }],
   ['map_remove', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K')], returnType: new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]) }],
+  ['map_keys', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('String')]) }],
+  ['map_values', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$V')]) }],
 
   // List higher-order functions
   ['map', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$U')]) }],
@@ -1287,6 +1289,20 @@ const BUILTIN_FUNCTIONS = new Map([
   ['canvas_scale', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_on_click', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
   ['canvas_on_drag', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
+
+  // Image loading/drawing
+  ['canvas_load_image', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
+  ['canvas_draw_image', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_image_loaded', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Boolean') }],
+
+  // Audio
+  ['audio_load', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
+  ['audio_play', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['audio_stop', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['audio_pause', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['audio_resume', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['audio_set_volume', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['audio_set_loop', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Boolean')], returnType: new TypeAnnotation('Unit') }],
 
   // Math builtins
   ['abs', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],

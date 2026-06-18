@@ -1,0 +1,12 @@
+fn main() -> Unit {
+  // 1×1 red pixel PNG as data URI (loads async, ID returned immediately)
+  let red_png: String = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+  let id: Number = canvas_load_image(red_png);
+  // Draw at three positions — may not render until image loads
+  canvas_draw_image(id, 0, 0, 10, 10);
+  canvas_draw_image(id, 50, 50, 20, 20);
+  canvas_draw_image(id, 100, 100, 30, 30);
+  // Draw a filled rect to verify canvas works regardless
+  canvas_set_fill_color("rgba(255,0,0,255)");
+  canvas_fill_rect(200, 200, 50, 50);
+}

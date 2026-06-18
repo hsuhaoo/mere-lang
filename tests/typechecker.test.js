@@ -503,6 +503,24 @@ testError('db_delete rejects non-String', `
 db_delete(42)
 `, /String|expected|mismatch/i);
 
+// ── map_keys / map_values ──────────────────────────────────────
+
+test('map_keys returns List<String>', `
+let m: Map<Number, String> = {1: "a"};
+let keys: List<String> = map_keys(m);
+sort(keys)
+`, ["1"]);
+
+test('map_values returns List<V>', `
+let m: Map<Number, String> = {1: "a"};
+let vals: List<String> = map_values(m);
+sort(vals)
+`, ["a"]);
+
+testError('map_keys rejects non-Map', `
+map_keys(42)
+`, /Map|expected|mismatch/i);
+
 // ── record_update ─────────────────────────────────────────────
 
 test('record_update type-checks', `

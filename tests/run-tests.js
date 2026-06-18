@@ -728,6 +728,43 @@ test('sort_by ascending', `
 sort_by([3, 1, 2], fn(a: Number, b: Number) -> Number { a - b })
 `, [1, 2, 3]);
 
+// ── map_keys / map_values ────────────────────────────
+
+test('map_keys returns string keys', `
+let m: Map<Number, String> = {1: "a", 2: "b", 3: "c"};
+let keys: List<String> = map_keys(m);
+sort(keys)
+`, ["1", "2", "3"]);
+
+test('map_values returns values', `
+let m: Map<Number, String> = {1: "a", 2: "b", 3: "c"};
+let vals: List<String> = map_values(m);
+sort(vals)
+`, ["a", "b", "c"]);
+
+test('map_keys fold over keys', `
+let m: Map<Number, Number> = {10: 1, 20: 2, 30: 3};
+let keys: List<String> = map_keys(m);
+fold(keys, 0, fn(acc: Number, k: String) -> Number { acc + parse_num(k).value })
+`, 60);
+
+test('map_keys fold inferred', `
+let m: Map<Number, Number> = {10: 1, 20: 2, 30: 3};
+fold(map_keys(m), 0, fn(acc: Number, k: String) -> Number { acc + parse_num(k).value })
+`, 60);
+
+test('map_keys empty map', `
+let m: Map<String, Number> = {};
+let keys: List<String> = map_keys(m);
+keys.len
+`, 0);
+
+test('map_values empty map', `
+let m: Map<String, Number> = {};
+let vals: List<Number> = map_values(m);
+vals.len
+`, 0);
+
 // ── sleep ───────────────────────────────────────────────
 
 test('sleep and join', `

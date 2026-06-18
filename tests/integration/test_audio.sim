@@ -1,0 +1,8 @@
+fn main() -> Unit {
+  let wav: String = "data:audio/wav;base64,UExSRRMAAAAARk9STUFOUSgAAAFQQ01BRNAAAAAIWF2UY2h1bmv/AAAAAAEAAAABAQAA";
+  let id: Number = audio_load(wav);
+  audio_set_volume(id, 0.5);
+  audio_set_loop(id, true);
+  audio_play(id);
+  ()
+}

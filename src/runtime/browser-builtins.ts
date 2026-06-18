@@ -25,6 +25,12 @@ class BrowserBuiltins {
   interpreter: Interpreter | null;
   private _listenersSetup: boolean;
   private _isDragging: boolean;
+  private _images: Map<number, HTMLImageElement>;
+  private _imageIdCounter: number;
+  private _imageUrlToId: Map<string, number>;
+  private _audios: Map<number, HTMLAudioElement>;
+  private _audioIdCounter: number;
+  private _audioUrlToId: Map<string, number>;
 
   constructor(
     scheduler?: Scheduler,
@@ -41,6 +47,12 @@ class BrowserBuiltins {
     this.interpreter = null;
     this._listenersSetup = false;
     this._isDragging = false;
+    this._images = new Map();
+    this._imageIdCounter = 0;
+    this._imageUrlToId = new Map();
+    this._audios = new Map();
+    this._audioIdCounter = 0;
+    this._audioUrlToId = new Map();
     this.registerBuiltins();
   }
 
@@ -137,6 +149,16 @@ class BrowserBuiltins {
       const map = args[0] as MapValue;
       const key = args[1];
       return map.remove(key);
+    });
+
+    this.registerFn('map_keys', 1, (args) => {
+      const map = args[0] as MapValue;
+      return mkList(Object.keys(map._entries || {}).map(k => mkString(k)), null);
+    });
+
+    this.registerFn('map_values', 1, (args) => {
+      const map = args[0] as MapValue;
+      return mkList(Object.values(map._entries || {}), null);
     });
 
     this.registerFn('get', 2, (args) => {
@@ -358,6 +380,100 @@ class BrowserBuiltins {
       }
       newFields[fieldName] = newValue;
       return new RecordValue(newFields, rec.typeName());
+    });
+
+    // ── Image loading (synchronous ID allocation, async load) ──
+    this.registerFn('canvas_load_image', 1, (args) => {
+      const url = args[0].toRawString();
+      const cachedId = this._imageUrlToId.get(url);
+      if (cachedId !== undefined) return mkNumber(cachedId);
+
+      const id = this._imageIdCounter++;
+      if (typeof Image !== 'undefined') {
+        const img = new Image();
+        img.src = url;
+        this._images.set(id, img);
+      }
+      this._imageUrlToId.set(url, id);
+      return mkNumber(id);
+    });
+
+    this.registerFn('canvas_draw_image', 5, (args) => {
+      if (!this.ctx) return mkUnit();
+      const id = args[0].toRawNumber();
+      const x = args[1].toRawNumber();
+      const y = args[2].toRawNumber();
+      const w = args[3].toRawNumber();
+      const h = args[4].toRawNumber();
+      const img = this._images.get(id);
+      if (img && img.complete && img.naturalWidth > 0) {
+        this.ctx.drawImage(img, x, y, w, h);
+      }
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_image_loaded', 1, (args) => {
+      const id = args[0].toRawNumber();
+      const img = this._images.get(id);
+      return mkBoolean(!!(img && img.complete && img.naturalWidth > 0));
+    });
+
+    // ── Audio (synchronous ID allocation, async load) ──
+    this.registerFn('audio_load', 1, (args) => {
+      const url = args[0].toRawString();
+      const cachedId = this._audioUrlToId.get(url);
+      if (cachedId !== undefined) return mkNumber(cachedId);
+
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      const id = this._audioIdCounter++;
+      this._audios.set(id, audio);
+      this._audioUrlToId.set(url, id);
+      return mkNumber(id);
+    });
+
+    this.registerFn('audio_play', 1, (args) => {
+      const id = args[0].toRawNumber();
+      const audio = this._audios.get(id);
+      if (audio) audio.play().catch(() => {});
+      return mkUnit();
+    });
+
+    this.registerFn('audio_stop', 1, (args) => {
+      const id = args[0].toRawNumber();
+      const audio = this._audios.get(id);
+      if (audio) { audio.pause(); audio.currentTime = 0; }
+      return mkUnit();
+    });
+
+    this.registerFn('audio_pause', 1, (args) => {
+      const id = args[0].toRawNumber();
+      const audio = this._audios.get(id);
+      if (audio) audio.pause();
+      return mkUnit();
+    });
+
+    this.registerFn('audio_resume', 1, (args) => {
+      const id = args[0].toRawNumber();
+      const audio = this._audios.get(id);
+      if (audio) audio.play().catch(() => {});
+      return mkUnit();
+    });
+
+    this.registerFn('audio_set_volume', 2, (args) => {
+      const id = args[0].toRawNumber();
+      const vol = args[1].toRawNumber();
+      const audio = this._audios.get(id);
+      if (audio) audio.volume = Math.max(0, Math.min(1, vol));
+      return mkUnit();
+    });
+
+    this.registerFn('audio_set_loop', 2, (args) => {
+      const id = args[0].toRawNumber();
+      const loop = args[1] instanceof BooleanValue ? args[1]._value : args[1].toRawString() === 'true';
+      const audio = this._audios.get(id);
+      if (audio) audio.loop = loop;
+      return mkUnit();
     });
 
     this.registerCanvasBuiltins();
