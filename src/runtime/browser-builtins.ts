@@ -25,6 +25,8 @@ class BrowserBuiltins {
   private _audios: Map<number, HTMLAudioElement>;
   private _audioIdCounter: number;
   private _audioUrlToId: Map<string, number>;
+  private _gradients: Map<number, CanvasGradient>;
+  private _gradientIdCounter: number;
 
   constructor(
     scheduler?: Scheduler,
@@ -46,6 +48,8 @@ class BrowserBuiltins {
     this._audios = new Map();
     this._audioIdCounter = 0;
     this._audioUrlToId = new Map();
+    this._gradients = new Map();
+    this._gradientIdCounter = 0;
     this.registerBuiltins();
   }
 
@@ -205,6 +209,22 @@ class BrowserBuiltins {
 
     this.registerFn('random', 1, (args) => {
       return mkNumber(Math.floor(Math.random() * args[0].toRawNumber()));
+    });
+
+    this.registerFn('sin', 1, (args) => {
+      return mkNumber(Math.sin(args[0].toRawNumber()));
+    });
+
+    this.registerFn('floor', 1, (args) => {
+      return mkNumber(Math.floor(args[0].toRawNumber()));
+    });
+
+    this.registerFn('round', 1, (args) => {
+      return mkNumber(Math.round(args[0].toRawNumber()));
+    });
+
+    this.registerFn('pi', 0, () => {
+      return mkNumber(Math.PI);
     });
 
     this.registerFn('sort', 1, (args) => {
@@ -692,6 +712,114 @@ class BrowserBuiltins {
     this.registerFn('canvas_scale', 2, (args) => {
       if (!this.ctx) return mkUnit();
       this.ctx.scale(args[0].toRawNumber(), args[1].toRawNumber());
+      return mkUnit();
+    });
+
+    // ── Gradients ──
+    this.registerFn('canvas_create_linear_gradient', 4, (args) => {
+      if (!this.ctx) return mkNumber(-1);
+      const grad = this.ctx.createLinearGradient(
+        args[0].toRawNumber(), args[1].toRawNumber(),
+        args[2].toRawNumber(), args[3].toRawNumber()
+      );
+      const id = this._gradientIdCounter++;
+      this._gradients.set(id, grad);
+      return mkNumber(id);
+    });
+
+    this.registerFn('canvas_create_radial_gradient', 6, (args) => {
+      if (!this.ctx) return mkNumber(-1);
+      const grad = this.ctx.createRadialGradient(
+        args[0].toRawNumber(), args[1].toRawNumber(), args[2].toRawNumber(),
+        args[3].toRawNumber(), args[4].toRawNumber(), args[5].toRawNumber()
+      );
+      const id = this._gradientIdCounter++;
+      this._gradients.set(id, grad);
+      return mkNumber(id);
+    });
+
+    this.registerFn('canvas_add_color_stop', 3, (args) => {
+      const id = args[0].toRawNumber();
+      const grad = this._gradients.get(id);
+      if (!grad) return mkUnit();
+      grad.addColorStop(args[1].toRawNumber(), args[2].toRawString());
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_fill_gradient', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      const id = args[0].toRawNumber();
+      const grad = this._gradients.get(id);
+      if (grad) this.ctx.fillStyle = grad;
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_stroke_gradient', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      const id = args[0].toRawNumber();
+      const grad = this._gradients.get(id);
+      if (grad) this.ctx.strokeStyle = grad;
+      return mkUnit();
+    });
+
+    // ── Shadows ──
+    this.registerFn('canvas_set_shadow_color', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.shadowColor = args[0].toRawString();
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_shadow_blur', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.shadowBlur = args[0].toRawNumber();
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_shadow_offset_x', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.shadowOffsetX = args[0].toRawNumber();
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_shadow_offset_y', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.shadowOffsetY = args[0].toRawNumber();
+      return mkUnit();
+    });
+
+    // ── Text style ──
+    this.registerFn('canvas_set_text_align', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.textAlign = args[0].toRawString() as CanvasTextAlign;
+      return mkUnit();
+    });
+
+    this.registerFn('canvas_set_text_baseline', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.textBaseline = args[0].toRawString() as CanvasTextBaseline;
+      return mkUnit();
+    });
+
+    // ── Path extensions ──
+    this.registerFn('canvas_arc_to', 5, (args) => {
+      if (!this.ctx) return mkUnit();
+      this.ctx.arcTo(
+        args[0].toRawNumber(), args[1].toRawNumber(),
+        args[2].toRawNumber(), args[3].toRawNumber(),
+        args[4].toRawNumber()
+      );
+      return mkUnit();
+    });
+
+    // ── Line dash ──
+    this.registerFn('canvas_set_line_dash', 1, (args) => {
+      if (!this.ctx) return mkUnit();
+      const list = args[0] as ListValue;
+      const segments: number[] = [];
+      for (let i = 0; i < list.length(); i++) {
+        segments.push(list.get(i).toRawNumber());
+      }
+      this.ctx.setLineDash(segments);
       return mkUnit();
     });
   }

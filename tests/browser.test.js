@@ -43,7 +43,8 @@ function testError(name, fn, expectedSubstring) {
   }
 }
 
-function createMockCanvas() {
+function createMockCanvas(opts) {
+  if (opts?.noCanvas) return null;
   const calls = [];
   const ctx = {};
   ctx.calls = calls;
@@ -51,6 +52,12 @@ function createMockCanvas() {
   ctx.strokeStyle = null;
   ctx.font = null;
   ctx.lineWidth = null;
+  ctx.shadowColor = null;
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
   ctx.clearRect = function(x, y, w, h) { calls.push(['clearRect', x, y, w, h]); };
   ctx.fillRect = function(x, y, w, h) { calls.push(['fillRect', x, y, w, h]); };
   ctx.strokeRect = function(x, y, w, h) { calls.push(['strokeRect', x, y, w, h]); };
@@ -62,6 +69,7 @@ function createMockCanvas() {
   ctx.moveTo = function(x, y) { calls.push(['moveTo', x, y]); };
   ctx.lineTo = function(x, y) { calls.push(['lineTo', x, y]); };
   ctx.arc = function(x, y, r, a1, a2) { calls.push(['arc', x, y, r, a1, a2]); };
+  ctx.arcTo = function(x1, y1, x2, y2, r) { calls.push(['arcTo', x1, y1, x2, y2, r]); };
   ctx.stroke = function() { calls.push(['stroke']); };
   ctx.fill = function() { calls.push(['fill']); };
   ctx.save = function() { calls.push(['save']); };
@@ -69,12 +77,29 @@ function createMockCanvas() {
   ctx.rotate = function(a) { calls.push(['rotate', a]); };
   ctx.translate = function(x, y) { calls.push(['translate', x, y]); };
   ctx.scale = function(x, y) { calls.push(['scale', x, y]); };
+  ctx.createLinearGradient = function(x0, y0, x1, y1) {
+    calls.push(['createLinearGradient', x0, y0, x1, y1]);
+    const grad = { _stops: [] };
+    grad.addColorStop = function(offset, color) {
+      grad._stops.push([offset, color]);
+    };
+    return grad;
+  };
+  ctx.createRadialGradient = function(x0, y0, r0, x1, y1, r1) {
+    calls.push(['createRadialGradient', x0, y0, r0, x1, y1, r1]);
+    const grad = { _stops: [] };
+    grad.addColorStop = function(offset, color) {
+      grad._stops.push([offset, color]);
+    };
+    return grad;
+  };
+  ctx.setLineDash = function(segments) { calls.push(['setLineDash', segments]); };
   return ctx;
 }
 
-function createTest() {
-  const ctx = createMockCanvas();
-  const scheduler = new Scheduler();
+function createTest(opts) {
+  const ctx = createMockCanvas(opts);
+  const scheduler = opts?.skipScheduler ? null : new Scheduler();
   const bb = new BrowserBuiltins(scheduler, ctx, 800, 600);
   return { ctx, scheduler, bb };
 }
@@ -119,6 +144,10 @@ function createTest() {
   test('append registered', names.includes('append'));
   test('map_put registered', names.includes('map_put'));
   test('abs registered', names.includes('abs'));
+  test('sin registered', names.includes('sin'));
+  test('floor registered', names.includes('floor'));
+  test('round registered', names.includes('round'));
+  test('pi registered', names.includes('pi'));
   test('record_update registered', names.includes('record_update'));
   test('canvas_load_image registered', names.includes('canvas_load_image'));
   test('canvas_draw_image registered', names.includes('canvas_draw_image'));
@@ -132,6 +161,19 @@ function createTest() {
   test('audio_set_loop registered', names.includes('audio_set_loop'));
   test('canvas_wait_click registered', names.includes('canvas_wait_click'));
   test('canvas_wait_drag registered', names.includes('canvas_wait_drag'));
+  test('canvas_create_linear_gradient registered', names.includes('canvas_create_linear_gradient'));
+  test('canvas_create_radial_gradient registered', names.includes('canvas_create_radial_gradient'));
+  test('canvas_add_color_stop registered', names.includes('canvas_add_color_stop'));
+  test('canvas_set_fill_gradient registered', names.includes('canvas_set_fill_gradient'));
+  test('canvas_set_stroke_gradient registered', names.includes('canvas_set_stroke_gradient'));
+  test('canvas_set_shadow_color registered', names.includes('canvas_set_shadow_color'));
+  test('canvas_set_shadow_blur registered', names.includes('canvas_set_shadow_blur'));
+  test('canvas_set_shadow_offset_x registered', names.includes('canvas_set_shadow_offset_x'));
+  test('canvas_set_shadow_offset_y registered', names.includes('canvas_set_shadow_offset_y'));
+  test('canvas_set_text_align registered', names.includes('canvas_set_text_align'));
+  test('canvas_set_text_baseline registered', names.includes('canvas_set_text_baseline'));
+  test('canvas_arc_to registered', names.includes('canvas_arc_to'));
+  test('canvas_set_line_dash registered', names.includes('canvas_set_line_dash'));
   test('map_keys registered', names.includes('map_keys'));
   test('map_values registered', names.includes('map_values'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
@@ -678,6 +720,13 @@ function createTest() {
     audio_load: 1, audio_play: 1, audio_stop: 1, audio_pause: 1, audio_resume: 1,
     audio_set_volume: 2, audio_set_loop: 2,
     canvas_wait_click: 0, canvas_wait_drag: 0,
+    canvas_create_linear_gradient: 4, canvas_create_radial_gradient: 6,
+    canvas_add_color_stop: 3, canvas_set_fill_gradient: 1, canvas_set_stroke_gradient: 1,
+    canvas_set_shadow_color: 1, canvas_set_shadow_blur: 1,
+    canvas_set_shadow_offset_x: 1, canvas_set_shadow_offset_y: 1,
+    canvas_set_text_align: 1, canvas_set_text_baseline: 1,
+    canvas_arc_to: 5, canvas_set_line_dash: 1,
+    sin: 1, floor: 1, round: 1, pi: 0,
     map_keys: 1, map_values: 1,
   };
 
@@ -685,6 +734,160 @@ function createTest() {
     const entry = bb.getFn(name);
     testEqual('arity: ' + name + ' = ' + expected, entry.arity, expected);
   }
+})();
+
+// ════════════════════════════════════════════════════════════
+// 8. New Canvas API tests (gradients, shadows, text style, arcTo, lineDash)
+// ════════════════════════════════════════════════════════════
+
+(function() {
+  // Skip gradient/shadow/arcTo tests if no ctx — just test arity and no-crash
+  const noCanvas = () => {
+    const { bb } = createTest();
+    return bb;
+  };
+
+  // Gradients without canvas — return -1 for create functions
+  (function() {
+    const { bb } = createTest({ noCanvas: true });
+    const linearFn = bb.getFn('canvas_create_linear_gradient');
+    const id = linearFn.fn([
+      { toRawNumber: () => 0 }, { toRawNumber: () => 0 },
+      { toRawNumber: () => 100 }, { toRawNumber: () => 100 },
+    ]);
+    testEqual('create_linear_gradient no ctx returns -1', id.toRawNumber(), -1);
+
+    const radialFn = bb.getFn('canvas_create_radial_gradient');
+    const rid = radialFn.fn([
+      { toRawNumber: () => 0 }, { toRawNumber: () => 0 }, { toRawNumber: () => 10 },
+      { toRawNumber: () => 50 }, { toRawNumber: () => 50 }, { toRawNumber: () => 20 },
+    ]);
+    testEqual('create_radial_gradient no ctx returns -1', rid.toRawNumber(), -1);
+  })();
+
+  // Canvas with mocked ctx — test gradient creation
+  (function() {
+    const { bb, ctx } = createTest();
+    const linearFn = bb.getFn('canvas_create_linear_gradient');
+    const id = linearFn.fn([
+      { toRawNumber: () => 0 }, { toRawNumber: () => 0 },
+      { toRawNumber: () => 100 }, { toRawNumber: () => 0 },
+    ]);
+    test('create_linear_gradient produces an ID', id.toRawNumber() >= 0);
+    test('create_linear_gradient called createLinearGradient', ctx.calls.some(c => c[0] === 'createLinearGradient'));
+
+    const addStop = bb.getFn('canvas_add_color_stop');
+    addStop.fn([{ toRawNumber: () => id.toRawNumber() }, { toRawNumber: () => 0 }, { toRawString: () => 'red' }]);
+    test('add_color_stop returns Unit', true);
+
+    const setFillGrad = bb.getFn('canvas_set_fill_gradient');
+    const fillResult = setFillGrad.fn([{ toRawNumber: () => id.toRawNumber() }]);
+    test('set_fill_gradient returns Unit', fillResult.isUnit());
+
+    const setStrokeGrad = bb.getFn('canvas_set_stroke_gradient');
+    const strokeResult = setStrokeGrad.fn([{ toRawNumber: () => id.toRawNumber() }]);
+    test('set_stroke_gradient returns Unit', strokeResult.isUnit());
+  })();
+
+  // Shadow APIs
+  (function() {
+    const { bb, ctx } = createTest();
+    const fn = (name) => bb.getFn(name).fn;
+
+    fn('canvas_set_shadow_color')([{ toRawString: () => 'rgba(0,0,0,0.5)' }]);
+    test('set_shadow_color', ctx.shadowColor === 'rgba(0,0,0,0.5)');
+
+    fn('canvas_set_shadow_blur')([{ toRawNumber: () => 10 }]);
+    testEqual('set_shadow_blur', ctx.shadowBlur, 10);
+
+    fn('canvas_set_shadow_offset_x')([{ toRawNumber: () => 5 }]);
+    testEqual('set_shadow_offset_x', ctx.shadowOffsetX, 5);
+
+    fn('canvas_set_shadow_offset_y')([{ toRawNumber: () => -3 }]);
+    testEqual('set_shadow_offset_y', ctx.shadowOffsetY, -3);
+  })();
+
+  // Text style APIs
+  (function() {
+    const { bb } = createTest();
+
+    const alignFn = bb.getFn('canvas_set_text_align');
+    const alignResult = alignFn.fn([{ toRawString: () => 'center' }]);
+    test('set_text_align returns Unit', alignResult.isUnit());
+
+    const baselineFn = bb.getFn('canvas_set_text_baseline');
+    const baselineResult = baselineFn.fn([{ toRawString: () => 'middle' }]);
+    test('set_text_baseline returns Unit', baselineResult.isUnit());
+  })();
+
+  // arcTo
+  (function() {
+    const { bb, ctx } = createTest();
+    const arcToFn = bb.getFn('canvas_arc_to');
+    const result = arcToFn.fn([
+      { toRawNumber: () => 0 }, { toRawNumber: () => 0 },
+      { toRawNumber: () => 100 }, { toRawNumber: () => 100 },
+      { toRawNumber: () => 20 },
+    ]);
+    test('arc_to returns Unit', result.isUnit());
+    test('arc_to called arcTo', ctx.calls.some(c => c[0] === 'arcTo'));
+  })();
+
+  // setLineDash
+  (function() {
+    const { bb, ctx } = createTest();
+    const dashFn = bb.getFn('canvas_set_line_dash');
+    const list = {
+      _elementType: null,
+      length: () => 2,
+      get: (i) => ({ toRawNumber: () => i === 0 ? 5 : 10 }),
+    };
+    const result = dashFn.fn([list]);
+    test('set_line_dash returns Unit', result.isUnit());
+    test('set_line_dash called setLineDash', ctx.calls.some(c => c[0] === 'setLineDash'));
+  })();
+
+  // No-canvas safety for all new APIs — should return Unit without crashing
+  (function() {
+    const { bb } = createTest({ noCanvas: true, skipScheduler: true });
+    const safes = [
+      'canvas_set_shadow_color', 'canvas_set_shadow_blur',
+      'canvas_set_shadow_offset_x', 'canvas_set_shadow_offset_y',
+      'canvas_set_text_align', 'canvas_set_text_baseline',
+      'canvas_set_fill_gradient', 'canvas_set_stroke_gradient',
+      'canvas_add_color_stop', 'canvas_arc_to', 'canvas_set_line_dash',
+    ];
+    for (const name of safes) {
+      const fn = bb.getFn(name);
+      const args = name === 'canvas_add_color_stop'
+        ? [{ toRawNumber: () => 0 }, { toRawNumber: () => 0 }, { toRawString: () => 'red' }]
+        : name === 'canvas_set_line_dash'
+        ? [{ length: () => 0, get: () => ({ toRawNumber: () => 0 }) }]
+        : [{ toRawNumber: () => 0 }, { toRawNumber: () => 0 }].slice(0, fn.arity);
+      const result = fn.fn(args);
+      test(name + ' safe without canvas', result.isUnit());
+    }
+  })();
+})();
+
+// ════════════════════════════════════════════════════════════
+// 9. Math builtin runtime tests
+// ════════════════════════════════════════════════════════════
+
+(function() {
+  const { bb } = createTest();
+
+  const sinResult = bb.getFn('sin').fn([{ toRawNumber: () => 0 }]);
+  testEqual('sin(0)', sinResult.toRawNumber(), 0);
+
+  const floorResult = bb.getFn('floor').fn([{ toRawNumber: () => 3.7 }]);
+  testEqual('floor(3.7)', floorResult.toRawNumber(), 3);
+
+  const roundResult = bb.getFn('round').fn([{ toRawNumber: () => 3.5 }]);
+  testEqual('round(3.5)', roundResult.toRawNumber(), 4);
+
+  const piResult = bb.getFn('pi').fn([]);
+  testEqual('pi()', piResult.toRawNumber(), Math.PI);
 })();
 
 // ════════════════════════════════════════════════════════════

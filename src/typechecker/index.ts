@@ -1295,6 +1295,19 @@ const BUILTIN_FUNCTIONS = new Map([
   ['canvas_scale', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
   ['canvas_wait_click', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('Number')])]) }],
   ['canvas_wait_drag', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Map', [new TypeAnnotation('String'), new TypeAnnotation('Number')])]) }],
+  ['canvas_create_linear_gradient', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['canvas_create_radial_gradient', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['canvas_add_color_stop', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_fill_gradient', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_stroke_gradient', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_shadow_color', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_shadow_blur', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_shadow_offset_x', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_shadow_offset_y', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_text_align', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_text_baseline', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_arc_to', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_set_line_dash', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('Number')])], returnType: new TypeAnnotation('Unit') }],
 
   // Image loading/drawing
   ['canvas_load_image', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Number') }],
@@ -1315,6 +1328,10 @@ const BUILTIN_FUNCTIONS = new Map([
   ['max', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['random', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['sin', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['floor', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['round', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['pi', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
 
   ['sort', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
