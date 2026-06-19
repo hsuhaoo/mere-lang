@@ -177,6 +177,7 @@ function createTest(opts) {
   test('map_keys registered', names.includes('map_keys'));
   test('map_values registered', names.includes('map_values'));
   test('fetch registered (with scheduler)', names.includes('fetch'));
+  test('await_font_loaded registered', names.includes('await_font_loaded'));
   test('db_store registered', names.includes('db_store'));
   test('db_load registered', names.includes('db_load'));
   test('db_delete registered', names.includes('db_delete'));
@@ -727,6 +728,7 @@ function createTest(opts) {
     canvas_set_text_align: 1, canvas_set_text_baseline: 1,
     canvas_arc_to: 5, canvas_set_line_dash: 1,
     sin: 1, floor: 1, round: 1, pi: 0,
+    await_font_loaded: 1,
     map_keys: 1, map_values: 1,
   };
 

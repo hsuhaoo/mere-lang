@@ -260,6 +260,17 @@ class BrowserBuiltins {
         return this.scheduler!.spawnAsync(promise, null);
       });
 
+      this.registerFn('await_font_loaded', 1, (args) => {
+        const fontSpec = args[0].toRawString();
+        if (typeof document === 'undefined' || !document.fonts) {
+          return this.scheduler!.spawnAsync(Promise.resolve(mkUnit()), null);
+        }
+        const promise = document.fonts.load(fontSpec)
+          .then(() => mkUnit())
+          .catch(() => mkUnit());
+        return this.scheduler!.spawnAsync(promise, null);
+      });
+
       this.registerFn('fetch', 4, (args) => {
         const url = args[0].toRawString();
         const method = args[1].toRawString();

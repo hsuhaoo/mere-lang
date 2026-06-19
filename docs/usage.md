@@ -224,6 +224,7 @@ let x: Number = add(3, 4);       // 7
 | `join` | `join(Task<T>) → T` | 获取 Task 结果 |
 | `sleep` | `sleep(Number) → Task<Unit>` | 等待指定毫秒数 |
 | `next_frame` | `next_frame() → Task<Number>` | 等待下一动画帧（浏览器） |
+| `await_font_loaded` | `await_font_loaded(String) → Task<Unit>` | 等待字体加载完成（浏览器） |
 | `file_read` | `file_read(String) → Task<Result<String>>` | 异步读取文件 |
 | `file_write` | `file_write(String, String) → Task<Result<Unit>>` | 异步写入文件 |
 | `file_read_lines` | `file_read_lines(String) → Task<Result<List<String>>>` | 异步读行 |
@@ -1041,6 +1042,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 - `fetch(url, method, headers, body) → Task<Result<String>>`
 - `sleep(ms) → Task<Unit>`（见第 15 节）
 - `next_frame() → Task<Number>`（见第 15 节）
+- `await_font_loaded(font) → Task<Unit>`（见第 15 节）
 
 ### 19.4 Node 与浏览器差异
 
@@ -1055,6 +1057,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 | `random` | ✅ | ✅ |
 | `sleep` | ✅ | ✅ |
 | `next_frame` | ❌ | ✅ |
+| `await_font_loaded` | ❌ | ✅ |
 
 ---
 

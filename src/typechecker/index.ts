@@ -1257,6 +1257,7 @@ const BUILTIN_FUNCTIONS = new Map([
   // Timing (async — returns Task)
   ['sleep', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Unit')]) }],
   ['next_frame', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Number')]) }],
+  ['await_font_loaded', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Unit')]) }],
 
   // File I/O (async — returns Task, I/O happens on join)
   ['file_read', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Result', [new TypeAnnotation('String')])]) }],
