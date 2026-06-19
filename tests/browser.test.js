@@ -94,6 +94,8 @@ function createMockCanvas(opts) {
     return grad;
   };
   ctx.setLineDash = function(segments) { calls.push(['setLineDash', segments]); };
+  ctx.setTransform = function(a, b, c, d, e, f) { calls.push(['setTransform', a, b, c, d, e, f]); };
+  ctx.canvas = { width: 800, height: 600 };
   return ctx;
 }
 
@@ -160,6 +162,8 @@ function createTest(opts) {
   test('audio_resume registered', names.includes('audio_resume'));
   test('audio_set_volume registered', names.includes('audio_set_volume'));
   test('audio_set_loop registered', names.includes('audio_set_loop'));
+  test('canvas_on_click registered', names.includes('canvas_on_click'));
+  test('canvas_on_drag registered', names.includes('canvas_on_drag'));
   test('canvas_wait_click registered', names.includes('canvas_wait_click'));
   test('canvas_wait_drag registered', names.includes('canvas_wait_drag'));
   test('canvas_create_linear_gradient registered', names.includes('canvas_create_linear_gradient'));
@@ -277,11 +281,11 @@ function createTest(opts) {
   (function() {
     const { ctx, bb } = createTest();
     bb.getFn('canvas_clear').fn([]);
-    test('canvas_clear calls clearRect', ctx.calls.length === 1);
-    testEqual('clear[0]', ctx.calls[0][0], 'clearRect');
-    testEqual('clear x', ctx.calls[0][1], 0);
-    testEqual('clear w', ctx.calls[0][3], 800);
-    testEqual('clear h', ctx.calls[0][4], 600);
+    test('canvas_clear calls clearRect', ctx.calls.length === 3);
+    testEqual('clear[1]', ctx.calls[1][0], 'clearRect');
+    testEqual('clear x', ctx.calls[1][1], 0);
+    testEqual('clear w', ctx.calls[1][3], 800);
+    testEqual('clear h', ctx.calls[1][4], 600);
   })();
 
   // 2j. Get dimensions
@@ -448,6 +452,8 @@ function createTest(opts) {
     scale: function() { calls.push('scale'); },
     strokeRect: function() { calls.push('strokeRect'); },
     clearRectExact: function() {},
+    setTransform: function() {},
+    canvas: { width: 800, height: 600 },
   };
 
   try {
@@ -555,6 +561,8 @@ function createTest(opts) {
       scale: function() {},
       strokeRect: function() {},
       clearRectExact: function() {},
+      setTransform: function() {},
+      canvas: { width: 800, height: 600 },
     };
     try {
       runBrowser(`
@@ -698,6 +706,64 @@ function createTest(opts) {
   } catch (e) {
     test('typecheck err: canvas_draw_image string id rejected', true);
   }
+
+  // canvas_on_click / canvas_on_drag — valid calls
+  try {
+    runBrowser('fn main() { canvas_on_click(fn (x: Number, y: Number) -> Unit {}) }', {
+      target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
+    });
+    test('typecheck: canvas_on_click lambda valid', true);
+  } catch (e) {
+    console.log('\u2717 canvas_on_click lambda:', e.message);
+    failed++;
+  }
+
+  try {
+    runBrowser('fn main() { canvas_on_drag(fn (x: Number, y: Number) -> Unit {}) }', {
+      target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
+    });
+    test('typecheck: canvas_on_drag lambda valid', true);
+  } catch (e) {
+    console.log('\u2717 canvas_on_drag lambda:', e.message);
+    failed++;
+  }
+
+  try {
+    runBrowser(`
+      fn handle(x: Number, y: Number) -> Unit { () }
+      fn main() { canvas_on_click(handle) }
+    `, { target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0 });
+    test('typecheck: canvas_on_click named fn valid', true);
+  } catch (e) {
+    console.log('\u2717 canvas_on_click named fn:', e.message);
+    failed++;
+  }
+
+  // canvas_on_click / canvas_on_drag — invalid (non-function)
+  try {
+    compile('fn main() { canvas_on_click(42) }');
+    console.log('\u2717 typecheck err: canvas_on_click number should fail');
+    failed++;
+  } catch (e) {
+    test('typecheck err: canvas_on_click number rejected', true);
+  }
+
+  try {
+    compile('fn main() { canvas_on_drag("notafn") }');
+    console.log('\u2717 typecheck err: canvas_on_drag string should fail');
+    failed++;
+  } catch (e) {
+    test('typecheck err: canvas_on_drag string rejected', true);
+  }
+
+  // canvas_on_click — wrong arity (fn should take (Number, Number))
+  try {
+    compile('fn main() { canvas_on_click(fn () -> Unit {}) }');
+    console.log('\u2717 typecheck err: canvas_on_click wrong arity should fail');
+    failed++;
+  } catch (e) {
+    test('typecheck err: canvas_on_click wrong fn arity rejected', true);
+  }
 })();
 
 // ════════════════════════════════════════════════════════════
@@ -721,6 +787,7 @@ function createTest(opts) {
     canvas_load_image: 1, canvas_draw_image: 5, canvas_image_loaded: 1,
     audio_load: 1, audio_play: 1, audio_stop: 1, audio_pause: 1, audio_resume: 1,
     audio_set_volume: 2, audio_set_loop: 2,
+    canvas_on_click: 1, canvas_on_drag: 1,
     canvas_wait_click: 0, canvas_wait_drag: 0,
     canvas_create_linear_gradient: 4, canvas_create_radial_gradient: 6,
     canvas_add_color_stop: 3, canvas_set_fill_gradient: 1, canvas_set_stroke_gradient: 1,

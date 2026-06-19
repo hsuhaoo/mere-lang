@@ -260,10 +260,11 @@ class ListValue extends Value {
   }
 
   get(index: number): Value | undefined {
-    if (index < 0 || index >= this._elements.length) {
+    const idx = Math.floor(index);
+    if (idx < 0 || idx >= this._elements.length) {
       return undefined;
     }
-    return this._elements[index];
+    return this._elements[idx];
   }
 
   append(elem: Value): ListValue {

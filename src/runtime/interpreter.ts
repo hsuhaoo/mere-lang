@@ -599,14 +599,20 @@ class Interpreter {
     while (true) {
       const condition = this.execExpr(stmt.condition);
       if (!condition.isTruthy()) break;
-      for (const s of stmt.body) {
-        try {
-          const result = this.execStmt(s);
-          if (result instanceof ReturnSignal) throw result;
-        } catch (e) {
-          if (e instanceof ReturnSignal) throw e;
-          throw e;
+      const savedEnv = this.rootEnv;
+      this.rootEnv = new Env(savedEnv);
+      try {
+        for (const s of stmt.body) {
+          try {
+            const result = this.execStmt(s);
+            if (result instanceof ReturnSignal) throw result;
+          } catch (e) {
+            if (e instanceof ReturnSignal) throw e;
+            throw e;
+          }
         }
+      } finally {
+        this.rootEnv = savedEnv;
       }
     }
     return mkUnit();
