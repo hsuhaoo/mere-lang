@@ -695,6 +695,145 @@ test('concat_all empty separator', `
 concat_all(["a", "b", "c"], "")
 `, "abc");
 
+// ── list_pop / list_remove_at / list_index_of / find ──────
+
+test('list_pop empty list', `
+let xs: List<Number> = [];
+let popped: List<Number> = list_pop(xs);
+popped.len
+`, 0);
+
+test('list_pop single element', `
+let xs: List<Number> = [42];
+let popped: List<Number> = list_pop(xs);
+popped.len
+`, 0);
+
+test('list_pop multi element', `
+let xs: List<Number> = [1, 2, 3];
+let popped: List<Number> = list_pop(xs);
+let last: Number = list_get(xs, xs.len - 1).value;
+popped.len + last
+`, 5); // popped=[1,2] len=2, last=3 -> 5
+
+test('list_pop two elements', `
+let xs: List<Number> = [10, 20];
+let popped: List<Number> = list_pop(xs);
+list_get(popped, 0).value
+`, 10); // popped=[10]
+
+test('list_pop preserves original', `
+let xs: List<Number> = [1, 2, 3];
+let popped: List<Number> = list_pop(xs);
+xs.len
+`, 3); // original unchanged
+
+test('list_remove_at normal', `
+let xs: List<Number> = [10, 20, 30, 40];
+let removed: List<Number> = list_remove_at(xs, 1);
+removed
+`, [10, 30, 40]);
+
+test('list_remove_at out of bounds', `
+let xs: List<Number> = [1, 2, 3];
+let removed: List<Number> = list_remove_at(xs, 10);
+removed.len
+`, 3);
+
+test('list_remove_at first element', `
+let xs: List<Number> = [10, 20, 30];
+let removed: List<Number> = list_remove_at(xs, 0);
+removed
+`, [20, 30]);
+
+test('list_remove_at last element', `
+let xs: List<Number> = [10, 20, 30];
+let removed: List<Number> = list_remove_at(xs, 2);
+removed
+`, [10, 20]);
+
+test('list_remove_at single element returns empty', `
+let xs: List<Number> = [42];
+let removed: List<Number> = list_remove_at(xs, 0);
+removed.len
+`, 0);
+
+test('list_remove_at negative index unchanged', `
+let xs: List<Number> = [1, 2, 3];
+let removed: List<Number> = list_remove_at(xs, -1);
+removed.len
+`, 3);
+
+test('list_remove_at empty list unchanged', `
+let xs: List<Number> = [];
+let removed: List<Number> = list_remove_at(xs, 0);
+removed.len
+`, 0);
+
+test('list_remove_at preserves original', `
+let xs: List<Number> = [1, 2, 3];
+let removed: List<Number> = list_remove_at(xs, 1);
+xs.len
+`, 3);
+
+test('list_index_of found', `
+let xs: List<Number> = [10, 20, 30];
+list_index_of(xs, 20)
+`, 1);
+
+test('list_index_of not found', `
+let xs: List<Number> = [10, 20, 30];
+list_index_of(xs, 99)
+`, -1);
+
+test('list_index_of string', `
+let xs: List<String> = ["a", "b", "c"];
+list_index_of(xs, "c")
+`, 2);
+
+test('list_index_of first element', `
+let xs: List<Number> = [5, 10, 15];
+list_index_of(xs, 5)
+`, 0);
+
+test('list_index_of duplicates returns first', `
+let xs: List<Number> = [7, 8, 7, 9];
+list_index_of(xs, 7)
+`, 0);
+
+test('list_index_of empty list', `
+let xs: List<Number> = [];
+list_index_of(xs, 1)
+`, -1);
+
+test('list_index_of boolean', `
+let xs: List<Boolean> = [true, false, true];
+list_index_of(xs, false)
+`, 1);
+
+test('find found', `
+find([10, 20, 30], fn(x: Number) -> Boolean { x > 15 }).value
+`, 20);
+
+test('find not found', `
+let r: Result<Number> = find([1, 2, 3], fn(x: Number) -> Boolean { x > 10 });
+not r.isOk
+`, true);
+
+test('find empty list', `
+let xs: List<Number> = [];
+let r: Result<Number> = find(xs, fn(x: Number) -> Boolean { true });
+not r.isOk
+`, true);
+
+test('find first element match', `
+find([10, 20, 30], fn(x: Number) -> Boolean { x < 25 }).value
+`, 10);
+
+test('find with strings', `
+find(["cat", "dog", "bird"], fn(s: String) -> Boolean { s == "dog" }).value
+`, "dog");
+
 // ── sort ────────────────────────────────────────────────
 
 test('sort numbers ascending', `

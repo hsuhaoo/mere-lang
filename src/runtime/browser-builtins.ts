@@ -123,6 +123,34 @@ class BrowserBuiltins {
       return list.slice(start, length);
     });
 
+    this.registerFn('list_pop', 1, (args) => {
+      const list = args[0] as ListValue;
+      const len = list.length();
+      if (len <= 1) return mkList([], list._elementType);
+      return list.slice(0, len - 1);
+    });
+
+    this.registerFn('list_remove_at', 2, (args) => {
+      const list = args[0] as ListValue;
+      const idx = args[1].toRawNumber();
+      const len = list.length();
+      if (idx < 0 || idx >= len) return list;
+      const left = [];
+      for (let i = 0; i < len; i++) {
+        if (i !== idx) left.push(list.get(i));
+      }
+      return new ListValue(left, list._elementType);
+    });
+
+    this.registerFn('list_index_of', 2, (args) => {
+      const list = args[0] as ListValue;
+      const item = args[1];
+      for (let i = 0; i < list.length(); i++) {
+        if (list.get(i)!.equals(item)) return mkNumber(i);
+      }
+      return mkNumber(-1);
+    });
+
     this.registerFn('map_put', 3, (args) => {
       const map = args[0] as MapValue;
       const key = args[1];

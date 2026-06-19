@@ -503,6 +503,49 @@ testError('db_delete rejects non-String', `
 db_delete(42)
 `, /String|expected|mismatch/i);
 
+// ── list_pop / list_remove_at / list_index_of / find ──────────
+
+test('list_pop type-checks', `
+let xs: List<Number> = [1, 2, 3];
+let popped: List<Number> = list_pop(xs);
+popped.len
+`, 2);
+
+test('list_remove_at type-checks', `
+let xs: List<Number> = [10, 20, 30, 40];
+let removed: List<Number> = list_remove_at(xs, 1);
+list_get(removed, 0).value
+`, 10);
+
+test('list_index_of type-checks', `
+let xs: List<String> = ["a", "b", "c"];
+let idx: Number = list_index_of(xs, "b");
+idx
+`, 1);
+
+test('find type-checks', `
+let r: Result<Number> = find([1, 2, 3], fn(x: Number) -> Boolean { x == 2 });
+r.value
+`, 2);
+
+test('list_index_of returns Number', `
+let xs: List<Number> = [5, 10, 15];
+let idx: Number = list_index_of(xs, 10);
+idx
+`, 1);
+
+testError('list_pop rejects non-List', `
+list_pop(42)
+`, /List|expected|mismatch/i);
+
+testError('list_remove_at rejects non-List', `
+list_remove_at(42, 1)
+`, /List|expected|mismatch/i);
+
+testError('list_index_of rejects non-List', `
+list_index_of(42, 1)
+`, /List|expected|mismatch/i);
+
 // ── map_keys / map_values ──────────────────────────────────────
 
 test('map_keys returns List<String>', `

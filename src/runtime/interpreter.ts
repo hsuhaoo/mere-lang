@@ -327,6 +327,26 @@ class Interpreter {
       return acc;
     }
 
+    // find List<T> (T -> Boolean) -> Result<T>
+    if (name === 'find') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('find expects a List', expr.line, expr.column);
+      }
+      const fnValue = this.execExpr(argExprs[1]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('find expects a function', expr.line, expr.column);
+      }
+      for (let i = 0; i < listValue.length(); i++) {
+        const elem = listValue.get(i);
+        const result = this.executeLambdaFromValue(fnValue, 'find', [elem]);
+        if (result.toRawBoolean()) {
+          return mkOk(elem);
+        }
+      }
+      return mkErr('Not found');
+    }
+
     // sort_by List<T> (T, T -> Number) -> List<T>
     if (name === 'sort_by') {
       const listValue = this.execExpr(argExprs[0]);

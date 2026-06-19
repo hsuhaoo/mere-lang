@@ -205,6 +205,10 @@ let x: Number = add(3, 4);       // 7
 | `to_string` | `to_string($T) → String` | 转字符串 |
 | `append` | `append(List<T>, T) → List<T>` | 追加元素 |
 | `list_get` | `list_get(List<T>, Number) → Result<T>` | 按索引取值 |
+| `list_pop` | `list_pop(List<T>) → List<T>` | 弹出末尾元素（返回新列表） |
+| `list_remove_at` | `list_remove_at(List<T>, Number) → List<T>` | 移除指定索引元素（返回新列表） |
+| `list_index_of` | `list_index_of(List<T>, T) → Number` | 查找元素位置（-1 表示未找到） |
+| `find` | `find(List<T>, Fn<T, Boolean>) → Result<T>` | 查找第一个匹配元素 |
 | `map_put` | `map_put(Map<K,V>, K, V) → Map<K,V>` | 插入/更新（返回新 Map） |
 | `map_get` | `map_get(Map<K,V>, K) → Result<V>` | 按键取值 |
 | `map_has` | `map_has(Map<K,V>, K) → Boolean` | 检查键 |
@@ -523,6 +527,10 @@ let extended: List<Number> = append(nums, 6);
 |------|------|------|
 | `append` | `append(List<T>, T) → List<T>` | 追加元素 |
 | `list_get` | `list_get(List<T>, Number) → Result<T>` | 按索引取值 |
+| `list_pop` | `list_pop(List<T>) → List<T>` | 弹出末尾元素（返回新列表） |
+| `list_remove_at` | `list_remove_at(List<T>, Number) → List<T>` | 移除指定索引元素（返回新列表） |
+| `list_index_of` | `list_index_of(List<T>, T) → Number` | 查找元素位置（-1 表示未找到） |
+| `find` | `find(List<T>, Fn<T, Boolean>) → Result<T>` | 查找第一个匹配元素 |
 | `sort` | `sort(List<Number>) → List<Number>` | 数字列表升序排序 |
 | `sort_by` | `sort_by(List<T>, Fn<T, Number>) → List<T>` | 按映射值排序列表 |
 
