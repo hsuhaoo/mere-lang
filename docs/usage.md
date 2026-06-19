@@ -209,6 +209,8 @@ let x: Number = add(3, 4);       // 7
 | `list_remove_at` | `list_remove_at(List<T>, Number) → List<T>` | 移除指定索引元素（返回新列表） |
 | `list_index_of` | `list_index_of(List<T>, T) → Number` | 查找元素位置（-1 表示未找到） |
 | `find` | `find(List<T>, Fn<T, Boolean>) → Result<T>` | 查找第一个匹配元素 |
+| `for_each` | `for_each(List<T>, Fn<T, Unit>) → Unit` | 遍历列表执行副作用 |
+| `range` | `range(Number, Number) → List<Number>` | 生成 `[start, end)` 数字列表 |
 | `map_put` | `map_put(Map<K,V>, K, V) → Map<K,V>` | 插入/更新（返回新 Map） |
 | `map_get` | `map_get(Map<K,V>, K) → Result<V>` | 按键取值 |
 | `map_has` | `map_has(Map<K,V>, K) → Boolean` | 检查键 |
@@ -531,6 +533,8 @@ let extended: List<Number> = append(nums, 6);
 | `list_remove_at` | `list_remove_at(List<T>, Number) → List<T>` | 移除指定索引元素（返回新列表） |
 | `list_index_of` | `list_index_of(List<T>, T) → Number` | 查找元素位置（-1 表示未找到） |
 | `find` | `find(List<T>, Fn<T, Boolean>) → Result<T>` | 查找第一个匹配元素 |
+| `for_each` | `for_each(List<T>, Fn<T, Unit>) → Unit` | 遍历列表执行副作用 |
+| `range` | `range(Number, Number) → List<Number>` | 生成 `[start, end)` 数字列表 |
 | `sort` | `sort(List<Number>) → List<Number>` | 数字列表升序排序 |
 | `sort_by` | `sort_by(List<T>, Fn<T, Number>) → List<T>` | 按映射值排序列表 |
 

@@ -95,6 +95,16 @@ class Builtins {
       return mkOk(list.get(index));
     });
 
+    this.registerFn('range', 2, (args) => {
+      const start = args[0].toRawNumber();
+      const end = args[1].toRawNumber();
+      const elems = [];
+      for (let i = start; i < end; i++) {
+        elems.push(mkNumber(i));
+      }
+      return mkList(elems, null);
+    });
+
     this.registerFn('substring_list', 3, (args) => {
       const list = args[0] as ListValue;
       const start = args[1].toRawNumber();

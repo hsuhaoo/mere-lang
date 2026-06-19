@@ -834,6 +834,30 @@ test('find with strings', `
 find(["cat", "dog", "bird"], fn(s: String) -> Boolean { s == "dog" }).value
 `, "dog");
 
+// ── range / for_each ────────────────────────────────────
+
+test('range produces numbers', `
+range(0, 5)
+`, [0, 1, 2, 3, 4]);
+
+test('range empty when start >= end', `
+range(5, 3)
+`, []);
+
+test('range single element', `
+range(3, 4)
+`, [3]);
+
+test('for_each returns Unit', `
+let xs: List<Number> = [1, 2, 3];
+for_each(xs, fn(x: Number) -> Unit {})
+`, '()');
+
+test('for_each empty list', `
+let xs: List<Number> = [];
+for_each(xs, fn(x: Number) -> Unit {})
+`, '()');
+
 // ── sort ────────────────────────────────────────────────
 
 test('sort numbers ascending', `

@@ -546,6 +546,25 @@ testError('list_index_of rejects non-List', `
 list_index_of(42, 1)
 `, /List|expected|mismatch/i);
 
+// ── for_each / range ──────────────────────────────────────────
+
+test('for_each type-checks', `
+for_each([1, 2, 3], fn(x: Number) -> Unit {})
+`, '()');
+
+test('range type-checks', `
+let xs: List<Number> = range(0, 5);
+xs.len
+`, 5);
+
+testError('for_each rejects non-List', `
+for_each(42, fn(x: Number) -> Unit {})
+`, /List|expected|mismatch/i);
+
+testError('range rejects non-Number', `
+range("a", 5)
+`, /Number|expected|mismatch/i);
+
 // ── map_keys / map_values ──────────────────────────────────────
 
 test('map_keys returns List<String>', `

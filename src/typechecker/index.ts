@@ -1242,6 +1242,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['list_pop', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['list_remove_at', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Number')], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['list_index_of', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$T')], returnType: new TypeAnnotation('Number') }],
+  ['range', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('List', [new TypeAnnotation('Number')]) }],
 
   // Map builtins (fully generic)
   ['map_put', { paramTypes: [new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]), new TypeAnnotation('$K'), new TypeAnnotation('$V')], returnType: new TypeAnnotation('Map', [new TypeAnnotation('$K'), new TypeAnnotation('$V')]) }],
@@ -1256,6 +1257,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['filter', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('Boolean')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
   ['fold', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('$U'), new TypeAnnotation('Fn', [new TypeAnnotation('$U'), new TypeAnnotation('$T'), new TypeAnnotation('$U')])], returnType: new TypeAnnotation('$U') }],
   ['find', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('Boolean')])], returnType: new TypeAnnotation('Result', [new TypeAnnotation('$T')]) }],
+  ['for_each', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
   ['sort_by', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')]), new TypeAnnotation('Fn', [new TypeAnnotation('$T'), new TypeAnnotation('$T'), new TypeAnnotation('Number')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 
   // Timing (async — returns Task)

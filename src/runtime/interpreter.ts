@@ -347,6 +347,22 @@ class Interpreter {
       return mkErr('Not found');
     }
 
+    // for_each List<T> (T -> Unit) -> Unit
+    if (name === 'for_each') {
+      const listValue = this.execExpr(argExprs[0]);
+      if (!(listValue instanceof ListValue)) {
+        throw new RuntimeError('for_each expects a List', expr.line, expr.column);
+      }
+      const fnValue = this.execExpr(argExprs[1]);
+      if (!(fnValue instanceof FnValue)) {
+        throw new RuntimeError('for_each expects a function', expr.line, expr.column);
+      }
+      for (let i = 0; i < listValue.length(); i++) {
+        this.executeLambdaFromValue(fnValue, 'for_each', [listValue.get(i)]);
+      }
+      return mkUnit();
+    }
+
     // sort_by List<T> (T, T -> Number) -> List<T>
     if (name === 'sort_by') {
       const listValue = this.execExpr(argExprs[0]);
