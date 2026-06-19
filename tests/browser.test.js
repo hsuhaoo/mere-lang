@@ -148,6 +148,7 @@ function createTest(opts) {
   test('floor registered', names.includes('floor'));
   test('round registered', names.includes('round'));
   test('pi registered', names.includes('pi'));
+  test('now registered', names.includes('now'));
   test('record_update registered', names.includes('record_update'));
   test('canvas_load_image registered', names.includes('canvas_load_image'));
   test('canvas_draw_image registered', names.includes('canvas_draw_image'));
@@ -727,7 +728,7 @@ function createTest(opts) {
     canvas_set_shadow_offset_x: 1, canvas_set_shadow_offset_y: 1,
     canvas_set_text_align: 1, canvas_set_text_baseline: 1,
     canvas_arc_to: 5, canvas_set_line_dash: 1,
-    sin: 1, floor: 1, round: 1, pi: 0,
+    sin: 1, floor: 1, round: 1, pi: 0, now: 0,
     await_font_loaded: 1,
     map_keys: 1, map_values: 1,
   };
@@ -890,6 +891,10 @@ function createTest(opts) {
 
   const piResult = bb.getFn('pi').fn([]);
   testEqual('pi()', piResult.toRawNumber(), Math.PI);
+
+  const nowResult = bb.getFn('now').fn([]);
+  test('now() returns a number', typeof nowResult.toRawNumber() === 'number');
+  test('now() > 0', nowResult.toRawNumber() > 0);
 })();
 
 // ════════════════════════════════════════════════════════════

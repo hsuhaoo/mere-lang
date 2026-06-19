@@ -1333,6 +1333,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['floor', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['round', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['pi', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
+  ['now', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
 
   ['sort', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 

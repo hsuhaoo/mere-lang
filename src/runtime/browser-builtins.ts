@@ -227,6 +227,10 @@ class BrowserBuiltins {
       return mkNumber(Math.PI);
     });
 
+    this.registerFn('now', 0, () => {
+      return mkNumber(Date.now());
+    });
+
     this.registerFn('sort', 1, (args) => {
       const list = args[0];
       const elems = [];

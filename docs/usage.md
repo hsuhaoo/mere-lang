@@ -218,6 +218,7 @@ let x: Number = add(3, 4);       // 7
 | `floor` | `floor(Number) → Number` | 向下取整 |
 | `round` | `round(Number) → Number` | 四舍五入 |
 | `pi` | `pi() → Number` | 圆周率 π |
+| `now` | `now() → Number` | 当前时间戳（毫秒，同 `Date.now()`） |
 | `sort` | `sort(List<Number>) → List<Number>` | 数字列表升序排序 |
 | `sort_by` | `sort_by(List<T>, Fn<T, Number>) → List<T>` | 按映射值排序列表 |
 | `spawn` | `spawn(Fn<.., RetT>) → Task<RetT>` | 包装零参 lambda 为 Task |
@@ -1055,6 +1056,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 | `fetch` | ✅ | ✅ |
 | `read_line` | ✅ | ❌ |
 | `random` | ✅ | ✅ |
+| `now` | ✅ | ✅ |
 | `sleep` | ✅ | ✅ |
 | `next_frame` | ❌ | ✅ |
 | `await_font_loaded` | ❌ | ✅ |
