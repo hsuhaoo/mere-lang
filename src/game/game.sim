@@ -1,0 +1,680 @@
+type CardConfig = {
+  id: Number, name: String, desc: String, cost: Number,
+  card_type: String, char: String,
+  effect_type: String, effect_value: Number
+};
+
+type GameState = {
+  screen: String, phase: String, turn: Number,
+  player_name: String, player_char: String,
+  player_hp: Number, player_max_hp: Number,
+  player_mana: Number, player_max_mana: Number,
+  player_shield: Number, player_deck: List<Number>,
+  player_hand: List<Number>, player_discard: List<Number>,
+  enemy_name: String, enemy_char: String,
+  enemy_hp: Number, enemy_max_hp: Number,
+  enemy_mana: Number, enemy_max_mana: Number,
+  enemy_shield: Number, enemy_deck: List<Number>,
+  enemy_hand: List<Number>, enemy_discard: List<Number>,
+  selected_card: Number,
+  log: List<String>, winner: String
+};
+
+type DrawResult = { hand: List<Number>, deck: List<Number>, discard: List<Number> };
+type DamageResult = { hp: Number, shield: Number };
+
+let empty_num_list: List<Number> = [];
+
+let all_cards: List<CardConfig> = [
+  { id: 0, name: "灵符「梦想封印」", desc: "造成5点伤害", cost: 1, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 5 },
+  { id: 1, name: "梦境「二重结界」", desc: "获得4点护盾", cost: 1, card_type: "defense", char: "reimu", effect_type: "shield", effect_value: 4 },
+  { id: 2, name: "宝符「阴阳宝玉」", desc: "造成3点伤害", cost: 2, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 3 },
+  { id: 3, name: "神技「八方鬼缚阵」", desc: "造成6点伤害", cost: 2, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 6 },
+  { id: 4, name: "结界「扩散结界」", desc: "获得6点护盾", cost: 2, card_type: "defense", char: "reimu", effect_type: "shield", effect_value: 6 },
+  { id: 5, name: "大结界「博丽弹幕结界」", desc: "造成8点伤害", cost: 3, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 8 },
+  { id: 6, name: "神灵「梦想封印 瞬」", desc: "造成10点伤害", cost: 4, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 10 },
+  { id: 7, name: "「梦想天生」", desc: "造成15点伤害", cost: 5, card_type: "attack", char: "reimu", effect_type: "damage", effect_value: 15 },
+  { id: 8, name: "魔符「星屑幻想」", desc: "造成4点伤害", cost: 1, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 4 },
+  { id: 9, name: "恋符「Master Spark」", desc: "造成7点伤害", cost: 2, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 7 },
+  { id: 10, name: "魔炮「Final Spark」", desc: "造成10点伤害", cost: 3, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 10 },
+  { id: 11, name: "星符「Dragon Meteor」", desc: "造成6点伤害", cost: 2, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 6 },
+  { id: 12, name: "黑符「Event Horizon」", desc: "造成5点伤害", cost: 2, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 5 },
+  { id: 13, name: "恋心「Double Spark」", desc: "造成8点伤害", cost: 3, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 8 },
+  { id: 14, name: "魔空「Asteroid Belt」", desc: "造成4点伤害", cost: 2, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 4 },
+  { id: 15, name: "「超新星」", desc: "造成20点伤害", cost: 5, card_type: "attack", char: "marisa", effect_type: "damage", effect_value: 20 },
+  { id: 16, name: "防御", desc: "获得3点护盾", cost: 1, card_type: "defense", char: "common", effect_type: "shield", effect_value: 3 },
+  { id: 17, name: "治愈", desc: "恢复4点HP", cost: 2, card_type: "heal", char: "common", effect_type: "heal", effect_value: 4 },
+  { id: 18, name: "魔力充填", desc: "恢复2点魔力", cost: 0, card_type: "special", char: "common", effect_type: "mana", effect_value: 2 },
+  { id: 19, name: "抽牌", desc: "抽1张牌", cost: 1, card_type: "special", char: "common", effect_type: "draw", effect_value: 1 }
+];
+
+fn get_cards_for_char(char: String) -> List<Number> {
+  let mut result: List<Number> = [];
+  let mut i: Number = 0;
+  while i < all_cards.len {
+    let card: CardConfig = list_get(all_cards, i).value;
+    if card.char == char or card.char == "common" {
+      if card.id < 18 {
+        result = append(result, card.id);
+      };
+    };
+    i = i + 1;
+  };
+  result
+}
+
+fn shuffle(deck: List<Number>) -> List<Number> {
+  let mut result: List<Number> = deck;
+  let n: Number = result.len;
+  let mut i: Number = 0;
+  while i < n * 3 {
+    let a: Number = random(n);
+    let b: Number = random(n);
+    if a != b {
+      let va: Number = list_get(result, a).value;
+      let vb: Number = list_get(result, b).value;
+      result = list_remove_at(result, max(a, b));
+      result = list_remove_at(result, min(a, b));
+      result = append(result, va);
+      result = append(result, vb);
+    };
+    i = i + 1;
+  };
+  result
+}
+
+fn draw_one_card(hand: List<Number>, deck: List<Number>, discard: List<Number>) -> DrawResult {
+  if deck.len == 0 {
+    if discard.len == 0 {
+      { hand: hand, deck: deck, discard: discard }
+    } else {
+      let reshuffled: List<Number> = shuffle(discard);
+      let card: Number = list_get(reshuffled, 0).value;
+      let rest: List<Number> = list_remove_at(reshuffled, 0);
+      { hand: append(hand, card), deck: rest, discard: [] }
+    }
+  } else {
+    let card: Number = list_get(deck, 0).value;
+    let rest: List<Number> = list_remove_at(deck, 0);
+    { hand: append(hand, card), deck: rest, discard: discard }
+  }
+}
+
+fn draw_n(n: Number, hand: List<Number>, deck: List<Number>, discard: List<Number>) -> DrawResult {
+  let mut h: List<Number> = hand;
+  let mut d: List<Number> = deck;
+  let mut ds: List<Number> = discard;
+  let mut i: Number = 0;
+  while i < n {
+    let dr: DrawResult = draw_one_card(h, d, ds);
+    h = dr.hand;
+    d = dr.deck;
+    ds = dr.discard;
+    if h == hand and d == deck and ds == discard {
+      i = n;
+    };
+    i = i + 1;
+  };
+  { hand: h, deck: d, discard: ds }
+}
+
+fn heal_char(hp: Number, max_hp: Number, amount: Number) -> Number {
+  if hp + amount > max_hp { max_hp } else { hp + amount }
+}
+
+fn apply_damage(hp: Number, shield: Number, dmg: Number) -> DamageResult {
+  if shield >= dmg {
+    { hp: hp, shield: shield - dmg }
+  } else {
+    let remaining: Number = dmg - shield;
+    { hp: hp - remaining, shield: 0 }
+  }
+}
+
+fn add_log(log: List<String>, msg: String) -> List<String> {
+  if log.len >= 5 {
+    append(list_remove_at(log, 0), msg)
+  } else {
+    append(log, msg)
+  }
+}
+
+let mut state: GameState = {
+  screen: "title", phase: "", turn: 0,
+  player_name: "", player_char: "",
+  player_hp: 20, player_max_hp: 20,
+  player_mana: 0, player_max_mana: 0,
+  player_shield: 0, player_deck: [], player_hand: [], player_discard: [],
+  enemy_name: "", enemy_char: "",
+  enemy_hp: 20, enemy_max_hp: 20,
+  enemy_mana: 0, enemy_max_mana: 0,
+  enemy_shield: 0, enemy_deck: [], enemy_hand: [], enemy_discard: [],
+  selected_card: -1, log: [], winner: ""
+};
+
+fn try_play_card(idx: Number) -> Unit {
+  let hand: List<Number> = state.player_hand;
+  if idx >= 0 and idx < hand.len {
+    let card_id: Number = list_get(hand, idx).value;
+    let card: CardConfig = list_get(all_cards, card_id).value;
+    if state.player_mana >= card.cost {
+      state = record_update(state, "player_mana", state.player_mana - card.cost);
+      state = record_update(state, "player_hand", list_remove_at(hand, idx));
+      state = record_update(state, "player_discard", append(state.player_discard, card_id));
+      if card.effect_type == "damage" {
+        let dmg: Number = card.effect_value;
+        let dr: DamageResult = apply_damage(state.enemy_hp, state.enemy_shield, dmg);
+        state = record_update(state, "enemy_hp", dr.hp);
+        state = record_update(state, "enemy_shield", dr.shield);
+        state = record_update(state, "log", add_log(state.log, concat("你对敌人造成", concat(to_string(dmg), "点伤害！"))));
+      } elif card.effect_type == "shield" {
+        let shield_amt: Number = card.effect_value;
+        state = record_update(state, "player_shield", state.player_shield + shield_amt);
+        state = record_update(state, "log", add_log(state.log, concat("你获得了", concat(to_string(shield_amt), "点护盾！"))));
+      } elif card.effect_type == "heal" {
+        let heal_amt: Number = card.effect_value;
+        let new_hp: Number = heal_char(state.player_hp, state.player_max_hp, heal_amt);
+        state = record_update(state, "player_hp", new_hp);
+        state = record_update(state, "log", add_log(state.log, concat("你恢复了", concat(to_string(heal_amt), "点HP！"))));
+      } elif card.effect_type == "mana" {
+        let mana_amt: Number = card.effect_value;
+        state = record_update(state, "player_mana", state.player_mana + mana_amt);
+        state = record_update(state, "log", add_log(state.log, concat("恢复了", concat(to_string(mana_amt), "点魔力！"))));
+      } elif card.effect_type == "draw" {
+        let draw_n_val: Number = card.effect_value;
+        let dr_res: DrawResult = draw_n(draw_n_val, state.player_hand, state.player_deck, state.player_discard);
+        state = record_update(state, "player_hand", dr_res.hand);
+        state = record_update(state, "player_deck", dr_res.deck);
+        state = record_update(state, "player_discard", dr_res.discard);
+        state = record_update(state, "log", add_log(state.log, concat("抽了", concat(to_string(draw_n_val), "张牌！"))));
+      };
+      if state.enemy_hp <= 0 {
+        state = record_update(state, "enemy_hp", 0);
+        state = record_update(state, "winner", "player");
+        state = record_update(state, "screen", "game-over");
+        state = record_update(state, "phase", "done");
+        state = record_update(state, "log", add_log(state.log, "你获得了胜利！"));
+      };
+    } else {
+      state = record_update(state, "log", add_log(state.log, "魔力不足！"));
+    };
+  };
+  state = record_update(state, "selected_card", -1);
+}
+
+fn enemy_turn_ai() -> Unit {
+  let mut hand: List<Number> = state.enemy_hand;
+  let mut deck: List<Number> = state.enemy_deck;
+  let mut discard: List<Number> = state.enemy_discard;
+  let mut mana: Number = state.enemy_mana;
+  let mut hp: Number = state.enemy_hp;
+  let mut shield: Number = state.enemy_shield;
+  let mut player_hp: Number = state.player_hp;
+  let mut player_shield: Number = state.player_shield;
+  let mut log: List<String> = state.log;
+
+  if deck.len == 0 and discard.len > 0 {
+    deck = shuffle(discard);
+    discard = [];
+  };
+  if deck.len > 0 {
+    let card_id: Number = list_get(deck, 0).value;
+    deck = list_remove_at(deck, 0);
+    hand = append(hand, card_id);
+  };
+
+  let mut attempts: Number = 0;
+  while attempts < 20 and hand.len > 0 {
+    let card_idx: Number = random(hand.len);
+    let cid: Number = list_get(hand, card_idx).value;
+    let card: CardConfig = list_get(all_cards, cid).value;
+    if mana >= card.cost {
+      mana = mana - card.cost;
+      hand = list_remove_at(hand, card_idx);
+      discard = append(discard, cid);
+      if card.effect_type == "damage" {
+        let dmg: Number = card.effect_value;
+        let dr: DamageResult = apply_damage(player_hp, player_shield, dmg);
+        player_hp = dr.hp;
+        player_shield = dr.shield;
+        log = add_log(log, concat("敌人对你造成", concat(to_string(dmg), "点伤害！")));
+      } elif card.effect_type == "shield" {
+        shield = shield + card.effect_value;
+        log = add_log(log, "敌人获得了护盾！");
+      } elif card.effect_type == "heal" {
+        hp = heal_char(hp, state.enemy_max_hp, card.effect_value);
+        log = add_log(log, "敌人恢复了HP！");
+      } elif card.effect_type == "mana" {
+        mana = mana + card.effect_value;
+        log = add_log(log, "敌人恢复了魔力！");
+      } elif card.effect_type == "draw" {
+        let mut di: Number = 0;
+        while di < card.effect_value {
+          let dr2: DrawResult = draw_one_card(hand, deck, discard);
+          hand = dr2.hand;
+          deck = dr2.deck;
+          discard = dr2.discard;
+          di = di + 1;
+        };
+        log = add_log(log, "敌人抽了牌！");
+      };
+    };
+    attempts = attempts + 1;
+  };
+
+  state = record_update(state, "enemy_hand", hand);
+  state = record_update(state, "enemy_deck", deck);
+  state = record_update(state, "enemy_discard", discard);
+  state = record_update(state, "enemy_mana", mana);
+  state = record_update(state, "enemy_hp", hp);
+  state = record_update(state, "enemy_shield", shield);
+  state = record_update(state, "player_hp", player_hp);
+  state = record_update(state, "player_shield", player_shield);
+  state = record_update(state, "log", log);
+
+  if player_hp <= 0 {
+    state = record_update(state, "player_hp", 0);
+    state = record_update(state, "winner", "enemy");
+    state = record_update(state, "screen", "game-over");
+    state = record_update(state, "phase", "done");
+    state = record_update(state, "log", add_log(state.log, "你被击败了..."));
+  };
+}
+
+fn render_bg() -> Unit {
+  canvas_clear();
+  canvas_set_fill_color("#1a1a2e");
+  canvas_fill_rect(0, 0, canvas_get_width(), canvas_get_height());
+}
+
+fn render_title_screen() -> Unit {
+  render_bg();
+  canvas_set_fill_color("#e94560");
+  canvas_set_font("bold 48px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("东方卡片战斗", 400, 150);
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("18px sans-serif");
+  canvas_fill_text("Simplex实现的回合制卡片游戏", 400, 200);
+  canvas_set_text_align("left");
+  canvas_set_fill_color("#e94560");
+  canvas_fill_rect(300, 320, 200, 60);
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 28px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("开始游戏", 400, 358);
+  canvas_set_text_align("left");
+}
+
+fn render_char_select() -> Unit {
+  render_bg();
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 32px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("选择你的角色", 400, 60);
+  canvas_set_text_align("left");
+
+  canvas_set_fill_color("#0f3460");
+  canvas_fill_rect(80, 100, 280, 380);
+  canvas_set_fill_color("#e94560");
+  canvas_set_font("bold 24px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("博丽灵梦", 220, 160);
+  canvas_set_fill_color("#ffcccc");
+  canvas_set_font("16px sans-serif");
+  canvas_fill_text("HP: 20  攻击: ★★★", 220, 200);
+  canvas_fill_text("防御: ★★★", 220, 225);
+  canvas_fill_text("均衡型角色", 220, 260);
+  canvas_fill_text("擅长防御和回复", 220, 285);
+
+  canvas_set_fill_color("#0f3460");
+  canvas_fill_rect(440, 100, 280, 380);
+  canvas_set_fill_color("#e94560");
+  canvas_set_font("bold 24px sans-serif");
+  canvas_fill_text("雾雨魔理沙", 580, 160);
+  canvas_set_fill_color("#ffcccc");
+  canvas_set_font("16px sans-serif");
+  canvas_fill_text("HP: 18  攻击: ★★★★★", 580, 200);
+  canvas_fill_text("防御: ★", 580, 225);
+  canvas_fill_text("进攻型角色", 580, 260);
+  canvas_fill_text("擅长高伤害输出", 580, 285);
+  canvas_set_text_align("left");
+}
+
+fn draw_hp_bar(x: Number, y: Number, w: Number, h: Number, cur: Number, max: Number, color: String) -> Unit {
+  let pct: Number = if max > 0 { cur / max } else { 0 };
+  canvas_set_fill_color("#333333");
+  canvas_fill_rect(x, y, w, h);
+  canvas_set_fill_color(color);
+  if pct > 0 {
+    canvas_fill_rect(x, y, w * pct, h);
+  };
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("14px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text(concat(to_string(cur), concat("/", to_string(max))), x + w / 2, y + h / 2 + 5);
+  canvas_set_text_align("left");
+}
+
+fn draw_card_ui(card_id: Number, x: Number, y: Number, w: Number, h: Number, selected: Boolean, is_enemy: Boolean) -> Unit {
+  let card: CardConfig = list_get(all_cards, card_id).value;
+  if selected {
+    canvas_set_fill_color("#ffd700");
+    canvas_fill_rect(x - 2, y - 2, w + 4, h + 4);
+  };
+  if is_enemy {
+    canvas_set_fill_color("#2d1b2d");
+  } else {
+    canvas_set_fill_color("#16213e");
+  };
+  canvas_fill_rect(x, y, w, h);
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 12px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text(card.name, x + w / 2, y + 18);
+  canvas_set_fill_color("#aaaaaa");
+  canvas_set_font("10px sans-serif");
+  canvas_fill_text(card.desc, x + w / 2, y + 36);
+  canvas_set_fill_color("#e94560");
+  canvas_set_font("bold 12px sans-serif");
+  canvas_fill_text(concat("费用:", to_string(card.cost)), x + w / 2, y + 54);
+  if card.effect_type == "damage" {
+    canvas_set_fill_color("#ff4444");
+    canvas_fill_text(concat("伤害:", to_string(card.effect_value)), x + w / 2, y + 74);
+  } elif card.effect_type == "shield" {
+    canvas_set_fill_color("#4488ff");
+    canvas_fill_text(concat("护盾:", to_string(card.effect_value)), x + w / 2, y + 74);
+  } elif card.effect_type == "heal" {
+    canvas_set_fill_color("#44ff44");
+    canvas_fill_text(concat("回复:", to_string(card.effect_value)), x + w / 2, y + 74);
+  } else {
+    canvas_set_fill_color("#ffaa44");
+    canvas_fill_text(card.effect_type, x + w / 2, y + 74);
+  };
+  canvas_set_text_align("left");
+}
+
+fn render_game_screen() -> Unit {
+  render_bg();
+
+  canvas_set_fill_color("#e94560");
+  canvas_set_font("16px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text(concat("第", concat(to_string(state.turn), "回合")), 400, 20);
+
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 16px sans-serif");
+  canvas_set_text_align("left");
+  canvas_fill_text(concat(state.enemy_name, concat(" [", concat(state.enemy_char, "]"))), 80, 48);
+  draw_hp_bar(80, 58, 250, 18, state.enemy_hp, state.enemy_max_hp, "#ff4444");
+  canvas_set_fill_color("#4488ff");
+  canvas_set_font("13px sans-serif");
+  canvas_fill_text(concat("魔力:", concat(to_string(state.enemy_mana), concat("/", to_string(state.enemy_max_mana)))), 370, 73);
+  if state.enemy_shield > 0 {
+    canvas_set_fill_color("#44aaff");
+    canvas_fill_text(concat("护盾:", to_string(state.enemy_shield)), 520, 73);
+  };
+
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 16px sans-serif");
+  canvas_fill_text(concat(state.player_name, concat(" [", concat(state.player_char, "]"))), 80, 288);
+  draw_hp_bar(80, 298, 250, 18, state.player_hp, state.player_max_hp, "#44ff44");
+  canvas_set_fill_color("#4488ff");
+  canvas_set_font("13px sans-serif");
+  canvas_fill_text(concat("魔力:", concat(to_string(state.player_mana), concat("/", to_string(state.player_max_mana)))), 370, 313);
+  if state.player_shield > 0 {
+    canvas_set_fill_color("#44aaff");
+    canvas_fill_text(concat("护盾:", to_string(state.player_shield)), 520, 313);
+  };
+
+  canvas_set_fill_color("#e94560");
+  canvas_fill_rect(620, 460, 150, 40);
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 20px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("结束回合", 695, 486);
+  canvas_set_text_align("left");
+
+  if state.selected_card >= 0 {
+    let card_name: String = list_get(all_cards, state.selected_card).value.name;
+    canvas_set_fill_color("#ffd700");
+    canvas_set_font("14px sans-serif");
+    canvas_set_text_align("center");
+      canvas_fill_text(concat("已选择: ", card_name), 400, 355);
+      canvas_set_fill_color("#88ff88");
+      canvas_set_font("12px sans-serif");
+      canvas_fill_text("双击卡牌出牌", 400, 375);
+      canvas_set_text_align("left");
+  };
+
+  let hand: List<Number> = state.player_hand;
+  let hand_len: Number = hand.len;
+  let card_w: Number = 100;
+  let card_h: Number = 140;
+  let spacing: Number = 15;
+  let total_w: Number = hand_len * (card_w + spacing) - spacing;
+  let start_x: Number = (800 - total_w) / 2;
+  let card_y: Number = 390;
+  let mut ci: Number = 0;
+  while ci < hand_len {
+    let cid: Number = list_get(hand, ci).value;
+    let cx: Number = start_x + ci * (card_w + spacing);
+    let is_selected: Boolean = state.selected_card == cid;
+    draw_card_ui(cid, cx, card_y, card_w, card_h, is_selected, false);
+    ci = ci + 1;
+  };
+
+  canvas_set_fill_color("#333333");
+  canvas_fill_rect(0, 540, 800, 60);
+  canvas_set_fill_color("#aaaaaa");
+  canvas_set_font("13px sans-serif");
+  let log_list: List<String> = state.log;
+  let mut li: Number = 0;
+  while li < log_list.len {
+    canvas_fill_text(list_get(log_list, li).value, 20, 560 + li * 18);
+    li = li + 1;
+  };
+}
+
+fn render_game_over() -> Unit {
+  render_bg();
+  if state.winner == "player" {
+    canvas_set_fill_color("#ffd700");
+  } else {
+    canvas_set_fill_color("#ff4444");
+  };
+  canvas_set_font("bold 48px sans-serif");
+  canvas_set_text_align("center");
+  if state.winner == "player" {
+    canvas_fill_text("胜利！", 400, 180);
+  } else {
+    canvas_fill_text("败北...", 400, 180);
+  };
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("20px sans-serif");
+  canvas_fill_text(concat("共", concat(to_string(state.turn), "回合")), 400, 230);
+  canvas_set_text_align("left");
+  canvas_set_fill_color("#e94560");
+  canvas_fill_rect(300, 320, 200, 60);
+  canvas_set_fill_color("#ffffff");
+  canvas_set_font("bold 28px sans-serif");
+  canvas_set_text_align("center");
+  canvas_fill_text("重新开始", 400, 358);
+  canvas_set_text_align("left");
+}
+
+fn render() -> Unit {
+  if state.screen == "title" {
+    render_title_screen();
+  } elif state.screen == "character-select" {
+    render_char_select();
+  } elif state.screen == "game" {
+    render_game_screen();
+  } elif state.screen == "game-over" {
+    render_game_over();
+  };
+}
+
+fn start_game(char: String, enemy_char: String, player_hp: Number, enemy_hp: Number) -> Unit {
+  let player_ids: List<Number> = shuffle(get_cards_for_char(char));
+  let enemy_ids: List<Number> = shuffle(get_cards_for_char(enemy_char));
+  let draw_res: DrawResult = draw_n(3, [], player_ids, []);
+  state = record_update(state, "screen", "game");
+  state = record_update(state, "phase", "player-turn");
+  state = record_update(state, "turn", 1);
+  state = record_update(state, "player_name", "你");
+  state = record_update(state, "player_char", char);
+  state = record_update(state, "player_hp", player_hp);
+  state = record_update(state, "player_max_hp", player_hp);
+  state = record_update(state, "player_mana", 2);
+  state = record_update(state, "player_max_mana", 2);
+  state = record_update(state, "player_shield", 0);
+  state = record_update(state, "player_deck", draw_res.deck);
+  state = record_update(state, "player_hand", draw_res.hand);
+  state = record_update(state, "player_discard", empty_num_list);
+  state = record_update(state, "enemy_name", "敌人");
+  state = record_update(state, "enemy_char", enemy_char);
+  state = record_update(state, "enemy_hp", enemy_hp);
+  state = record_update(state, "enemy_max_hp", enemy_hp);
+  state = record_update(state, "enemy_shield", 0);
+  state = record_update(state, "enemy_deck", enemy_ids);
+  state = record_update(state, "enemy_hand", empty_num_list);
+  state = record_update(state, "enemy_discard", empty_num_list);
+  state = record_update(state, "selected_card", -1);
+  state = record_update(state, "log", ["你的回合！选择卡牌点击敌人区域出牌"]);
+  state = record_update(state, "winner", "");
+}
+
+fn handle_click(x: Number, y: Number) -> Unit {
+  if state.screen == "title" {
+    if x >= 300 and x <= 500 and y >= 320 and y <= 380 {
+      state = record_update(state, "screen", "character-select");
+      render();
+    };
+  } elif state.screen == "character-select" {
+    if x >= 80 and x <= 360 and y >= 100 and y <= 480 {
+      start_game("reimu", "marisa", 20, 20);
+      render();
+    } elif x >= 440 and x <= 720 and y >= 100 and y <= 480 {
+      start_game("marisa", "reimu", 18, 20);
+      render();
+    };
+  } elif state.screen == "game" {
+    if state.phase == "player-turn" {
+      if x >= 620 and x <= 770 and y >= 460 and y <= 500 {
+        let new_turn: Number = state.turn + 1;
+        state = record_update(state, "turn", new_turn);
+        state = record_update(state, "phase", "enemy-turn");
+        state = record_update(state, "selected_card", -1);
+        state = record_update(state, "player_mana", state.player_max_mana);
+        state = record_update(state, "enemy_mana", state.enemy_max_mana);
+        state = record_update(state, "player_shield", 0);
+        state = record_update(state, "enemy_shield", 0);
+        state = record_update(state, "player_max_mana", if state.player_max_mana < 10 { state.player_max_mana + 1 } else { 10 });
+        state = record_update(state, "enemy_max_mana", if state.enemy_max_mana < 10 { state.enemy_max_mana + 1 } else { 10 });
+        let draw_for_player: DrawResult = draw_one_card(state.player_hand, state.player_deck, state.player_discard);
+        let draw_for_enemy: DrawResult = draw_one_card(state.enemy_hand, state.enemy_deck, state.enemy_discard);
+        state = record_update(state, "player_hand", draw_for_player.hand);
+        state = record_update(state, "player_deck", draw_for_player.deck);
+        state = record_update(state, "player_discard", draw_for_player.discard);
+        state = record_update(state, "enemy_hand", draw_for_enemy.hand);
+        state = record_update(state, "enemy_deck", draw_for_enemy.deck);
+        state = record_update(state, "enemy_discard", draw_for_enemy.discard);
+        state = record_update(state, "log", add_log(state.log, "--- 敌人回合 ---"));
+        render();
+        enemy_turn_ai();
+        if state.screen != "game-over" {
+          state = record_update(state, "phase", "player-turn");
+          state = record_update(state, "log", add_log(state.log, "--- 你的回合 ---"));
+        };
+        render();
+      } elif y >= 390 and y <= 530 {
+        let hand: List<Number> = state.player_hand;
+        let hand_len: Number = hand.len;
+        let card_w: Number = 100;
+        let spacing: Number = 15;
+        let total_w: Number = hand_len * (card_w + spacing) - spacing;
+        let start_x: Number = (800 - total_w) / 2;
+        let ci: Number = (x - start_x) / (card_w + spacing);
+        if ci >= 0 and ci < hand_len {
+          let cid: Number = list_get(hand, ci).value;
+          state = record_update(state, "selected_card", cid);
+          render();
+        };
+      } else {
+        if state.selected_card >= 0 {
+          state = record_update(state, "selected_card", -1);
+          render();
+        };
+      };
+    };
+  } elif state.screen == "game-over" {
+    if x >= 300 and x <= 500 and y >= 320 and y <= 380 {
+      state = record_update(state, "screen", "title");
+      render();
+    };
+  };
+}
+
+fn handle_dblclick(x: Number, y: Number) -> Unit {
+  if state.screen == "game" and state.phase == "player-turn" {
+    if y >= 390 and y <= 530 {
+      let hand: List<Number> = state.player_hand;
+      let hand_len: Number = hand.len;
+      let card_w: Number = 100;
+      let spacing: Number = 15;
+      let total_w: Number = hand_len * (card_w + spacing) - spacing;
+      let start_x: Number = (800 - total_w) / 2;
+      let ci: Number = (x - start_x) / (card_w + spacing);
+      if ci >= 0 and ci < hand_len {
+        try_play_card(ci);
+        render();
+      };
+    };
+  };
+}
+
+fn handle_hover(x: Number, y: Number) -> Unit {
+  if state.screen == "title" {
+    if x >= 300 and x <= 500 and y >= 320 and y <= 380 {
+      canvas_set_cursor("pointer")
+    } else {
+      canvas_set_cursor("default")
+    }
+  } elif state.screen == "character-select" {
+    if x >= 80 and x <= 360 and y >= 100 and y <= 480 {
+      canvas_set_cursor("pointer")
+    } elif x >= 440 and x <= 720 and y >= 100 and y <= 480 {
+      canvas_set_cursor("pointer")
+    } else {
+      canvas_set_cursor("default")
+    }
+  } elif state.screen == "game" {
+    if state.phase == "player-turn" {
+      if x >= 620 and x <= 770 and y >= 460 and y <= 500 {
+        canvas_set_cursor("pointer")
+      } elif y >= 390 and y <= 530 {
+        canvas_set_cursor("pointer")
+      } else {
+        canvas_set_cursor("default")
+      }
+    } else {
+      canvas_set_cursor("default")
+    }
+  } elif state.screen == "game-over" {
+    if x >= 300 and x <= 500 and y >= 320 and y <= 380 {
+      canvas_set_cursor("pointer")
+    } else {
+      canvas_set_cursor("default")
+    }
+  } else {
+    canvas_set_cursor("default")
+  }
+}
+
+fn main() -> Unit {
+  render();
+  canvas_on_click(handle_click);
+  canvas_on_drag(handle_hover);
+  canvas_on_dblclick(handle_dblclick);
+}

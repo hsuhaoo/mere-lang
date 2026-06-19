@@ -1,7 +1,7 @@
 import {
   Value,
   NumberValue, StringValue, BooleanValue, ListValue,
-  MapValue, TaskValue, RecordValue,
+  MapValue, TaskValue, RecordValue, FnValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
   mkOk, mkErr,
@@ -15,10 +15,18 @@ class BrowserBuiltins {
   ctx: CanvasRenderingContext2D | null;
   canvasWidth: number;
   canvasHeight: number;
+  private _logicalWidth: number;
+  private _logicalHeight: number;
 
   interpreter: Interpreter | null;
   private _clickResolve: ((value: Value) => void) | null;
   private _dragState: { fromX: number; fromY: number; resolve: (value: Value) => void } | null;
+  private _clickHandler: FnValue | null;
+  private _dragHandler: FnValue | null;
+  private _dblClickHandler: FnValue | null;
+  private _clickListenerSet: boolean;
+  private _dragListenerSet: boolean;
+  private _dblClickListenerSet: boolean;
   private _images: Map<number, HTMLImageElement>;
   private _imageIdCounter: number;
   private _imageUrlToId: Map<string, number>;
@@ -37,11 +45,19 @@ class BrowserBuiltins {
     this.fnMap = new Map();
     this.scheduler = scheduler || null;
     this.ctx = canvas || null;
-    this.canvasWidth = width || 0;
-    this.canvasHeight = height || 0;
+    this.canvasWidth = width ?? 800;
+    this.canvasHeight = height ?? 600;
+    this._logicalWidth = this.canvasWidth;
+    this._logicalHeight = this.canvasHeight;
     this.interpreter = null;
     this._clickResolve = null;
     this._dragState = null;
+    this._clickHandler = null;
+    this._dragHandler = null;
+    this._dblClickHandler = null;
+    this._clickListenerSet = false;
+    this._dragListenerSet = false;
+    this._dblClickListenerSet = false;
     this._images = new Map();
     this._imageIdCounter = 0;
     this._imageUrlToId = new Map();
@@ -430,10 +446,12 @@ class BrowserBuiltins {
         const canvas = this.ctx.canvas;
         const handler = (e: MouseEvent) => {
           const rect = canvas.getBoundingClientRect();
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
           canvas.removeEventListener('click', handler);
           resolve(mkMap({
-            x: mkNumber(e.clientX - rect.left),
-            y: mkNumber(e.clientY - rect.top),
+            x: mkNumber((e.clientX - rect.left) * scaleX),
+            y: mkNumber((e.clientY - rect.top) * scaleY),
           }));
         };
         canvas.addEventListener('click', handler);
@@ -452,27 +470,30 @@ class BrowserBuiltins {
 
         const onPointerDown = (e: PointerEvent) => {
           const rect = canvas.getBoundingClientRect();
-          fromX = e.clientX - rect.left;
-          fromY = e.clientY - rect.top;
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
+          fromX = (e.clientX - rect.left) * scaleX;
+          fromY = (e.clientY - rect.top) * scaleY;
           canvas.addEventListener('pointermove', onPointerMove);
           canvas.addEventListener('pointerup', onPointerUp);
           canvas.setPointerCapture(e.pointerId);
         };
 
         const onPointerMove = (e: PointerEvent) => {
-          // tracking only — no callback needed with Task style
         };
 
         const onPointerUp = (e: PointerEvent) => {
           const rect = canvas.getBoundingClientRect();
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
           canvas.removeEventListener('pointerdown', onPointerDown);
           canvas.removeEventListener('pointermove', onPointerMove);
           canvas.removeEventListener('pointerup', onPointerUp);
           resolve(mkMap({
             from_x: mkNumber(fromX),
             from_y: mkNumber(fromY),
-            to_x: mkNumber(e.clientX - rect.left),
-            to_y: mkNumber(e.clientY - rect.top),
+            to_x: mkNumber((e.clientX - rect.left) * scaleX),
+            to_y: mkNumber((e.clientY - rect.top) * scaleY),
           }));
         };
 
@@ -590,22 +611,98 @@ class BrowserBuiltins {
       return mkUnit();
     });
 
+    this.registerCallbackBuiltins();
     this.registerCanvasBuiltins();
+  }
+
+  private registerCallbackBuiltins() {
+    this.registerFn('canvas_on_click', 1, (args) => {
+      if (!(args[0] instanceof FnValue)) {
+        throw new Error('canvas_on_click expects a function');
+      }
+      this._clickHandler = args[0] as FnValue;
+      if (!this._clickListenerSet && this.ctx) {
+        this._clickListenerSet = true;
+        const canvas = this.ctx.canvas;
+        canvas.addEventListener('click', (e: MouseEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
+          const x = (e.clientX - rect.left) * scaleX;
+          const y = (e.clientY - rect.top) * scaleY;
+          if (this._clickHandler && this.interpreter) {
+            this.interpreter.executeLambdaFromValue(this._clickHandler, 'click', [mkNumber(x), mkNumber(y)]);
+          }
+        });
+      }
+      return mkUnit();
+    });
+    this.registerFn('canvas_on_drag', 1, (args) => {
+      if (!(args[0] instanceof FnValue)) {
+        throw new Error('canvas_on_drag expects a function');
+      }
+      this._dragHandler = args[0] as FnValue;
+      if (!this._dragListenerSet && this.ctx) {
+        this._dragListenerSet = true;
+        const canvas = this.ctx.canvas;
+        canvas.addEventListener('mousemove', (e: MouseEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
+          const x = (e.clientX - rect.left) * scaleX;
+          const y = (e.clientY - rect.top) * scaleY;
+          if (this._dragHandler && this.interpreter) {
+            try {
+              this.interpreter.executeLambdaFromValue(this._dragHandler, 'drag', [mkNumber(x), mkNumber(y)]);
+            } catch (err) {
+              console.error('canvas_on_drag error:', err);
+            }
+          }
+        });
+      }
+      return mkUnit();
+    });
+    this.registerFn('canvas_on_dblclick', 1, (args) => {
+      if (!(args[0] instanceof FnValue)) {
+        throw new Error('canvas_on_dblclick expects a function');
+      }
+      this._dblClickHandler = args[0] as FnValue;
+      if (!this._dblClickListenerSet && this.ctx) {
+        this._dblClickListenerSet = true;
+        const canvas = this.ctx.canvas;
+        canvas.addEventListener('dblclick', (e: MouseEvent) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = this._logicalWidth / rect.width;
+          const scaleY = this._logicalHeight / rect.height;
+          const x = (e.clientX - rect.left) * scaleX;
+          const y = (e.clientY - rect.top) * scaleY;
+          if (this._dblClickHandler && this.interpreter) {
+            this.interpreter.executeLambdaFromValue(this._dblClickHandler, 'dblclick', [mkNumber(x), mkNumber(y)]);
+          }
+        });
+      }
+      return mkUnit();
+    });
   }
 
   private registerCanvasBuiltins() {
     this.registerFn('canvas_clear', 0, () => {
-      if (!this.ctx) return mkUnit();
-      this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+      if (!this.ctx || !this.ctx.canvas) return mkUnit();
+      const canvas = this.ctx.canvas;
+      const sx = canvas.width / this._logicalWidth;
+      const sy = canvas.height / this._logicalHeight;
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      this.ctx.setTransform(sx, 0, 0, sy, 0, 0);
       return mkUnit();
     });
 
     this.registerFn('canvas_get_width', 0, () => {
-      return mkNumber(this.canvasWidth);
+      return mkNumber(this._logicalWidth);
     });
 
     this.registerFn('canvas_get_height', 0, () => {
-      return mkNumber(this.canvasHeight);
+      return mkNumber(this._logicalHeight);
     });
 
     this.registerFn('canvas_fill_rect', 4, (args) => {
@@ -861,6 +958,13 @@ class BrowserBuiltins {
         args[2].toRawNumber(), args[3].toRawNumber(),
         args[4].toRawNumber()
       );
+      return mkUnit();
+    });
+
+    // ── Cursor ──
+    this.registerFn('canvas_set_cursor', 1, (args) => {
+      if (!this.ctx || !this.ctx.canvas) return mkUnit();
+      this.ctx.canvas.style.cursor = args[0].toRawString();
       return mkUnit();
     });
 

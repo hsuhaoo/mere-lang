@@ -130,11 +130,11 @@ let empty: Unit = ();
 | `+` | `String + String` | 拼接 |
 | `len` | `len(String) → Number` | 字符串长度（已废弃，使用 `s.len`） |
 | `concat` | `concat(String, String) → String` | 拼接 |
-| `concat_all` | `concat_all(List<String>) → String` | 拼接列表中所有字符串 |
+| `concat_all` | `concat_all(List<String>, String) → String` | 拼接列表中所有字符串（分隔符为第二参数） |
 | `substring` | `substring(String, Number, Number) → String` | 截取（起始位置 + 长度） |
-| `indexOf` | `indexOf(String, String) → Result<Number>` | 查找子串位置 |
+| `substring_list` | `substring_list(String, Number, Number) → List<String>` | 按长度切分字符串为列表 |
+| `indexOf` | `indexOf(String, String) → Number` | 查找子串位置（未找到返回 -1） |
 | `to_string` | `to_string($T) → String` | 转字符串 |
-| `to_string_bool` | `to_string_bool(Boolean) → String` | 布尔转字符串 |
 | `print` | `print(String) → Unit` | 打印到 stdout |
 
 ### 4.5 字段
@@ -237,6 +237,7 @@ let x: Number = add(3, 4);       // 7
 | `file_read_lines` | `file_read_lines(String) → Task<Result<List<String>>>` | 异步读行 |
 | `read_line` | `read_line() → Task<Result<String>>` | 从标准输入读取一行 |
 | `fetch` | `fetch(String, String, Map<String,String>, String) → Task<Result<String>>` | HTTP 请求（url, method, headers, body） |
+| `record_update` | `record_update(Record, String, $T) → Record` | 更新记录字段（返回新记录） |
 | `random` | `random(Number) → Number` | 返回 `[0, n)` 随机整数 |
 | `db_store` | `db_store(String, String) → Task<Result<Unit>>` | IndexedDB 存储（浏览器） |
 | `db_load` | `db_load(String) → Task<Result<String>>` | IndexedDB 读取（浏览器） |
@@ -244,8 +245,11 @@ let x: Number = add(3, 4);       // 7
 | `map` | `map(List<T>, Fn<T, U>) → List<U>` | 列表映射 |
 | `filter` | `filter(List<T>, Fn<T, Boolean>) → List<T>` | 列表过滤 |
 | `fold` | `fold(List<T>, U, Fn<U, T, U>) → U` | 列表归约 |
-| `concat_all` | `concat_all(List<String>) → String` | 拼接列表中所有字符串 |
-| `indexOf` | `indexOf(String, String) → Result<Number>` | 查找子串位置 |
+| `concat_all` | `concat_all(List<String>, String) → String` | 拼接列表中所有字符串（第二参数为分隔符） |
+| `indexOf` | `indexOf(String, String) → Number` | 查找子串位置（未找到返回 -1） |
+| `get` | `get(List<T>, Number) → Result<T>` 或 `get(Map<K,V>, K) → Result<V>` | 按索引（列表）或键（Map）取值 |
+| `has` | `has(Map<K,V>, K) → Boolean` | 检查 Map 中是否存在键 |
+| `put` | `put(Map<K,V>, K, V) → Map<K,V>` | Map 插入/更新，返回新 Map |
 
 ### 5.5 可变量
 
@@ -529,6 +533,7 @@ let extended: List<Number> = append(nums, 6);
 |------|------|------|
 | `append` | `append(List<T>, T) → List<T>` | 追加元素 |
 | `list_get` | `list_get(List<T>, Number) → Result<T>` | 按索引取值 |
+| `get` | `get(List<T>, Number) → Result<T>` | list_get 的别名 |
 | `list_pop` | `list_pop(List<T>) → List<T>` | 弹出末尾元素（返回新列表） |
 | `list_remove_at` | `list_remove_at(List<T>, Number) → List<T>` | 移除指定索引元素（返回新列表） |
 | `list_index_of` | `list_index_of(List<T>, T) → Number` | 查找元素位置（-1 表示未找到） |
@@ -590,6 +595,9 @@ let ages: Map<String, Number> = {
 | `map_remove` | `map_remove(Map<K,V>, K) → Map<K,V>` | 删除（返回新 Map） |
 | `map_keys` | `map_keys(Map<K,V>) → List<K>` | 获取所有键 |
 | `map_values` | `map_values(Map<K,V>) → List<V>` | 获取所有值 |
+| `get` | `get(Map<K,V>, K) → Result<V>` | map_get 的别名 |
+| `has` | `has(Map<K,V>, K) → Boolean` | map_has 的别名 |
+| `put` | `put(Map<K,V>, K, V) → Map<K,V>` | map_put 的别名 |
 
 **注意**：`map_put` 和 `map_remove` 返回新 Map，原 Map 不变。
 
@@ -620,7 +628,22 @@ let area: Number = rect.width * rect.height;   // 20000
 let left: Number = rect.top_left.x;            // 嵌套字段访问
 ```
 
-### 12.4 完整示例
+### 12.4 记录更新
+
+记录默认不可变，`record_update` 返回修改字段后的新记录：
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `record_update` | `record_update(Record, String, $T) → Record` | 更新记录字段（返回新记录，原记录不变） |
+
+```sim
+type GameState = { score: Number, name: String };
+let state: GameState = { score: 0, name: "Alice" };
+let state2: GameState = record_update(state, "score", 100);
+// state.score 仍为 0，state2.score 为 100
+```
+
+### 12.5 完整示例
 
 ```sim
 type Point = { x: Number, y: Number };
@@ -875,12 +898,6 @@ canvas_fill_rect(0, 0, 200, 100);
 
 ### 16.8 图片
 
-同前。
-
-### 16.9 音频
-
-同前。
-
 | 函数 | 签名 | 说明 |
 |------|------|------|
 | `canvas_load_image` | `canvas_load_image(String) → Number` | 加载图片，返回缓存 ID（同步返回，后台异步加载） |
@@ -889,23 +906,14 @@ canvas_fill_rect(0, 0, 200, 100);
 
 ```sim
 let id: Number = canvas_load_image("cards/reimu.png");
-// 图片在后台加载，draw 在加载完成后才有实际效果
 canvas_draw_image(id, 100, 200, 80, 120);
 ```
 
-**说明**：浏览器中图片加载是异步的，`canvas_load_image` 立即返回 ID，图片在后台加载。`canvas_draw_image` 在图片未加载完成时静默跳过。可用 `canvas_image_loaded(id)` 轮询加载状态。也可以配合页面预加载来保证图片在 Simplex 代码运行前已加载。
+**说明**：浏览器中图片加载是异步的，`canvas_load_image` 立即返回 ID，图片在后台加载。`canvas_draw_image` 在图片未加载完成时静默跳过。可用 `canvas_image_loaded(id)` 轮询加载状态。
 
-**资源说明**：`canvas_load_image` 接受 URL 或路径。
+**资源说明**：支持 URL、相对路径和数据 URI。图片按 URL 缓存。
 
-| 运行方式 | 图片路径示例 | 说明 |
-|---------|-------------|------|
-| 浏览器（dev） | `"cards/reimu.png"` | 相对 HTML 页面路径 |
-| CLI build | `"cards/reimu.png"` | 图片需与 .html 放在一起 |
-| 任意场景 | `"data:image/png;base64,..."` | 数据 URI，无需外部文件 |
-
-图片加载后会按 URL 缓存，重复调用 `canvas_load_image` 同一 URL 立即返回已缓存的 ID。
-
-### 16.8 音频
+### 16.9 音频
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
@@ -926,7 +934,7 @@ audio_play(id);
 
 资源约定同图片——支持 URL、相对路径和数据 URI。音频按 URL 缓存。
 
-### 16.9 示例
+### 16.10 示例
 
 ```sim
 fn draw() {
@@ -951,6 +959,12 @@ draw()
 |------|------|------|
 | `canvas_wait_click` | `canvas_wait_click() → Task<Map<String, Number>>` | 等待点击，返回 `{x, y}` |
 | `canvas_wait_drag` | `canvas_wait_drag() → Task<Map<String, Number>>` | 等待拖拽完成，返回 `{from_x, from_y, to_x, to_y}` |
+| `canvas_on_click` | `canvas_on_click(Fn<Number,Number,Unit>) → Unit` | 注册点击回调（每次点击触发） |
+| `canvas_on_drag` | `canvas_on_drag(Fn<Number,Number,Unit>) → Unit` | 注册鼠标移动回调（用于 hover 效果） |
+| `canvas_on_dblclick` | `canvas_on_dblclick(Fn<Number,Number,Unit>) → Unit` | 注册双击回调 |
+| `canvas_set_cursor` | `canvas_set_cursor(String) → Unit` | 设置鼠标样式（`"pointer"`、`"default"` 等 CSS 值） |
+
+回调版本（`canvas_on_*`）注册后每次事件触发自动调用，适合实时响应（如 hover 更改光标），需要在 `main()` 中一次性注册。Task 版本（`canvas_wait_*`）适合在主循环中串行等待。
 
 ### 17.2 示例
 
@@ -1050,7 +1064,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 以下函数仅在浏览器运行时可用：
 
 - 所有 `canvas_*` 函数（见第 16 节）
-- `canvas_wait_click` / `canvas_wait_drag`（见第 17 节）
+- `canvas_wait_click` / `canvas_wait_drag` / `canvas_on_click` / `canvas_on_drag` / `canvas_on_dblclick` / `canvas_set_cursor`（见第 17 节）
 - `db_store` / `db_load` / `db_delete`（见第 18 节）
 - `fetch(url, method, headers, body) → Task<Result<String>>`
 - `sleep(ms) → Task<Unit>`（见第 15 节）
@@ -1065,6 +1079,8 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 | `canvas_*` | ❌ | ✅ |
 | `canvas_wait_click` / `canvas_wait_drag` | ❌ | ✅ |
 | `db_store` / `db_load` / `db_delete` | ❌ | ✅ |
+| `canvas_on_click` / `canvas_on_drag` / `canvas_on_dblclick` | ❌ | ✅ |
+| `canvas_set_cursor` | ❌ | ✅ |
 | `fetch` | ✅ | ✅ |
 | `read_line` | ✅ | ❌ |
 | `random` | ✅ | ✅ |
@@ -1077,7 +1093,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 
 ## 20. 完整示例
 
-### 16.1 Hello World
+### 20.1 Hello World
 
 ```sim
 print("Hello, Simplex!");
@@ -1085,7 +1101,7 @@ let name: String = "World";
 print("Hello, " + name + "!");
 ```
 
-### 16.2 递归：斐波那契
+### 20.2 递归：斐波那契
 
 ```sim
 fn fib(n: Number) -> Number {
@@ -1104,7 +1120,7 @@ fn print_fib(i: Number, max: Number) -> Unit {
 print_fib(0, 15);
 ```
 
-### 16.3 模块：跨文件导入
+### 20.3 模块：跨文件导入
 
 ```sim
 // math.sim — 导出函数
