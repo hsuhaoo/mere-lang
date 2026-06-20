@@ -476,12 +476,16 @@ class FnValue extends Value {
   params: Array<{ name: string; type: TypeAnnotation }>;
   body: Stmt[];
   _definingEnv: Env | null;
+  vmFuncIndex: number;
+  vm: any;
 
   constructor(params: Array<{ name: string; type: TypeAnnotation }>, body: Stmt[], definingEnv: Env | null = null) {
     super(FN_TYPE);
     this.params = params;
     this.body = body;
     this._definingEnv = definingEnv;
+    this.vmFuncIndex = -1;
+    this.vm = null;
   }
 
   toString(): string {

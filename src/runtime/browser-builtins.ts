@@ -7,18 +7,17 @@ import {
   mkOk, mkErr,
 } from './values.js';
 import { Scheduler } from './scheduler.js';
-import type { Interpreter } from './interpreter.js';
 
 class BrowserBuiltins {
   fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
   scheduler: Scheduler | null;
+  callFn: ((fn: FnValue, args: Value[]) => Value) | null = null;
   ctx: CanvasRenderingContext2D | null;
   canvasWidth: number;
   canvasHeight: number;
   private _logicalWidth: number;
   private _logicalHeight: number;
 
-  interpreter: Interpreter | null;
   private _clickResolve: ((value: Value) => void) | null;
   private _dragState: { fromX: number; fromY: number; resolve: (value: Value) => void } | null;
   private _clickHandler: FnValue | null;
@@ -49,7 +48,6 @@ class BrowserBuiltins {
     this.canvasHeight = height ?? 600;
     this._logicalWidth = this.canvasWidth;
     this._logicalHeight = this.canvasHeight;
-    this.interpreter = null;
     this._clickResolve = null;
     this._dragState = null;
     this._clickHandler = null;
@@ -67,10 +65,6 @@ class BrowserBuiltins {
     this._gradients = new Map();
     this._gradientIdCounter = 0;
     this.registerBuiltins();
-  }
-
-  setInterpreter(i: Interpreter) {
-    this.interpreter = i;
   }
 
   registerBuiltins() {
@@ -630,8 +624,8 @@ class BrowserBuiltins {
           const scaleY = this._logicalHeight / rect.height;
           const x = (e.clientX - rect.left) * scaleX;
           const y = (e.clientY - rect.top) * scaleY;
-          if (this._clickHandler && this.interpreter) {
-            this.interpreter.executeLambdaFromValue(this._clickHandler, 'click', [mkNumber(x), mkNumber(y)]);
+          if (this._clickHandler && this._clickHandler.vm && this._clickHandler.vmFuncIndex >= 0) {
+            this._clickHandler.vm.callByIndex(this._clickHandler.vmFuncIndex, [mkNumber(x), mkNumber(y)]);
           }
         });
       }
@@ -651,9 +645,9 @@ class BrowserBuiltins {
           const scaleY = this._logicalHeight / rect.height;
           const x = (e.clientX - rect.left) * scaleX;
           const y = (e.clientY - rect.top) * scaleY;
-          if (this._dragHandler && this.interpreter) {
+          if (this._dragHandler && this._dragHandler.vm && this._dragHandler.vmFuncIndex >= 0) {
             try {
-              this.interpreter.executeLambdaFromValue(this._dragHandler, 'drag', [mkNumber(x), mkNumber(y)]);
+              this._dragHandler.vm.callByIndex(this._dragHandler.vmFuncIndex, [mkNumber(x), mkNumber(y)]);
             } catch (err) {
               console.error('canvas_on_drag error:', err);
             }
@@ -676,8 +670,8 @@ class BrowserBuiltins {
           const scaleY = this._logicalHeight / rect.height;
           const x = (e.clientX - rect.left) * scaleX;
           const y = (e.clientY - rect.top) * scaleY;
-          if (this._dblClickHandler && this.interpreter) {
-            this.interpreter.executeLambdaFromValue(this._dblClickHandler, 'dblclick', [mkNumber(x), mkNumber(y)]);
+          if (this._dblClickHandler && this._dblClickHandler.vm && this._dblClickHandler.vmFuncIndex >= 0) {
+            this._dblClickHandler.vm.callByIndex(this._dblClickHandler.vmFuncIndex, [mkNumber(x), mkNumber(y)]);
           }
         });
       }
@@ -986,7 +980,8 @@ class BrowserBuiltins {
   }
 
   getFn(name: string): { arity: number; fn: (args: any[]) => Value } | undefined {
-    return this.fnMap.get(name);
+    const result = this.fnMap.get(name);
+    return result;
   }
 
   isBuiltin(name: string): boolean {

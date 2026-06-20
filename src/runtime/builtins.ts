@@ -10,7 +10,7 @@ import process from 'process';
 import {
   Value,
   NumberValue, StringValue, BooleanValue, ListValue,
-  MapValue, TaskValue, RecordValue,
+  MapValue, TaskValue, RecordValue, FnValue,
   number as mkNumber, string as mkString, boolean as mkBoolean, unit as mkUnit,
   list as mkList, map as mkMap,
   mkOk, mkErr,
@@ -21,6 +21,7 @@ import fs from 'fs';
 class Builtins {
   fnMap: Map<string, { arity: number; fn: (args: any[]) => Value }>;
   scheduler: Scheduler | null;
+  callFn: ((fn: FnValue, args: Value[]) => Value) | null = null;
 
   constructor(scheduler?: Scheduler) {
     this.fnMap = new Map();
@@ -372,6 +373,107 @@ class Builtins {
       }
       newFields[fieldName] = newValue;
       return new RecordValue(newFields, rec.typeName());
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // Higher-order list functions (map/filter/fold/find/for_each/sort_by)
+    // ═══════════════════════════════════════════════════════════
+
+    this.registerFn('map', 2, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('map expects a List');
+      const fn = args[1] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('map expects a function');
+      const results: Value[] = [];
+      for (let i = 0; i < list.length(); i++) {
+        results.push(this.callFn!(fn, [list.get(i)]));
+      }
+      return mkList(results, null);
+    });
+
+    this.registerFn('filter', 2, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('filter expects a List');
+      const fn = args[1] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('filter expects a function');
+      const results: Value[] = [];
+      for (let i = 0; i < list.length(); i++) {
+        const elem = list.get(i);
+        if (this.callFn!(fn, [elem]).toRawBoolean()) {
+          results.push(elem);
+        }
+      }
+      return mkList(results, null);
+    });
+
+    this.registerFn('fold', 3, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('fold expects a List');
+      let acc = args[1];
+      const fn = args[2] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('fold expects a function');
+      for (let i = 0; i < list.length(); i++) {
+        acc = this.callFn!(fn, [acc, list.get(i)]);
+      }
+      return acc;
+    });
+
+    this.registerFn('find', 2, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('find expects a List');
+      const fn = args[1] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('find expects a function');
+      for (let i = 0; i < list.length(); i++) {
+        const elem = list.get(i);
+        if (this.callFn!(fn, [elem]).toRawBoolean()) {
+          return mkOk(elem);
+        }
+      }
+      return mkErr('Not found');
+    });
+
+    this.registerFn('for_each', 2, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('for_each expects a List');
+      const fn = args[1] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('for_each expects a function');
+      for (let i = 0; i < list.length(); i++) {
+        this.callFn!(fn, [list.get(i)]);
+      }
+      return mkUnit();
+    });
+
+    this.registerFn('sort_by', 2, (args) => {
+      const list = args[0] as ListValue;
+      if (!(list instanceof ListValue)) throw new Error('sort_by expects a List');
+      const fn = args[1] as FnValue;
+      if (!(fn instanceof FnValue)) throw new Error('sort_by expects a function');
+      const elements: Value[] = [];
+      for (let i = 0; i < list.length(); i++) {
+        elements.push(list.get(i));
+      }
+      elements.sort((a, b) => {
+        const result = this.callFn!(fn, [a, b]);
+        return result.toRawNumber();
+      });
+      return mkList(elements, null);
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // Async / Task builtins (spawn, join)
+    // ═══════════════════════════════════════════════════════════
+
+    this.registerFn('spawn', 1, (args) => {
+      const fnValue = args[0] as FnValue;
+      if (!(fnValue instanceof FnValue)) throw new Error('spawn expects a function');
+      const thunk = () => this.callFn!(fnValue, []);
+      return this.scheduler!.spawn(thunk, null);
+    });
+
+    this.registerFn('join', 1, (args) => {
+      const taskValue = args[0] as TaskValue;
+      if (!(taskValue instanceof TaskValue)) throw new Error('join expects a Task');
+      return this.scheduler!.join(taskValue);
     });
   }
 

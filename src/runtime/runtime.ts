@@ -23,7 +23,6 @@ export function createRuntime(config: RuntimeConfig): Interpreter {
       config.canvasHeight || 0
     );
     const interpreter = new Interpreter(builtins, scheduler);
-    builtins.setInterpreter(interpreter);
     return interpreter;
   }
 

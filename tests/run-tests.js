@@ -676,6 +676,98 @@ test('else: elif true skips else', `
 if false { 1 } elif true { 2 } else { 3 }
 `, 2);
 
+// ── long elif chains ────────────────────────────────────
+
+test('long elif: first branch taken (5 elif + else)', `
+let x: Number = 10;
+let result: String = if x > 5 {
+  "a"
+} elif x > 4 {
+  "b"
+} elif x > 3 {
+  "c"
+} elif x > 2 {
+  "d"
+} elif x > 1 {
+  "e"
+} else {
+  "f"
+};
+result
+`, "a");
+
+test('long elif: middle branch taken (5 elif + else)', `
+let x: Number = 2;
+let result: String = if x > 5 {
+  "a"
+} elif x > 4 {
+  "b"
+} elif x > 3 {
+  "c"
+} elif x > 2 {
+  "d"
+} elif x > 1 {
+  "e"
+} else {
+  "f"
+};
+result
+`, "e");
+
+test('long elif: last elif taken (5 elif + else)', `
+let x: Number = 4;
+let result: String = if x > 5 {
+  "a"
+} elif x > 4 {
+  "b"
+} elif x > 3 {
+  "c"
+} elif x > 2 {
+  "d"
+} elif x > 1 {
+  "e"
+} else {
+  "f"
+};
+result
+`, "c");
+
+test('long elif: else taken (5 elif + else)', `
+let x: Number = 0;
+let result: String = if x > 5 {
+  "a"
+} elif x > 4 {
+  "b"
+} elif x > 3 {
+  "c"
+} elif x > 2 {
+  "d"
+} elif x > 1 {
+  "e"
+} else {
+  "f"
+};
+result
+`, "f");
+
+test('long elif: global state (like game handle_hover)', `
+let state: String = "game";
+let result: String = if state == "title" {
+  "title"
+} elif state == "menu" {
+  "menu"
+} elif state == "character-select" {
+  "char"
+} elif state == "game" {
+  "game"
+} elif state == "pause" {
+  "pause"
+} else {
+  "unknown"
+};
+result
+`, "game");
+
 // ── concat_all ───────────────────────────────────────────
 
 test('concat_all joins strings', `
@@ -1035,6 +1127,119 @@ while i < 5 {
 }
 x
 `, -3);
+
+// ── global index edge cases (regression: JMP offsets off-by-one) ──
+// With 11+ preceding let bindings, a global's index has low byte = 11+,
+// which collides with opcode values (MUL=11, DIV=12, EQ=13, JMP=23, etc.)
+// JMP overshooting by 1 byte would land on that byte as a spurious opcode.
+
+test('elif high global index: first branch', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_val: Number = 15;
+fn pick(n: Number) -> Number {
+  if n > 20 { 100 } elif n > 10 { 200 } elif n > 0 { 300 } else { 400 }
+};
+pick(gi_val)
+`, 200);
+
+test('elif high global index: second branch', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_val: Number = 5;
+fn pick(n: Number) -> Number {
+  if n > 20 { 100 } elif n > 10 { 200 } elif n > 0 { 300 } else { 400 }
+};
+pick(gi_val)
+`, 300);
+
+test('elif high global index: else branch', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_val: Number = -5;
+fn pick(n: Number) -> Number {
+  if n > 20 { 100 } elif n > 10 { 200 } elif n > 0 { 300 } else { 400 }
+};
+pick(gi_val)
+`, 400);
+
+test('elif high global index: no branch', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_val: Number = 15;
+fn pick(n: Number) -> Number {
+  if n > 20 { 100 } elif n > 10 { 200 } elif n > 0 { 300 };
+};
+pick(gi_val)
+`, 200);
+
+test('elif high global index: nested func calls (like render pattern)', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_screen: String = "game";
+fn render_bg() -> Number { 10 };
+fn render_title() -> Number { 1 };
+fn render_game() -> Number { 2 };
+fn render_over() -> Number { 3 };
+fn render() -> Number {
+  if gi_screen == "title" { render_title()
+  } elif gi_screen == "game" { render_game()
+  } elif gi_screen == "game-over" { render_over()
+  };
+};
+render()
+`, 2);
+
+test('while high global index: loop body', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_limit: Number = 3;
+let mut gi_sum: Number = 0;
+let mut gi_i: Number = 0;
+fn accumulate() -> Number {
+  while gi_i < gi_limit {
+    gi_sum = gi_sum + 1;
+    gi_i = gi_i + 1;
+  };
+  gi_sum
+};
+accumulate()
+`, 3);
+
+test('while high global index: always true + nested if/else', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let mut gi_flag: Boolean = true;
+let mut gi_cnt: Number = 0;
+fn run_loop() -> Number {
+  while gi_flag {
+    gi_cnt = gi_cnt + 1;
+    if gi_cnt >= 3 { gi_flag = false } else {};
+  };
+  gi_cnt
+};
+run_loop()
+`, 3);
+
+test('while high global index: condition false on entry', `
+let gi0: Number = 0; let gi1: Number = 0; let gi2: Number = 0; let gi3: Number = 0; let gi4: Number = 0;
+let gi5: Number = 0; let gi6: Number = 0; let gi7: Number = 0; let gi8: Number = 0; let gi9: Number = 0;
+let gi10: Number = 0; let gi11: Number = 0; let gi12: Number = 0; let gi13: Number = 0; let gi14: Number = 0;
+let gi_cond: Boolean = false;
+let mut gi_val: Number = 42;
+fn test() -> Number {
+  while gi_cond { gi_val = 0; };
+  gi_val
+};
+test()
+`, 42);
 
 console.log();
 console.log('=== Results:', passed, 'passed,', failed, 'failed ===');

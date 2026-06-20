@@ -621,6 +621,7 @@ fn handle_click(x: Number, y: Number) -> Unit {
       render();
     };
   };
+  print("end of handle_click");
 }
 
 fn handle_dblclick(x: Number, y: Number) -> Unit {

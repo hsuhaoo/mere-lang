@@ -10,6 +10,5 @@ export function createBrowserRuntime(
   const scheduler = new Scheduler();
   const builtins = new BrowserBuiltins(scheduler, canvas || null, width || 0, height || 0);
   const interpreter = new Interpreter(builtins, scheduler);
-  builtins.setInterpreter(interpreter);
   return interpreter;
 }
