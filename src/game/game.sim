@@ -286,7 +286,7 @@ fn enemy_turn_ai() -> Unit {
 
 fn render_bg() -> Unit {
   canvas_clear();
-  canvas_set_fill_color("#1a1a2e");
+  canvas_set_fill_color("#1a1a1a");
   canvas_fill_rect(0, 0, canvas_get_width(), canvas_get_height());
 }
 
