@@ -320,6 +320,80 @@ m.double(m.square(3))
   if (val !== 18) throw new Error(`expected 18, got ${val}`);
 });
 
+// ── Function body accessing import qualified name ──────────────
+
+test('function body can call import qualified name', () => {
+  writeMod('greeter.sim', `
+export fn hello(name: String) -> String { "Hello, " + name }
+`);
+
+  writeMod('main.sim', `
+import g from "greeter.sim";
+
+fn run_test(name: String) -> String {
+  g.hello(name)
+}
+
+run_test("world")
+`);
+
+  const result = runModule('main.sim');
+  const val = extractValue(result);
+  if (val !== 'Hello, world') throw new Error(`expected 'Hello, world', got ${val}`);
+});
+
+test('function body can call import qualified name inside main()', () => {
+  writeMod('math.sim', `
+export fn double(x: Number) -> Number { x * 2 }
+`);
+
+  writeMod('main.sim', `
+import m from "math.sim";
+
+fn compute() -> Number {
+  m.double(21)
+}
+
+compute()
+`);
+
+  const result = runModule('main.sim');
+  const val = extractValue(result);
+  if (val !== 42) throw new Error(`expected 42, got ${val}`);
+});
+
+// ── collectSources ────────────────────────────────────────────
+
+test('collectSources returns all dependency sources', () => {
+  writeMod('a.sim', `export fn a() -> Number { 1 }`);
+  writeMod('b.sim', `
+import x from "a.sim";
+export fn b() -> Number { x.a() + 1 }
+`);
+  writeMod('main.sim', `
+import y from "b.sim";
+y.b()
+`);
+
+  const loader = new ModuleLoader(tmpDir);
+  const sources = loader.collectSources('main.sim');
+
+  // Should contain all 3 modules
+  const absKey = function(name) { return Object.keys(sources).find(function(k) { return k.endsWith(name); }); };
+  if (!absKey('main.sim')) throw new Error('main.sim not in sources');
+  if (!absKey('a.sim')) throw new Error('a.sim not in sources (transitive dep)');
+  if (!absKey('b.sim')) throw new Error('b.sim not in sources');
+
+  // Each source should be non-empty
+  for (const key of Object.keys(sources)) {
+    const src = sources[key];
+    if (!src || src.trim().length === 0) throw new Error('empty source for ' + key);
+  }
+
+  // Should have exactly 3 modules: main.sim, a.sim, b.sim
+  if (Object.keys(sources).length !== 3) throw new Error('expected 3 sources, got ' + Object.keys(sources).length);
+});
+
 // ── Language-level import/export (via run() — these fail) ────────
 
 test('import/export cannot be used with run() — needs ModuleLoader', () => {

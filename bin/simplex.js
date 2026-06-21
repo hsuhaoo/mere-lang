@@ -27,7 +27,6 @@ function build(args) {
     process.exit(1);
   }
 
-  const source = fs.readFileSync(simFile, 'utf-8');
   const baseName = path.basename(simFile, path.extname(simFile));
   const simDir = path.dirname(path.resolve(simFile));
 
@@ -60,7 +59,6 @@ function build(args) {
     }
   }
 
-  const hasCanvas = /canvas_/.test(source);
   const runtimePath = path.join(__dirname, '..', 'dist', 'simplex.browser.js');
 
   if (!fs.existsSync(runtimePath)) {
@@ -69,11 +67,26 @@ function build(args) {
     process.exit(1);
   }
 
+  // Walk import tree and collect all module sources
+  const absSimFile = path.resolve(simFile);
+  const simBaseDir = path.dirname(absSimFile);
+  let moduleSources = {};
+  try {
+    const loader = new ModuleLoader(simBaseDir);
+    moduleSources = loader.collectSources(absSimFile);
+  } catch (e) {
+    console.warn('Warning: Could not resolve all module imports:', e.message);
+    const source = fs.readFileSync(simFile, 'utf-8');
+    moduleSources = { 'main.sim': source };
+  }
+
+  // Check if any module uses canvas API
+  const hasCanvas = Object.values(moduleSources).some((s) => /canvas_/.test(s));
+
   const runtime = fs.readFileSync(runtimePath, 'utf-8');
-  const escaped = source
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
+  const sourcesJson = JSON.stringify(moduleSources);
+  // The main file key is the absolute path used in collectSources
+  const mainKey = absSimFile;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -92,7 +105,8 @@ function build(args) {
 ${hasCanvas ? '<canvas id="canvas"></canvas>' : '<div id="output"></div>'}
 <script>${runtime}
 const { runBrowser } = simplex;
-const source = \`${escaped}\`;
+const moduleSources = ${sourcesJson};
+const mainKey = ${JSON.stringify(mainKey)};
 try {
   ${hasCanvas
     ? `const canvas = document.getElementById('canvas');
@@ -102,8 +116,20 @@ try {
   }
   resize();
   const ctx = canvas.getContext('2d');
-  runBrowser(source, { target: 'browser', canvas: ctx, canvasWidth: canvas.width, canvasHeight: canvas.height });`
-    : `const result = runBrowser(source, { target: 'browser', canvas: null });
+  runBrowser(moduleSources[mainKey], {
+    target: 'browser',
+    canvas: ctx,
+    canvasWidth: canvas.width,
+    canvasHeight: canvas.height,
+    sources: moduleSources,
+    mainKey: mainKey,
+  });`
+    : `const result = runBrowser(moduleSources[mainKey], {
+    target: 'browser',
+    canvas: null,
+    sources: moduleSources,
+    mainKey: mainKey,
+  });
   document.getElementById('output').textContent = String(result);`
   }
 } catch (e) {

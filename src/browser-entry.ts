@@ -32,10 +32,28 @@ export {
   mkErr,
 };
 
+type ModuleData = {
+  name: string;
+  path: string;
+  program: any;
+  exports: Map<string, any>;
+};
+
 export function runBrowser(
   source: string,
-  config: { target?: string; canvas?: CanvasRenderingContext2D | null; canvasWidth?: number; canvasHeight?: number } = {}
+  config: {
+    target?: string;
+    canvas?: CanvasRenderingContext2D | null;
+    canvasWidth?: number;
+    canvasHeight?: number;
+    sources?: Record<string, string>;
+    mainKey?: string;
+  } = {}
 ) {
+  if (config.sources) {
+    return runWithModules(config.sources, config.mainKey || '', config);
+  }
+
   const lexer = new Lexer(source);
   const tokens = lexer.getTokens();
 
@@ -47,4 +65,76 @@ export function runBrowser(
 
   const interpreter = createBrowserRuntime(config.canvas, config.canvasWidth, config.canvasHeight);
   return interpreter.run(program);
+}
+
+function runWithModules(
+  sources: Record<string, string>,
+  mainKey: string,
+  config: {
+    canvas?: CanvasRenderingContext2D | null;
+    canvasWidth?: number;
+    canvasHeight?: number;
+  }
+) {
+  const loaded = new Map<string, ModuleData>();
+
+  function resolveModule(importPath: string): ModuleData {
+    if (loaded.has(importPath)) {
+      return loaded.get(importPath)!;
+    }
+
+    const src = sources[importPath];
+    if (!src) {
+      throw new Error(`Module not found: ${importPath}`);
+    }
+
+    const lexer = new Lexer(src);
+    const parser = new Parser(lexer.getTokens());
+    const program = parser.parse();
+
+    for (const stmt of program.stmts) {
+      const s = stmt as any;
+      if (stmt.constructor.name === 'ImportStmt') {
+        if (!loaded.has(s.from)) {
+          resolveModule(s.from);
+        }
+      }
+    }
+
+    const exports = new Map<string, any>();
+    for (const stmt of program.stmts) {
+      const s = stmt as any;
+      if (stmt.constructor.name === 'ExportStmt' && s.decl && s.decl.name) {
+        exports.set(s.decl.name, s.decl);
+      }
+    }
+
+    const entry: ModuleData = { name: importPath, path: importPath, program, exports };
+    loaded.set(importPath, entry);
+
+    const checker = new TypeChecker();
+    checker.check(program, { imports: loaded });
+
+    return loaded.get(importPath)!;
+  }
+
+  const mainData = resolveModule(mainKey);
+
+  const interpreter = createBrowserRuntime(config.canvas, config.canvasWidth, config.canvasHeight);
+
+  for (const stmt of mainData.program.stmts) {
+    const s = stmt as any;
+    if (stmt.constructor.name === 'ImportStmt') {
+      const external = resolveModule(s.from);
+      const namespace = new Map<string, any>();
+      for (const [name, fnDecl] of external.exports) {
+        interpreter.userFns.set(`${s.name}__${name}`, fnDecl);
+        interpreter.userFns.set(name, fnDecl);
+        namespace.set(name, fnDecl);
+      }
+      interpreter.rootEnv.define(s.name, { _module: namespace } as any);
+    }
+  }
+
+  return interpreter.run(mainData.program);
 }

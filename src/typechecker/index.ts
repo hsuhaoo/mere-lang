@@ -712,11 +712,13 @@ class TypeChecker {
     // Check if it's a module namespace (e.g., math.add from import)
     const objBinding = this.lookupIdentifier(expr.object.name || 'unknown');
     if (objBinding instanceof TypeAnnotation && objBinding.name === 'Record' && objectType.typeParams) {
-      // Module namespace - look up qualified name in scope
+      // Module namespace qualified names (e.g., greet.hello).
+      // These are deterministic module lookups, NOT closure captures —
+      // safe to search outer scopes.
       const qualifiedName = `${expr.object.name}.${expr.field}`;
-      const qualifiedBinding = this.scopeBindings.get(qualifiedName);
-      if (qualifiedBinding) {
-        return qualifiedBinding.type;
+      for (let i = this.scopes.length - 1; i >= 0; i--) {
+        const entry = this.scopes[i].get(qualifiedName);
+        if (entry) return entry.type;
       }
     }
 
