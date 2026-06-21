@@ -147,9 +147,15 @@ function createTest(opts) {
   test('map_put registered', names.includes('map_put'));
   test('abs registered', names.includes('abs'));
   test('sin registered', names.includes('sin'));
+  test('cos registered', names.includes('cos'));
   test('floor registered', names.includes('floor'));
   test('round registered', names.includes('round'));
   test('pi registered', names.includes('pi'));
+  test('lerp registered', names.includes('lerp'));
+  test('clamp registered', names.includes('clamp'));
+  test('ease_in registered', names.includes('ease_in'));
+  test('ease_out registered', names.includes('ease_out'));
+  test('ease_in_out registered', names.includes('ease_in_out'));
   test('now registered', names.includes('now'));
   test('record_update registered', names.includes('record_update'));
   test('canvas_load_image registered', names.includes('canvas_load_image'));
@@ -795,7 +801,9 @@ function createTest(opts) {
     canvas_set_shadow_offset_x: 1, canvas_set_shadow_offset_y: 1,
     canvas_set_text_align: 1, canvas_set_text_baseline: 1,
     canvas_arc_to: 5, canvas_set_line_dash: 1,
-    sin: 1, floor: 1, round: 1, pi: 0, now: 0,
+    sin: 1, cos: 1, floor: 1, round: 1, pi: 0,
+    lerp: 3, clamp: 3, ease_in: 1, ease_out: 1, ease_in_out: 1,
+    now: 0,
     await_font_loaded: 1,
     map_keys: 1, map_values: 1,
   };
@@ -950,6 +958,9 @@ function createTest(opts) {
   const sinResult = bb.getFn('sin').fn([{ toRawNumber: () => 0 }]);
   testEqual('sin(0)', sinResult.toRawNumber(), 0);
 
+  const cosResult = bb.getFn('cos').fn([{ toRawNumber: () => 0 }]);
+  testEqual('cos(0)', cosResult.toRawNumber(), 1);
+
   const floorResult = bb.getFn('floor').fn([{ toRawNumber: () => 3.7 }]);
   testEqual('floor(3.7)', floorResult.toRawNumber(), 3);
 
@@ -958,6 +969,66 @@ function createTest(opts) {
 
   const piResult = bb.getFn('pi').fn([]);
   testEqual('pi()', piResult.toRawNumber(), Math.PI);
+
+  // lerp
+  const lerpMid = bb.getFn('lerp').fn([
+    { toRawNumber: () => 0 }, { toRawNumber: () => 10 }, { toRawNumber: () => 0.5 }
+  ]);
+  testEqual('lerp(0, 10, 0.5)', lerpMid.toRawNumber(), 5);
+
+  const lerpEnd = bb.getFn('lerp').fn([
+    { toRawNumber: () => 0 }, { toRawNumber: () => 10 }, { toRawNumber: () => 1 }
+  ]);
+  testEqual('lerp(0, 10, 1)', lerpEnd.toRawNumber(), 10);
+
+  // clamp
+  const clampMid = bb.getFn('clamp').fn([
+    { toRawNumber: () => 5 }, { toRawNumber: () => 0 }, { toRawNumber: () => 10 }
+  ]);
+  testEqual('clamp(5, 0, 10)', clampMid.toRawNumber(), 5);
+
+  const clampLow = bb.getFn('clamp').fn([
+    { toRawNumber: () => -5 }, { toRawNumber: () => 0 }, { toRawNumber: () => 10 }
+  ]);
+  testEqual('clamp(-5, 0, 10)', clampLow.toRawNumber(), 0);
+
+  const clampHigh = bb.getFn('clamp').fn([
+    { toRawNumber: () => 15 }, { toRawNumber: () => 0 }, { toRawNumber: () => 10 }
+  ]);
+  testEqual('clamp(15, 0, 10)', clampHigh.toRawNumber(), 10);
+
+  // ease_in
+  const easeIn0 = bb.getFn('ease_in').fn([{ toRawNumber: () => 0 }]);
+  testEqual('ease_in(0)', easeIn0.toRawNumber(), 0);
+
+  const easeIn1 = bb.getFn('ease_in').fn([{ toRawNumber: () => 1 }]);
+  testEqual('ease_in(1)', easeIn1.toRawNumber(), 1);
+
+  const easeInHalf = bb.getFn('ease_in').fn([{ toRawNumber: () => 0.5 }]);
+  testEqual('ease_in(0.5)', easeInHalf.toRawNumber(), 0.25);
+
+  // ease_out
+  const easeOut0 = bb.getFn('ease_out').fn([{ toRawNumber: () => 0 }]);
+  testEqual('ease_out(0)', easeOut0.toRawNumber(), 0);
+
+  const easeOut1 = bb.getFn('ease_out').fn([{ toRawNumber: () => 1 }]);
+  testEqual('ease_out(1)', easeOut1.toRawNumber(), 1);
+
+  const easeOutHalf = bb.getFn('ease_out').fn([{ toRawNumber: () => 0.5 }]);
+  testEqual('ease_out(0.5)', easeOutHalf.toRawNumber(), 0.75);
+
+  // ease_in_out
+  const eio0 = bb.getFn('ease_in_out').fn([{ toRawNumber: () => 0 }]);
+  testEqual('ease_in_out(0)', eio0.toRawNumber(), 0);
+
+  const eio1 = bb.getFn('ease_in_out').fn([{ toRawNumber: () => 1 }]);
+  testEqual('ease_in_out(1)', eio1.toRawNumber(), 1);
+
+  const eioQuarter = bb.getFn('ease_in_out').fn([{ toRawNumber: () => 0.25 }]);
+  testEqual('ease_in_out(0.25)', eioQuarter.toRawNumber(), 0.125);
+
+  const eioThreeQuarter = bb.getFn('ease_in_out').fn([{ toRawNumber: () => 0.75 }]);
+  testEqual('ease_in_out(0.75)', eioThreeQuarter.toRawNumber(), 0.875);
 
   const nowResult = bb.getFn('now').fn([]);
   test('now() returns a number', typeof nowResult.toRawNumber() === 'number');

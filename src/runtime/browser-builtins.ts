@@ -263,6 +263,10 @@ class BrowserBuiltins {
       return mkNumber(Math.sin(args[0].toRawNumber()));
     });
 
+    this.registerFn('cos', 1, (args) => {
+      return mkNumber(Math.cos(args[0].toRawNumber()));
+    });
+
     this.registerFn('floor', 1, (args) => {
       return mkNumber(Math.floor(args[0].toRawNumber()));
     });
@@ -273,6 +277,38 @@ class BrowserBuiltins {
 
     this.registerFn('pi', 0, () => {
       return mkNumber(Math.PI);
+    });
+
+    this.registerFn('lerp', 3, (args) => {
+      let a = args[0].toRawNumber();
+      let b = args[1].toRawNumber();
+      let t = args[2].toRawNumber();
+      return mkNumber(a + (b - a) * t);
+    });
+
+    this.registerFn('clamp', 3, (args) => {
+      let v = args[0].toRawNumber();
+      let lo = args[1].toRawNumber();
+      let hi = args[2].toRawNumber();
+      return mkNumber(Math.max(lo, Math.min(hi, v)));
+    });
+
+    this.registerFn('ease_in', 1, (args) => {
+      let t = args[0].toRawNumber();
+      return mkNumber(t * t);
+    });
+
+    this.registerFn('ease_out', 1, (args) => {
+      let t = args[0].toRawNumber();
+      return mkNumber(t * (2 - t));
+    });
+
+    this.registerFn('ease_in_out', 1, (args) => {
+      let t = args[0].toRawNumber();
+      if (t < 0.5) {
+        return mkNumber(2 * t * t);
+      }
+      return mkNumber(-1 + (4 - 2 * t) * t);
     });
 
     this.registerFn('now', 0, () => {

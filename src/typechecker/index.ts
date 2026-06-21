@@ -1339,10 +1339,18 @@ const BUILTIN_FUNCTIONS = new Map([
   ['min', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['random', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['sin', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['cos', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['floor', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['round', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['pi', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
   ['now', { paramTypes: [], returnType: new TypeAnnotation('Number') }],
+
+  // Animation helpers
+  ['lerp', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['clamp', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['ease_in', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['ease_out', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
+  ['ease_in_out', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
 
   ['sort', { paramTypes: [new TypeAnnotation('List', [new TypeAnnotation('$T')])], returnType: new TypeAnnotation('List', [new TypeAnnotation('$T')]) }],
 

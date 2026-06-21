@@ -415,6 +415,74 @@ test('min equal values', `
 min(5, 5)
 `, 5);
 
+test('cos zero', `
+cos(0)
+`, 1);
+
+test('cos pi', `
+cos(pi())
+`, -1);
+
+test('lerp mid', `
+lerp(0, 10, 0.5)
+`, 5);
+
+test('lerp full', `
+lerp(0, 10, 1)
+`, 10);
+
+test('clamp mid', `
+clamp(5, 0, 10)
+`, 5);
+
+test('clamp low', `
+clamp(-5, 0, 10)
+`, 0);
+
+test('clamp high', `
+clamp(15, 0, 10)
+`, 10);
+
+test('ease_in zero', `
+ease_in(0)
+`, 0);
+
+test('ease_in one', `
+ease_in(1)
+`, 1);
+
+test('ease_in half', `
+ease_in(0.5)
+`, 0.25);
+
+test('ease_out zero', `
+ease_out(0)
+`, 0);
+
+test('ease_out half', `
+ease_out(0.5)
+`, 0.75);
+
+test('ease_out one', `
+ease_out(1)
+`, 1);
+
+test('ease_in_out zero', `
+ease_in_out(0)
+`, 0);
+
+test('ease_in_out quarter', `
+ease_in_out(0.25)
+`, 0.125);
+
+test('ease_in_out three_quarter', `
+ease_in_out(0.75)
+`, 0.875);
+
+test('ease_in_out one', `
+ease_in_out(1)
+`, 1);
+
 test('parse_num success', `
 let r: Result<Number> = parse_num("42");
 r.value
