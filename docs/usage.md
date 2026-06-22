@@ -794,7 +794,7 @@ let y: Number = math.multiply(5, 6);  // 30
 let result: Result<String> = join(file_read("hello.txt"));
 ```
 
-`join` 阻塞等待任务结果。多个异步 I/O 可同时启动，再分别 `join` 实现并发。
+`join` 挂起等待任务结果，不阻塞事件循环。多个异步 I/O 可同时启动，再分别 `join` 实现并发。
 
 ### 15.2 sleep / next_frame
 
