@@ -394,6 +394,19 @@ class VM {
             this.stack.push(val);
             break;
           }
+          // Module namespace field access
+          if (obj && typeof obj === 'object' && (obj as any)._module) {
+            const ns = (obj as any)._module as Map<string, any>;
+            const entry = ns.get(fieldName);
+            if (entry && typeof entry === 'object' && entry.constructor && entry.constructor.name === 'FnDecl') {
+              throw new Error(`'${fieldName}' is a function, use ${fieldName}() to call`);
+            }
+            if (entry instanceof Value) {
+              this.stack.push(entry);
+              break;
+            }
+            throw new Error(`Module has no export '${fieldName}'`);
+          }
           console.error(`[VM] FIELD '${fieldName}' on ${obj.typeName()} in '${(frame as any).fnName || '?'}' at ip=${ip-1}`);
           throw new Error(`Cannot access field on ${obj.typeName()}`);
         }

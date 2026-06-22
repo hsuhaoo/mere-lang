@@ -78,6 +78,16 @@ function runWithModules(
 ) {
   const loaded = new Map<string, ModuleData>();
 
+  function evalExportLetInit(expr: any): Value {
+    if (expr.constructor.name === 'LiteralExpr') {
+      const v = expr.value;
+      if (typeof v === 'string') return mkString(v);
+      if (typeof v === 'number') return mkNumber(v);
+      if (typeof v === 'boolean') return mkBoolean(v);
+    }
+    throw new Error(`export let requires a literal initializer`);
+  }
+
   function resolveModule(importPath: string): ModuleData {
     if (loaded.has(importPath)) {
       return loaded.get(importPath)!;
@@ -127,10 +137,16 @@ function runWithModules(
     if (stmt.constructor.name === 'ImportStmt') {
       const external = resolveModule(s.from);
       const namespace = new Map<string, any>();
-      for (const [name, fnDecl] of external.exports) {
-        interpreter.userFns.set(`${s.name}__${name}`, fnDecl);
-        interpreter.userFns.set(name, fnDecl);
-        namespace.set(name, fnDecl);
+      for (const [name, exportEntry] of external.exports) {
+        const decl = exportEntry as any;
+        if (decl.constructor && (decl.constructor.name === 'LetStmt' || decl.constructor.name === 'MutDeclStmt')) {
+          const value = evalExportLetInit(decl.init);
+          namespace.set(name, value);
+        } else {
+          interpreter.userFns.set(`${s.name}__${name}`, exportEntry);
+          interpreter.userFns.set(name, exportEntry);
+          namespace.set(name, exportEntry);
+        }
       }
       interpreter.rootEnv.define(s.name, { _module: namespace } as any);
     }

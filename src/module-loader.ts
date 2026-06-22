@@ -6,7 +6,7 @@ import { TypeChecker, TypeError } from './typechecker/index.js';
 import { Interpreter, RuntimeError } from './runtime/interpreter.js';
 import { Builtins } from './runtime/builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
-import { list as mkList, string as mkString } from './runtime/values.js';
+import { list as mkList, string as mkString, number as mkNumber, boolean as mkBoolean } from './runtime/values.js';
 import { FnDecl, Program } from './ast/nodes.js';
 
 export type SourceReader = (resolvedPath: string) => string;
@@ -82,14 +82,30 @@ class ModuleLoader {
       if (stmt.constructor.name === 'ImportStmt') {
         const external = this.loadModule(stmt.from, stmt.from);
         const namespace = new Map();
-        for (const [name, fnDecl] of external.exports) {
-          interpreter.userFns.set(`${stmt.name}__${name}`, fnDecl);
-          interpreter.userFns.set(name, fnDecl);
-          namespace.set(name, fnDecl);
+        for (const [name, exportEntry] of external.exports) {
+          const decl = exportEntry as any;
+          if (decl.constructor && (decl.constructor.name === 'LetStmt' || decl.constructor.name === 'MutDeclStmt')) {
+            const value = this._evalExportLetInit(decl.init);
+            namespace.set(name, value);
+          } else {
+            interpreter.userFns.set(`${stmt.name}__${name}`, exportEntry);
+            interpreter.userFns.set(name, exportEntry);
+            namespace.set(name, exportEntry);
+          }
         }
         interpreter.rootEnv.define(stmt.name, { _module: namespace } as any);
       }
     }
+  }
+
+  _evalExportLetInit(expr) {
+    if (expr.constructor.name === 'LiteralExpr') {
+      const v = expr.value;
+      if (typeof v === 'string') return mkString(v);
+      if (typeof v === 'number') return mkNumber(v);
+      if (typeof v === 'boolean') return mkBoolean(v);
+    }
+    throw new Error('export let requires a literal initializer');
   }
 
   _preloadImports(program, moduleDir) {

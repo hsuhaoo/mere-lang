@@ -75,6 +75,14 @@ class Interpreter {
       if (stmt instanceof MutDeclStmt) { globalNames.push(stmt.name); globalValues.push(UNIT_VALUE); }
       if (stmt instanceof LetStmt) { globalNames.push(stmt.name); globalValues.push(UNIT_VALUE); }
       if (stmt instanceof FnDecl) { globalNames.push(stmt.name); globalValues.push(UNIT_VALUE); }
+      if (stmt instanceof ExportStmt) {
+        if (stmt.decl instanceof MutDeclStmt || stmt.decl instanceof LetStmt) {
+          globalNames.push(stmt.decl.name); globalValues.push(UNIT_VALUE);
+        }
+        if (stmt.decl instanceof FnDecl) {
+          globalNames.push(stmt.decl.name); globalValues.push(UNIT_VALUE);
+        }
+      }
     }
     // Add names injected into rootEnv (e.g. by module loader for imports)
     for (const key of this.rootEnv.getNames()) {
@@ -125,7 +133,7 @@ class Interpreter {
 
     // ── Compile __main__ from module-level statments ──
     const mainStmts = program.stmts.filter(
-      s => !(s instanceof FnDecl || s instanceof TypeDecl || s instanceof ImportStmt || s instanceof ExportStmt)
+      s => !(s instanceof FnDecl || s instanceof TypeDecl || s instanceof ImportStmt || (s instanceof ExportStmt && s.decl instanceof FnDecl))
     );
     if (mainStmts.length > 0) {
       const mainCompiled = compiler.compileMain(mainStmts);

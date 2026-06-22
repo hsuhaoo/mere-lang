@@ -234,7 +234,9 @@ class Compiler {
       this.buf.emit(Opcode.UNIT);
     } else if (stmt instanceof IfStmt) {
       this.compileIf(stmt.condition, stmt.thenBlock, stmt.elifBlocks, stmt.elseBlock);
-    } else if (stmt instanceof FnDecl || stmt instanceof TypeDecl || stmt instanceof ImportStmt || stmt instanceof ExportStmt) {
+    } else if (stmt instanceof FnDecl || stmt instanceof TypeDecl || stmt instanceof ImportStmt || (stmt instanceof ExportStmt && stmt.decl instanceof FnDecl)) {
+    } else if (stmt instanceof ExportStmt) {
+      this.compileStmt(stmt.decl, isLast);
     } else if ((stmt as any).constructor) {
       console.warn(`[Compiler] unimplemented stmt: ${(stmt as any).constructor.name}`);
     }

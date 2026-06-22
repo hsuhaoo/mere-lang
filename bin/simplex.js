@@ -115,6 +115,7 @@ try {
     canvas.height = window.innerHeight;
   }
   resize();
+  window.addEventListener('resize', resize);
   const ctx = canvas.getContext('2d');
   runBrowser(moduleSources[mainKey], {
     target: 'browser',

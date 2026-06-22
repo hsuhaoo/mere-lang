@@ -185,8 +185,25 @@ class Parser {
 
   parseExport() {
     this.expect(TokenType.EXPORT);
-    const fnDecl = this.parseFnDecl(false);
-    return new ExportStmt(fnDecl);
+    if (this.check(TokenType.FN)) {
+      const fnDecl = this.parseFnDecl(false);
+      return new ExportStmt(fnDecl);
+    }
+    if (this.check(TokenType.LET)) {
+      // Reject export let mut — exported variables must be immutable
+      const savedPos = this.pos;
+      this.advance();
+      if (this.check(TokenType.MUT)) {
+        const mutToken = this.peek();
+        this.pos = savedPos;
+        throw new ParseError("'export let mut' is not allowed: exported variables must be immutable (use 'export let')", mutToken.line, mutToken.column);
+      }
+      this.pos = savedPos;
+      const letStmt = this.parseLet();
+      return new ExportStmt(letStmt);
+    }
+    const token = this.peek();
+    throw new ParseError("Expected 'fn' or 'let' after 'export'", token.line, token.column);
   }
 
   // ── Type declaration ──────────────────────────────────────────

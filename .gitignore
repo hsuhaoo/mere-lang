@@ -6,6 +6,9 @@ data/
 # Build artifacts
 *.html
 
+# Presentation artifacts
+presentation/
+
 # macOS
 .DS_Store
 

@@ -126,8 +126,8 @@ class TypeChecker {
       if (stmt instanceof FnDecl && stmt.name) {
         this.fnDecls.set(stmt.name, stmt);
       }
-      if (stmt instanceof ExportStmt && stmt.decl instanceof FnDecl) {
-        if (stmt.decl.name) {
+      if (stmt instanceof ExportStmt) {
+        if (stmt.decl instanceof FnDecl && stmt.decl.name) {
           this.fnDecls.set(stmt.decl.name, stmt.decl);
         }
       }
@@ -228,15 +228,20 @@ class TypeChecker {
     // Register the namespace identifier (e.g., 'math') as a record type
     // so that math.add, math.multiply are type-checked as field accesses
     const fieldTypes = [];
-    for (const [name, fnDecl] of moduleData.exports) {
-      const retType = fnDecl.returnType || new TypeAnnotation('Unit');
-      const paramTypes = fnDecl.params.map(p => p.type);
-      const fnType = new TypeAnnotation('Fn', [...paramTypes, retType], stmt.line, stmt.column);
-      // Register qualified name in scope (e.g., math.add -> Fn<...>)
+    for (const [name, exportDecl] of moduleData.exports) {
+      let exportType: TypeAnnotation;
+      if (exportDecl instanceof FnDecl) {
+        const retType = exportDecl.returnType || new TypeAnnotation('Unit');
+        const paramTypes = exportDecl.params.map(p => p.type);
+        exportType = new TypeAnnotation('Fn', [...paramTypes, retType], stmt.line, stmt.column);
+      } else {
+        exportType = exportDecl.type;
+      }
+      // Register qualified name in scope (e.g., math.add -> Fn<...> or String)
       const qualifiedName = `${stmt.name}.${name}`;
-      this.scopeBindings.set(qualifiedName, new ScopeEntry(qualifiedName, fnType));
+      this.scopeBindings.set(qualifiedName, new ScopeEntry(qualifiedName, exportType));
       // Track field types for the namespace record
-      fieldTypes.push({ name, type: fnType });
+      fieldTypes.push({ name, type: exportType });
     }
 
     // Register 'math' as a record type containing these function fields
@@ -1263,7 +1268,6 @@ const BUILTIN_FUNCTIONS = new Map([
 
   // Timing (async — returns Task)
   ['sleep', { paramTypes: [new TypeAnnotation('Number')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Unit')]) }],
-  ['next_frame', { paramTypes: [], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Number')]) }],
   ['await_font_loaded', { paramTypes: [new TypeAnnotation('String')], returnType: new TypeAnnotation('Task', [new TypeAnnotation('Unit')]) }],
 
   // File I/O (async — returns Task, I/O happens on join)
@@ -1306,6 +1310,7 @@ const BUILTIN_FUNCTIONS = new Map([
   ['canvas_on_click', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
   ['canvas_on_drag', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
   ['canvas_on_dblclick', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
+  ['canvas_on_frame', { paramTypes: [new TypeAnnotation('Fn', [new TypeAnnotation('Number'), new TypeAnnotation('Unit')])], returnType: new TypeAnnotation('Unit') }],
   ['canvas_create_linear_gradient', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['canvas_create_radial_gradient', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('Number')], returnType: new TypeAnnotation('Number') }],
   ['canvas_add_color_stop', { paramTypes: [new TypeAnnotation('Number'), new TypeAnnotation('Number'), new TypeAnnotation('String')], returnType: new TypeAnnotation('Unit') }],

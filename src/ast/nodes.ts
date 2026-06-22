@@ -351,11 +351,11 @@ class ImportStmt {
 }
 
 class ExportStmt {
-  decl: FnDecl;
+  decl: Stmt;
   line: number;
   column: number;
 
-  constructor(decl: FnDecl, line = 0, column = 0) {
+  constructor(decl: Stmt, line = 0, column = 0) {
     this.decl = decl;
     this.line = line;
     this.column = column;

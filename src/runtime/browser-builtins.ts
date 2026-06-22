@@ -34,6 +34,8 @@ class BrowserBuiltins {
   private _audioUrlToId: Map<string, number>;
   private _gradients: Map<number, CanvasGradient>;
   private _gradientIdCounter: number;
+  private _frameHandler: FnValue | null;
+  private _frameRAFId: number | null;
 
   constructor(
     scheduler?: Scheduler,
@@ -64,6 +66,8 @@ class BrowserBuiltins {
     this._audioUrlToId = new Map();
     this._gradients = new Map();
     this._gradientIdCounter = 0;
+    this._frameHandler = null;
+    this._frameRAFId = null;
     this.registerBuiltins();
   }
 
@@ -343,11 +347,6 @@ class BrowserBuiltins {
     });
 
     if (this.scheduler) {
-      this.registerFn('next_frame', 0, (args) => {
-        const promise: Promise<Value> = new Promise(resolve => requestAnimationFrame(ts => resolve(mkNumber(ts))));
-        return this.scheduler!.spawnAsync(promise, null);
-      });
-
       this.registerFn('await_font_loaded', 1, (args) => {
         const fontSpec = args[0].toRawString();
         if (typeof document === 'undefined' || !document.fonts) {
@@ -710,6 +709,22 @@ class BrowserBuiltins {
             this._dblClickHandler.vm.callByIndex(this._dblClickHandler.vmFuncIndex, [mkNumber(x), mkNumber(y)]);
           }
         });
+      }
+      return mkUnit();
+    });
+    this.registerFn('canvas_on_frame', 1, (args) => {
+      if (!(args[0] instanceof FnValue)) {
+        throw new Error('canvas_on_frame expects a function');
+      }
+      this._frameHandler = args[0] as FnValue;
+      if (this._frameRAFId === null && this.ctx) {
+        const loop = (ts: number) => {
+          if (this._frameHandler && this._frameHandler.vm && this._frameHandler.vmFuncIndex >= 0) {
+            this._frameHandler.vm.callByIndex(this._frameHandler.vmFuncIndex, [mkNumber(ts)]);
+          }
+          this._frameRAFId = requestAnimationFrame(loop);
+        };
+        this._frameRAFId = requestAnimationFrame(loop);
       }
       return mkUnit();
     });
