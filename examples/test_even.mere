@@ -1,4 +1,4 @@
-// test_even.sim
+// test_even.mere
 
 fn main() -> Unit {
   let x: Number = 2;

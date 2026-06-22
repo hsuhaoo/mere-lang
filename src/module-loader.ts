@@ -6,7 +6,7 @@ import { TypeChecker, TypeError } from './typechecker/index.js';
 import { Interpreter, RuntimeError } from './runtime/interpreter.js';
 import { Builtins } from './runtime/builtins.js';
 import { Scheduler } from './runtime/scheduler.js';
-import { list as mkList, string as mkString, number as mkNumber, boolean as mkBoolean } from './runtime/values.js';
+import { Value, list as mkList, string as mkString, number as mkNumber, boolean as mkBoolean } from './runtime/values.js';
 import { FnDecl, Program } from './ast/nodes.js';
 
 export type SourceReader = (resolvedPath: string) => string;
@@ -65,7 +65,7 @@ class ModuleLoader {
     return exports;
   }
 
-  runModule(filePath) {
+  async runModule(filePath): Promise<Value> {
     const moduleData = this.loadModule(filePath, filePath);
 
     const scheduler = new Scheduler();
@@ -118,7 +118,7 @@ class ModuleLoader {
     }
   }
 
-  runMain(filePath) {
+  async runMain(filePath): Promise<Value> {
     return this.runModule(filePath);
   }
 

@@ -1,4 +1,4 @@
-// test_fold_debug3.sim
+// test_fold_debug3.mere
 
 fn main() -> Unit {
   let items: List<String> = ["a", "b", "c"];

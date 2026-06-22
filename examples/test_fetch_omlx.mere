@@ -1,4 +1,4 @@
-// test_fetch_omlx.sim
+// test_fetch_omlx.mere
 // 验证 Mere fetch builtin 调用本机 oMLX 推理服务器
 // 使用前确保 oMLX 已启动: omlx start
 // 默认端口: 8000

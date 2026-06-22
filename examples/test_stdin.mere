@@ -1,4 +1,4 @@
-// test_stdin.sim
+// test_stdin.mere
 // 测试 read_line builtin
 
 fn main() -> Unit {

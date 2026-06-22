@@ -1,5 +1,5 @@
 // Mere example: Factorial
-// Run with: node bin/mere.js examples/factorial.sim
+// Run with: node bin/mere.js examples/factorial.mere
 
 fn factorial(n: Number) -> Number {
   if n <= 1 {

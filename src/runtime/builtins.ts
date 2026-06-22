@@ -504,15 +504,8 @@ class Builtins {
     });
 
     // ═══════════════════════════════════════════════════════════
-    // Async / Task builtins (spawn, join)
+    // Task builtins (join)
     // ═══════════════════════════════════════════════════════════
-
-    this.registerFn('spawn', 1, (args) => {
-      const fnValue = args[0] as FnValue;
-      if (!(fnValue instanceof FnValue)) throw new Error('spawn expects a function');
-      const thunk = () => this.callFn!(fnValue, []);
-      return this.scheduler!.spawn(thunk, null);
-    });
 
     this.registerFn('join', 1, (args) => {
       const taskValue = args[0] as TaskValue;

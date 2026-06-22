@@ -1,5 +1,5 @@
 // Mere example: Custom record types
-// Run with: node bin/mere.js examples/records.sim
+// Run with: node bin/mere.js examples/records.mere
 
 // Define a Point record
 type Point = { x: Number, y: Number };

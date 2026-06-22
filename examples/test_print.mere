@@ -1,4 +1,4 @@
-// test_print.sim
+// test_print.mere
 
 fn main() -> Unit {
   print("Hello");

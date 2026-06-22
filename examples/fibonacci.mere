@@ -1,5 +1,5 @@
 // Mere example: Fibonacci
-// Run with: node bin/mere.js examples/fibonacci.sim
+// Run with: node bin/mere.js examples/fibonacci.mere
 
 fn fib(n: Number) -> Number {
   if n <= 0 {

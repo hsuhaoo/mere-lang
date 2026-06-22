@@ -1,5 +1,5 @@
 // Mere example: Data structures (List, Map, and Records)
-// Run with: node bin/mere.js examples/data_structures.sim
+// Run with: node bin/mere.js examples/data_structures.mere
 
 // --- List operations ---
 let numbers: List<Number> = [1, 2, 3, 4, 5];

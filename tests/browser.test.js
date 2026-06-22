@@ -106,6 +106,8 @@ function createTest(opts) {
   return { ctx, scheduler, bb };
 }
 
+async function main() {
+
 // ════════════════════════════════════════════════════════════
 // 1. Built-in registration tests
 // ════════════════════════════════════════════════════════════
@@ -435,7 +437,7 @@ function createTest(opts) {
 // 4. Integration via runBrowser — Mere source → canvas
 // ════════════════════════════════════════════════════════════
 
-(function() {
+(async function() {
   const calls = [];
   const ctx = {
     calls: calls,
@@ -463,7 +465,7 @@ function createTest(opts) {
   };
 
   try {
-    runBrowser('fn draw() { canvas_clear(); canvas_fill_rect(10, 20, 100, 50); canvas_fill_text("hi", 0, 30) } draw()', {
+    await runBrowser('fn draw() { canvas_clear(); canvas_fill_rect(10, 20, 100, 50); canvas_fill_text("hi", 0, 30) } draw()', {
       target: 'browser',
       canvas: ctx,
       canvasWidth: 800,
@@ -483,7 +485,7 @@ function createTest(opts) {
 // 4b. Named function as event handler (scope + side-effect tests)
 // ════════════════════════════════════════════════════════════
 
-(function testCanvasWaitClickReturnsTask() {
+(async function testCanvasWaitClickReturnsTask() {
   {
     const ctx = {
       fillStyle: null, font: null, strokeStyle: null, lineWidth: null,
@@ -508,7 +510,7 @@ function createTest(opts) {
       clearRectExact: function() {},
     };
     try {
-      const result = runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
+      const result = await runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
         target: 'browser', canvas: ctx, canvasWidth: 800, canvasHeight: 600,
       });
       test('canvas_wait_click type-checks and returns Task', true);
@@ -519,10 +521,10 @@ function createTest(opts) {
   }
 })();
 
-(function testCanvasWaitClickNoCanvas() {
+(async function testCanvasWaitClickNoCanvas() {
   {
     try {
-      runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
+      await runBrowser('fn main() -> Unit { let t: Task<Map<String, Number>> = canvas_wait_click(); () }', {
         target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
       });
       test('canvas_wait_click type-checks without canvas', true);
@@ -543,7 +545,7 @@ function createTest(opts) {
   }
 })();
 
-(function testNamedFnLastExpressionSideEffectOnce() {
+(async function testNamedFnLastExpressionSideEffectOnce() {
   {
     const calls = [];
     const ctx = {
@@ -571,7 +573,7 @@ function createTest(opts) {
       canvas: { width: 800, height: 600 },
     };
     try {
-      runBrowser(`
+      await runBrowser(`
         fn draw() {
           canvas_clear();
           canvas_fill_rect(0, 0, 100, 50);
@@ -594,10 +596,10 @@ function createTest(opts) {
 // 5. Type checker — canvas builtin signatures
 // ════════════════════════════════════════════════════════════
 
-(function() {
+(async function() {
   // Valid canvas calls should type-check and run
   try {
-    runBrowser('fn main() { canvas_set_fill_color("red"); canvas_fill_rect(0, 0, 100, 50) }', {
+    await runBrowser('fn main() { canvas_set_fill_color("red"); canvas_fill_rect(0, 0, 100, 50) }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: canvas_set_fill_color + fill_rect', true);
@@ -607,7 +609,7 @@ function createTest(opts) {
   }
 
   try {
-    runBrowser('fn main() { canvas_fill_text("hi", 10, 20); canvas_stroke_text("bye", 30, 40) }', {
+    await runBrowser('fn main() { canvas_fill_text("hi", 10, 20); canvas_stroke_text("bye", 30, 40) }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: fill_text + stroke_text', true);
@@ -617,7 +619,7 @@ function createTest(opts) {
   }
 
   try {
-    runBrowser('fn main() { canvas_begin_path(); canvas_move_to(0, 0); canvas_line_to(100, 100); canvas_stroke() }', {
+    await runBrowser('fn main() { canvas_begin_path(); canvas_move_to(0, 0); canvas_line_to(100, 100); canvas_stroke() }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: path operations', true);
@@ -627,7 +629,7 @@ function createTest(opts) {
   }
 
   try {
-    runBrowser('fn main() { let w: Number = canvas_get_width(); let h: Number = canvas_get_height() }', {
+    await runBrowser('fn main() { let w: Number = canvas_get_width(); let h: Number = canvas_get_height() }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: get_width + get_height', true);
@@ -687,7 +689,7 @@ function createTest(opts) {
 
   // canvas_load_image / canvas_draw_image — valid
   try {
-    runBrowser('fn main() { canvas_load_image("data:,"); canvas_draw_image(0, 0, 0, 100, 50) }', {
+    await runBrowser('fn main() { canvas_load_image("data:,"); canvas_draw_image(0, 0, 0, 100, 50) }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: canvas_load_image + draw_image valid', true);
@@ -715,7 +717,7 @@ function createTest(opts) {
 
   // canvas_on_click / canvas_on_drag — valid calls
   try {
-    runBrowser('fn main() { canvas_on_click(fn (x: Number, y: Number) -> Unit {}) }', {
+    await runBrowser('fn main() { canvas_on_click(fn (x: Number, y: Number) -> Unit {}) }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: canvas_on_click lambda valid', true);
@@ -725,7 +727,7 @@ function createTest(opts) {
   }
 
   try {
-    runBrowser('fn main() { canvas_on_drag(fn (x: Number, y: Number) -> Unit {}) }', {
+    await runBrowser('fn main() { canvas_on_drag(fn (x: Number, y: Number) -> Unit {}) }', {
       target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0,
     });
     test('typecheck: canvas_on_drag lambda valid', true);
@@ -735,7 +737,7 @@ function createTest(opts) {
   }
 
   try {
-    runBrowser(`
+    await runBrowser(`
       fn handle(x: Number, y: Number) -> Unit { () }
       fn main() { canvas_on_click(handle) }
     `, { target: 'browser', canvas: null, canvasWidth: 0, canvasHeight: 0 });
@@ -1036,6 +1038,9 @@ function createTest(opts) {
 })();
 
 // ════════════════════════════════════════════════════════════
-console.log();
-console.log('=== Results: ' + passed + ' passed, ' + failed + ' failed ===');
-if (failed > 0) process.exit(1);
+  console.log();
+  console.log('=== Results: ' + passed + ' passed, ' + failed + ' failed ===');
+  if (failed > 0) process.exit(1);
+}
+
+main().catch(e => { console.error(e); process.exit(1); });

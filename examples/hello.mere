@@ -1,5 +1,5 @@
 // Mere example: Hello World
-// Run with: node bin/mere.js examples/hello.sim
+// Run with: node bin/mere.js examples/hello.mere
 
 print("Hello, Mere!")
 

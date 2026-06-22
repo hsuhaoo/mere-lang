@@ -1,4 +1,4 @@
-// test_fold_simple.sim
+// test_fold_simple.mere
 
 fn main() -> Unit {
   let nums: List<Number> = [1, 2, 3];

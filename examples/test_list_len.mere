@@ -1,4 +1,4 @@
-// test_list_len.sim
+// test_list_len.mere
 
 fn main() -> Unit {
   let items: List<String> = ["a", "b", "c"];

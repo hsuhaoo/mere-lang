@@ -1,4 +1,4 @@
-import math from "./math.sim";
+import math from "./math.mere";
 
 let x: Number = math.add(3, 4);
 let y: Number = math.multiply(5, 6);

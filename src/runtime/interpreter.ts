@@ -61,7 +61,7 @@ class Interpreter {
     this.vm = null;
   }
 
-  run(program: Program): Value {
+  async run(program: Program): Promise<Value> {
     for (const stmt of program.stmts) {
       if (stmt instanceof FnDecl) this.userFns.set(stmt.name, stmt);
       if (stmt instanceof TypeDecl) this.typeDecls.set(stmt.name, stmt);
@@ -113,6 +113,10 @@ class Interpreter {
       if (!fn.vm || fn.vmFuncIndex < 0) {
         throw new Error(`FnValue lacks VM reference: cannot call ${fn.typeName()}`);
       }
+      const currentVM = this.scheduler.getCurrentVM();
+      if (currentVM) {
+        return currentVM.callByIndex(fn.vmFuncIndex, args);
+      }
       return this.vm!.callByIndex(fn.vmFuncIndex, args);
     };
 
@@ -140,17 +144,11 @@ class Interpreter {
       this.vm.tryRegister(mainCompiled);
     }
 
-    // ── Execute __main__ via VM ──
-    let lastValue: Value = this.vm.hasFunction('__main__')
-      ? this.vm.callFunction('__main__', [])
-      : mkUnit();
+    // ── Set up scheduler and run ──
+    this.scheduler.registerMainVM(this.vm);
+    this.scheduler.setupMainEntry(this.vm.hasFunction('__main__'));
 
-    // ── Auto-call main() via VM (overrides lastValue) ──
-    if (this.vm.hasFunction('main')) {
-      lastValue = this.vm.callFunction('main', []);
-    }
-
-    return lastValue;
+    return this.scheduler.run();
   }
 
   loadModule(name: string, path: string) {

@@ -1,4 +1,4 @@
-// test_filter_debug.sim
+// test_filter_debug.mere
 
 fn main() -> Unit {
   // 简单测试 filter

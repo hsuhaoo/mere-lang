@@ -1,4 +1,4 @@
-// test_first_or_empty.sim
+// test_first_or_empty.mere
 
 fn first_or_empty(s: String) -> String {
   if s == "[" { return ""; }

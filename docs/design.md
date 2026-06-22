@@ -18,7 +18,7 @@
 
 - Lambda 表达式存在但**不捕获**外部变量
 - 用 `Result<T>` 代替异常和 `try-catch`
-- `spawn` 接受零参 lambda，`join` 等待结果
+- `join` 等待异步任务结果
 - 异步 I/O（`file_read`、`file_write`、`file_read_lines`）返回 `Task`，调用即启动，`join` 等待
 - 网络 I/O（`fetch`）支持 HTTP GET/POST/PUT/DELETE，自定义 Header，返回 `Task<Result<String>>`
 - `if`/`elif`/`else` 多分支，且可作为表达式返回值
@@ -28,7 +28,7 @@
 ## 运行
 
 ```bash
-node bin/mere.js examples/hello.sim
+node bin/mere.js examples/hello.mere
 node tests/run-tests.js
 ```
 

@@ -7,8 +7,8 @@ function printHelp() {
   console.log(`Mere Language Interpreter v1.0.0
 
 Usage:
-  mere <file.sim> [args...]    Run a Mere file
-  mere build <file.sim>        Build self-contained HTML for browser
+  mere <file.mere> [args...]    Run a Mere file
+  mere build <file.mere>        Build self-contained HTML for browser
   mere --help                  Show this help
   mere --version               Show version
 
@@ -23,7 +23,7 @@ Build options:
 function build(args) {
   const simFile = args[0];
   if (!simFile) {
-    console.error('Error: No input .sim file specified');
+    console.error('Error: No input .mere file specified');
     process.exit(1);
   }
 
@@ -77,7 +77,7 @@ function build(args) {
   } catch (e) {
     console.warn('Warning: Could not resolve all module imports:', e.message);
     const source = fs.readFileSync(simFile, 'utf-8');
-    moduleSources = { 'main.sim': source };
+    moduleSources = { [absSimFile]: source };
   }
 
   // Check if any module uses canvas API
@@ -107,37 +107,39 @@ ${hasCanvas ? '<canvas id="canvas"></canvas>' : '<div id="output"></div>'}
 const { runBrowser } = mere;
 const moduleSources = ${sourcesJson};
 const mainKey = ${JSON.stringify(mainKey)};
-try {
-  ${hasCanvas
-    ? `const canvas = document.getElementById('canvas');
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+(async () => {
+  try {
+    ${hasCanvas
+      ? `const canvas = document.getElementById('canvas');
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    const ctx = canvas.getContext('2d');
+    await runBrowser(moduleSources[mainKey], {
+      target: 'browser',
+      canvas: ctx,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      sources: moduleSources,
+      mainKey: mainKey,
+    });`
+      : `const result = await runBrowser(moduleSources[mainKey], {
+      target: 'browser',
+      canvas: null,
+      sources: moduleSources,
+      mainKey: mainKey,
+    });
+    document.getElementById('output').textContent = String(result);`
+    }
+  } catch (e) {
+    console.error('Mere error:', e);
+    const el = ${hasCanvas ? "document.getElementById('canvas')" : "document.getElementById('output')"};
+    el.after(Object.assign(document.createElement('div'), { className: 'error', textContent: 'Error: ' + e.message }));
   }
-  resize();
-  window.addEventListener('resize', resize);
-  const ctx = canvas.getContext('2d');
-  runBrowser(moduleSources[mainKey], {
-    target: 'browser',
-    canvas: ctx,
-    canvasWidth: canvas.width,
-    canvasHeight: canvas.height,
-    sources: moduleSources,
-    mainKey: mainKey,
-  });`
-    : `const result = runBrowser(moduleSources[mainKey], {
-    target: 'browser',
-    canvas: null,
-    sources: moduleSources,
-    mainKey: mainKey,
-  });
-  document.getElementById('output').textContent = String(result);`
-  }
-} catch (e) {
-  console.error('Mere error:', e);
-  const el = ${hasCanvas ? "document.getElementById('canvas')" : "document.getElementById('output')"};
-  el.after(Object.assign(document.createElement('div'), { className: 'error', textContent: 'Error: ' + e.message }));
-}
+})();
 </script>
 </body>
 </html>`;
@@ -146,7 +148,7 @@ try {
   console.log(`Built: ${opts.output}`);
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
@@ -164,14 +166,14 @@ function main() {
     return;
   }
 
-  // Run a .sim file
+  // Run a .mere file
   const filePath = args[0];
   const extraArgs = args.slice(1);
   const baseDir = path.dirname(path.resolve(filePath)) || process.cwd();
 
   try {
     const loader = new ModuleLoader(baseDir);
-    loader.runMain(filePath, extraArgs);
+    await loader.runMain(filePath, extraArgs);
   } catch (e) {
     if (e.line !== undefined && e.column !== undefined) {
       console.error(`${e.name}: ${e.message}`);

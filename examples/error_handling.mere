@@ -1,5 +1,5 @@
 // Mere example: Error handling with Result
-// Run with: node bin/mere.js examples/error_handling.sim
+// Run with: node bin/mere.js examples/error_handling.mere
 
 fn safe_divide(a: Number, b: Number) -> Result<Number> {
   if b == 0 {

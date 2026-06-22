@@ -1,88 +1,211 @@
-import { Value, TaskValue, task as mkTask } from './values.js';
+import { Value, TaskValue, TaskHandle, SuspendFrame } from './values.js';
 import { TypeAnnotation } from '../ast/nodes.js';
-import deasync from 'deasync';
 
-class SchedulerTask {
+interface SchedulerTask {
   id: number;
-  fn: () => Value | Promise<Value>;
-  resultType: TypeAnnotation | null;
   state: 'pending' | 'done';
   result: Value | null;
   error: string | null;
+  promise?: Promise<Value>;
+  waitingVmIdx?: number;
+  handle?: TaskHandle;
+}
 
-  constructor(id: number, fn: () => Value | Promise<Value>, resultType: TypeAnnotation | null) {
-    this.id = id;
-    this.fn = fn;
-    this.resultType = resultType;
-    this.state = 'pending';
-    this.result = null;
-    this.error = null;
-  }
-
-  isDone(): boolean {
-    return this.state === 'done';
-  }
+interface VMLike {
+  stack: Value[];
+  frames: any[];
+  funcList: any[];
+  functions: Map<string, any>;
+  funcNameToIndex: Map<string, number>;
+  globals: Value[];
+  globalNames: string[];
+  pushFrame(fn: any, args: Value[]): number;
+  runScheduled(targetDepth: number): Value;
+  hasFunction(name: string): boolean;
+  getFunctionIndex(name: string): number;
+  callByIndex(index: number, args: Value[]): Value;
 }
 
 class Scheduler {
-  tasks: Map<number, SchedulerTask>;
-  nextId: number;
+  private tasks: Map<number, SchedulerTask>;
+  private nextTaskId: number;
+  private vms: VMLike[];
+  private readyQueue: number[];
+  currentVmIdx: number;
+  private mainVmIdx: number;
+  private mainResult: Value;
+  private pendingPromiseTasks: Set<number>;
+  private vmNextEntry: Map<number, string | null>;
+
+  getCurrentVM(): VMLike | null {
+    if (this.currentVmIdx >= 0 && this.currentVmIdx < this.vms.length) {
+      return this.vms[this.currentVmIdx];
+    }
+    return null;
+  }
 
   constructor() {
     this.tasks = new Map();
-    this.nextId = 0;
+    this.nextTaskId = 1;
+    this.vms = [];
+    this.readyQueue = [];
+    this.currentVmIdx = -1;
+    this.mainVmIdx = -1;
+    this.mainResult = null as unknown as Value;
+    this.pendingPromiseTasks = new Set();
+    this.vmNextEntry = new Map();
   }
 
-  spawn(fn: () => Value | Promise<Value>, resultType: TypeAnnotation | null): TaskValue {
-    const task = new SchedulerTask(this.nextId++, fn, resultType);
-    this.tasks.set(task.id, task);
-    return mkTask(task, resultType);
+  registerMainVM(vm: VMLike): void {
+    this.mainVmIdx = this.vms.length;
+    this.vms.push(vm);
+  }
+
+  setupMainEntry(hasEntry: boolean): void {
+    if (hasEntry) {
+      this.vmNextEntry.set(this.mainVmIdx, '__main__');
+    }
   }
 
   spawnAsync(promise: Promise<Value>, resultType: TypeAnnotation | null): TaskValue {
-    const task = new SchedulerTask(this.nextId++, () => promise, resultType);
-    this.tasks.set(task.id, task);
+    const taskId = this.nextTaskId++;
+
+    const handle: TaskHandle = {
+      id: taskId,
+      state: 'pending',
+      result: null,
+      error: null,
+      resultType,
+      isDone(): boolean { return this.state === 'done'; },
+    };
+
+    const task: SchedulerTask = {
+      id: taskId,
+      state: 'pending',
+      result: null,
+      error: null,
+      promise,
+    };
+    this.tasks.set(taskId, task);
+    this.pendingPromiseTasks.add(taskId);
+
     promise.then(
-      value => { task.result = value; task.state = 'done'; },
-      err => { task.error = err.message; task.state = 'done'; }
+      value => { handle.state = 'done'; handle.result = value; task.state = 'done'; task.result = value; },
+      err => { handle.state = 'done'; handle.error = err.message; task.state = 'done'; task.error = err.message; }
     );
-    return mkTask(task, resultType);
+
+    return new TaskValue(handle, resultType);
   }
 
   join(taskValue: TaskValue): Value {
-    const task = taskValue.handle;
-
-    if (task.isDone()) {
-      if (task.error) {
-        throw new Error(`Task ${task.id} failed: ${task.error}`);
+    const handle = taskValue.handle;
+    if (handle.isDone()) {
+      if (handle.error) {
+        throw new Error(`Task ${handle.id} failed: ${handle.error}`);
       }
-      return task.result;
+      return handle.result!;
     }
 
-    const result = task.fn();
-
-    if (result instanceof Promise) {
-      // Async task — already started by spawnAsync, pump loop until done
-      if (!task.isDone()) {
-        deasync.loopWhile(() => !task.isDone());
-      }
-    } else {
-      // Sync task — execute result immediately
-      task.result = result;
-      task.state = 'done';
+    const vm = this.vms[this.currentVmIdx];
+    const task = this.tasks.get(handle.id);
+    if (task) {
+      task.waitingVmIdx = this.currentVmIdx;
     }
 
-    if (task.error) {
-      throw new Error(`Task ${task.id} failed: ${task.error}`);
-    }
-    return task.result;
+    vm.stack.push(taskValue);
+    throw new SuspendFrame();
   }
 
-  reset() {
-    this.tasks.clear();
-    this.nextId = 0;
+  async run(): Promise<Value> {
+    if (this.mainVmIdx < 0) return null as unknown as Value;
+
+    const mainVM = this.vms[this.mainVmIdx];
+    const nextEntry = this.vmNextEntry.get(this.mainVmIdx);
+    if (nextEntry !== undefined) {
+      const fnIdx = mainVM.getFunctionIndex(nextEntry);
+      if (fnIdx >= 0) {
+        mainVM.pushFrame(mainVM.funcList[fnIdx], []);
+      }
+      this.vmNextEntry.delete(this.mainVmIdx);
+    }
+    this.readyQueue.push(this.mainVmIdx);
+
+    while (this.readyQueue.length > 0 || this.pendingPromiseTasks.size > 0) {
+      while (this.readyQueue.length > 0) {
+        const vmIdx = this.readyQueue.shift()!;
+        this.currentVmIdx = vmIdx;
+        const vm = this.vms[vmIdx];
+
+        let result: Value;
+        try {
+          result = vm.runScheduled(0);
+        } catch (e) {
+          if (e instanceof SuspendFrame) {
+            continue;
+          }
+          throw e;
+        }
+
+        this.handleVMCompletion(vmIdx, result);
+      }
+
+      if (this.pendingPromiseTasks.size > 0) {
+        await this.waitForPromises();
+      }
+    }
+
+    return this.mainResult;
+  }
+
+  private handleVMCompletion(vmIdx: number, result: Value): void {
+    const nextEntry = this.vmNextEntry.get(this.mainVmIdx);
+    if (nextEntry !== undefined) {
+      const mainVM = this.vms[this.mainVmIdx];
+      const fnIdx = mainVM.getFunctionIndex(nextEntry);
+      if (fnIdx >= 0) {
+        mainVM.pushFrame(mainVM.funcList[fnIdx], []);
+        this.readyQueue.push(this.mainVmIdx);
+      }
+      this.vmNextEntry.delete(this.mainVmIdx);
+      return;
+    }
+
+    this.mainResult = result;
+  }
+
+  private wakeWaitingVM(taskId: number): void {
+    const task = this.tasks.get(taskId);
+    if (task && task.waitingVmIdx !== undefined) {
+      this.readyQueue.push(task.waitingVmIdx);
+      task.waitingVmIdx = undefined;
+    }
+  }
+
+  private async waitForPromises(): Promise<void> {
+    const pending: Promise<Value>[] = [];
+    for (const taskId of this.pendingPromiseTasks) {
+      const task = this.tasks.get(taskId);
+      if (task && task.state === 'pending' && task.promise) {
+        pending.push(task.promise);
+      }
+    }
+
+    if (pending.length === 0) return;
+
+    await Promise.race(pending).catch(() => {});
+
+    const resolved: number[] = [];
+    for (const taskId of this.pendingPromiseTasks) {
+      const task = this.tasks.get(taskId);
+      if (task && task.state === 'done') {
+        resolved.push(taskId);
+        this.wakeWaitingVM(taskId);
+      }
+    }
+    for (const id of resolved) {
+      this.pendingPromiseTasks.delete(id);
+    }
   }
 }
 
 export { Scheduler };
-export type { SchedulerTask };

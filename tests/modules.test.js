@@ -7,9 +7,9 @@ let passed = 0;
 let failed = 0;
 let tmpDir;
 
-function test(name, fn) {
+async function test(name, fn) {
   try {
-    fn();
+    await fn();
     console.log('✓', name);
     passed++;
   } catch (e) {
@@ -18,9 +18,9 @@ function test(name, fn) {
   }
 }
 
-function testError(name, fn, pattern) {
+async function testError(name, fn, pattern) {
   try {
-    fn();
+    await fn();
     console.log('✗', name, 'expected error, got success');
     failed++;
   } catch (e) {
@@ -40,9 +40,9 @@ function writeMod(name, source) {
   return p;
 }
 
-function runModule(filePath) {
+async function runModule(filePath) {
   const loader = new ModuleLoader(tmpDir);
-  return loader.runModule(filePath);
+  return await loader.runModule(filePath);
 }
 
 function extractValue(v) {
@@ -61,274 +61,275 @@ function extractValue(v) {
   return v.toString();
 }
 
-console.log('=== Module System Test Suite ===');
-console.log();
+async function main() {
+  console.log('=== Module System Test Suite ===');
+  console.log();
 
-// Setup: create temp directory
-tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mere-test-'));
-const cleanTmpDir = () => fs.rmSync(tmpDir, { recursive: true, force: true });
+  // Setup: create temp directory
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mere-test-'));
+  const cleanTmpDir = () => fs.rmSync(tmpDir, { recursive: true, force: true });
 
-try {
+  try {
 
-// ── Happy path: basic module ────────────────────────────────────
+  // ── Happy path: basic module ────────────────────────────────────
 
-test('import add from math module', () => {
-  writeMod('math.sim', `
+  await test('import add from math module', async () => {
+    writeMod('math.mere', `
 export fn add(a: Number, b: Number) -> Number {
   a + b
 }
 `);
 
-  writeMod('main.sim', `
-import math from "math.sim";
+    writeMod('main.mere', `
+import math from "math.mere";
 math.add(3, 4)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 7) throw new Error(`expected 7, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 7) throw new Error(`expected 7, got ${val}`);
+  });
 
-test('import multiply from math module', () => {
-  writeMod('math.sim', `
+  await test('import multiply from math module', async () => {
+    writeMod('math.mere', `
 export fn multiply(a: Number, b: Number) -> Number {
   a * b
 }
 `);
 
-  writeMod('main.sim', `
-import math from "math.sim";
+    writeMod('main.mere', `
+import math from "math.mere";
 math.multiply(5, 6)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 30) throw new Error(`expected 30, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 30) throw new Error(`expected 30, got ${val}`);
+  });
 
-test('import multiple functions from one module', () => {
-  writeMod('math.sim', `
+  await test('import multiple functions from one module', async () => {
+    writeMod('math.mere', `
 export fn add(a: Number, b: Number) -> Number { a + b }
 export fn multiply(a: Number, b: Number) -> Number { a * b }
 export fn square(x: Number) -> Number { x * x }
 `);
 
-  writeMod('main.sim', `
-import math from "math.sim";
+    writeMod('main.mere', `
+import math from "math.mere";
 math.add(10, 20) + math.multiply(2, 3) + math.square(4)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 10 + 20 + 2 * 3 + 4 * 4) throw new Error(`expected 52, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 10 + 20 + 2 * 3 + 4 * 4) throw new Error(`expected 52, got ${val}`);
+  });
 
-test('module function calls its own exported functions', () => {
-  writeMod('math.sim', `
+  await test('module function calls its own exported functions', async () => {
+    writeMod('math.mere', `
 export fn double(x: Number) -> Number { x * 2 }
 export fn quad(x: Number) -> Number { double(x) + double(x) }
 `);
 
-  writeMod('main.sim', `
-import math from "math.sim";
+    writeMod('main.mere', `
+import math from "math.mere";
 math.quad(5)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 20) throw new Error(`expected 20, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 20) throw new Error(`expected 20, got ${val}`);
+  });
 
-test('multiple imports from different modules', () => {
-  writeMod('math.sim', `
+  await test('multiple imports from different modules', async () => {
+    writeMod('math.mere', `
 export fn add(a: Number, b: Number) -> Number { a + b }
 `);
-  writeMod('string_util.sim', `
+    writeMod('string_util.mere', `
 export fn greet(name: String) -> String { "Hello, " + name }
 `);
 
-  writeMod('main.sim', `
-import math from "math.sim";
-import str from "string_util.sim";
+    writeMod('main.mere', `
+import math from "math.mere";
+import str from "string_util.mere";
 let s: String = str.greet("world");
 s.len + math.add(10, 5)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 27) throw new Error(`expected 27, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 27) throw new Error(`expected 27, got ${val}`);
+  });
 
-// ── Module with types ───────────────────────────────────────────
+  // ── Module with types ───────────────────────────────────────────
 
-test('module with custom types', () => {
-  writeMod('geometry.sim', `
+  await test('module with custom types', async () => {
+    writeMod('geometry.mere', `
 export fn area(w: Number, h: Number) -> Number { w * h }
 `);
 
-  writeMod('main.sim', `
-import geo from "geometry.sim";
+    writeMod('main.mere', `
+import geo from "geometry.mere";
 geo.area(3, 4)
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 12) throw new Error(`expected 12, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 12) throw new Error(`expected 12, got ${val}`);
+  });
 
-// ── Module caching ──────────────────────────────────────────────
+  // ── Module caching ──────────────────────────────────────────────
 
-test('module data is cached (same object on second load)', () => {
-  writeMod('cache_math.sim', `
+  await test('module data is cached (same object on second load)', () => {
+    writeMod('cache_math.mere', `
 export fn add(a: Number, b: Number) -> Number { a + b }
 `);
-  writeMod('main.sim', `import m from "cache_math.sim"; m.add(1, 2)`);
+    writeMod('main.mere', `import m from "cache_math.mere"; m.add(1, 2)`);
 
-  const loader = new ModuleLoader(tmpDir);
-  const first = loader.loadModule('cache_math.sim', 'cache_math.sim');
-  const second = loader.loadModule('cache_math.sim', 'cache_math.sim');
-  if (first !== second) throw new Error('expected same moduleData reference (cache hit)');
-  if (!first.exports.has('add')) throw new Error('exports should contain add');
-});
+    const loader = new ModuleLoader(tmpDir);
+    const first = loader.loadModule('cache_math.mere', 'cache_math.mere');
+    const second = loader.loadModule('cache_math.mere', 'cache_math.mere');
+    if (first !== second) throw new Error('expected same moduleData reference (cache hit)');
+    if (!first.exports.has('add')) throw new Error('exports should contain add');
+  });
 
-// ── runMain alias ───────────────────────────────────────────────
+  // ── runMain alias ───────────────────────────────────────────────
 
-test('runMain loads and runs the program', () => {
-  writeMod('entry.sim', `
+  await test('runMain loads and runs the program', async () => {
+    writeMod('entry.mere', `
 export fn answer() -> Number { 42 }
 `);
-  writeMod('main.sim', `
-import e from "entry.sim";
+    writeMod('main.mere', `
+import e from "entry.mere";
 e.answer()
 `);
 
-  const loader = new ModuleLoader(tmpDir);
-  const result = loader.runMain('main.sim');
-  const val = extractValue(result);
-  if (val !== 42) throw new Error(`expected 42, got ${val}`);
-});
+    const loader = new ModuleLoader(tmpDir);
+    const result = await loader.runMain('main.mere');
+    const val = extractValue(result);
+    if (val !== 42) throw new Error(`expected 42, got ${val}`);
+  });
 
-// ── Error cases ─────────────────────────────────────────────────
+  // ── Error cases ─────────────────────────────────────────────────
 
-testError('import non-existent module fails',
-  () => {
-    writeMod('main.sim', `
-import bad from "nonexistent.sim";
+  await testError('import non-existent module fails',
+    async () => {
+      writeMod('main.mere', `
+import bad from "nonexistent.mere";
 bad.anything()
 `);
-    runModule('main.sim');
-  },
-  /ENOENT|no such file|exist/i
-);
+      await runModule('main.mere');
+    },
+    /ENOENT|no such file|exist/i
+  );
 
-testError('import module with no exports fails type check',
-  () => {
-    writeMod('empty.sim', `let x: Number = 1;`);
-    writeMod('main.sim', `
-import e from "empty.sim";
+  await testError('import module with no exports fails type check',
+    async () => {
+      writeMod('empty.mere', `let x: Number = 1;`);
+      writeMod('main.mere', `
+import e from "empty.mere";
 e.anything()
 `);
-    runModule('main.sim');
-  },
-  /no exports/i
-);
+      await runModule('main.mere');
+    },
+    /no exports/i
+  );
 
-testError('non-exported function is not accessible from importer',
-  () => {
-    writeMod('secret.sim', `
+  await testError('non-exported function is not accessible from importer',
+    async () => {
+      writeMod('secret.mere', `
 fn hidden() -> Number { 42 }
 export fn visible() -> Number { 10 }
 `);
-    writeMod('main.sim', `
-import s from "secret.sim";
+      writeMod('main.mere', `
+import s from "secret.mere";
 s.hidden()
 `);
-    runModule('main.sim');
-  },
-  /no field|Cannot|Undefined|has no exports/i
-);
+      await runModule('main.mere');
+    },
+    /no field|Cannot|Undefined|has no exports/i
+  );
 
-// ── Edge cases ──────────────────────────────────────────────────
+  // ── Edge cases ──────────────────────────────────────────────────
 
-test('module function that returns unit', () => {
-  writeMod('greet.sim', `
+  await test('module function that returns unit', async () => {
+    writeMod('greet.mere', `
 export fn say(msg: String) -> Unit { print(msg) }
 `);
 
-  writeMod('main.sim', `
-import g from "greet.sim";
+    writeMod('main.mere', `
+import g from "greet.mere";
 g.say("test")
 `);
 
-  // Should not throw; returns unit
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== '()') throw new Error(`expected unit, got ${val}`);
-});
+    // Should not throw; returns unit
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== '()') throw new Error(`expected unit, got ${val}`);
+  });
 
-test('module with result types', () => {
-  writeMod('safe_math.sim', `
+  await test('module with result types', async () => {
+    writeMod('safe_math.mere', `
 export fn divide(a: Number, b: Number) -> Result<Number> {
   if b == 0 { return err("div0"); }
   ok(a / b)
 }
 `);
 
-  writeMod('main.sim', `
-import m from "safe_math.sim";
+    writeMod('main.mere', `
+import m from "safe_math.mere";
 let r: Result<Number> = m.divide(10, 2);
 r.value
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 5) throw new Error(`expected 5, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 5) throw new Error(`expected 5, got ${val}`);
+  });
 
-test('module function returns err result on bad input', () => {
-  writeMod('safe_math.sim', `
+  await test('module function returns err result on bad input', async () => {
+    writeMod('safe_math.mere', `
 export fn divide(a: Number, b: Number) -> Result<Number> {
   if b == 0 { return err("div0"); }
   ok(a / b)
 }
 `);
 
-  writeMod('main.sim', `
-import m from "safe_math.sim";
+    writeMod('main.mere', `
+import m from "safe_math.mere";
 let r: Result<Number> = m.divide(10, 0);
 not r.isOk
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== true) throw new Error(`expected true, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== true) throw new Error(`expected true, got ${val}`);
+  });
 
-test('chain module function calls', () => {
-  writeMod('math.sim', `
+  await test('chain module function calls', async () => {
+    writeMod('math.mere', `
 export fn double(x: Number) -> Number { x * 2 }
 export fn square(x: Number) -> Number { x * x }
 `);
 
-  writeMod('main.sim', `
-import m from "math.sim";
+    writeMod('main.mere', `
+import m from "math.mere";
 m.double(m.square(3))
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 18) throw new Error(`expected 18, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 18) throw new Error(`expected 18, got ${val}`);
+  });
 
-// ── Function body accessing import qualified name ──────────────
+  // ── Function body accessing import qualified name ──────────────
 
-test('function body can call import qualified name', () => {
-  writeMod('greeter.sim', `
+  await test('function body can call import qualified name', async () => {
+    writeMod('greeter.mere', `
 export fn hello(name: String) -> String { "Hello, " + name }
 `);
 
-  writeMod('main.sim', `
-import g from "greeter.sim";
+    writeMod('main.mere', `
+import g from "greeter.mere";
 
 fn run_test(name: String) -> String {
   g.hello(name)
@@ -337,18 +338,18 @@ fn run_test(name: String) -> String {
 run_test("world")
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 'Hello, world') throw new Error(`expected 'Hello, world', got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 'Hello, world') throw new Error(`expected 'Hello, world', got ${val}`);
+  });
 
-test('function body can call import qualified name inside main()', () => {
-  writeMod('math.sim', `
+  await test('function body can call import qualified name inside main()', async () => {
+    writeMod('math.mere', `
 export fn double(x: Number) -> Number { x * 2 }
 `);
 
-  writeMod('main.sim', `
-import m from "math.sim";
+    writeMod('main.mere', `
+import m from "math.mere";
 
 fn compute() -> Number {
   m.double(21)
@@ -357,69 +358,72 @@ fn compute() -> Number {
 compute()
 `);
 
-  const result = runModule('main.sim');
-  const val = extractValue(result);
-  if (val !== 42) throw new Error(`expected 42, got ${val}`);
-});
+    const result = await runModule('main.mere');
+    const val = extractValue(result);
+    if (val !== 42) throw new Error(`expected 42, got ${val}`);
+  });
 
-// ── collectSources ────────────────────────────────────────────
+  // ── collectSources ────────────────────────────────────────────
 
-test('collectSources returns all dependency sources', () => {
-  writeMod('a.sim', `export fn a() -> Number { 1 }`);
-  writeMod('b.sim', `
-import x from "a.sim";
+  await test('collectSources returns all dependency sources', () => {
+    writeMod('a.mere', `export fn a() -> Number { 1 }`);
+    writeMod('b.mere', `
+import x from "a.mere";
 export fn b() -> Number { x.a() + 1 }
 `);
-  writeMod('main.sim', `
-import y from "b.sim";
+    writeMod('main.mere', `
+import y from "b.mere";
 y.b()
 `);
 
-  const loader = new ModuleLoader(tmpDir);
-  const sources = loader.collectSources('main.sim');
+    const loader = new ModuleLoader(tmpDir);
+    const sources = loader.collectSources('main.mere');
 
-  // Should contain all 3 modules
-  const absKey = function(name) { return Object.keys(sources).find(function(k) { return k.endsWith(name); }); };
-  if (!absKey('main.sim')) throw new Error('main.sim not in sources');
-  if (!absKey('a.sim')) throw new Error('a.sim not in sources (transitive dep)');
-  if (!absKey('b.sim')) throw new Error('b.sim not in sources');
+    // Should contain all 3 modules
+    const absKey = function(name) { return Object.keys(sources).find(function(k) { return k.endsWith(name); }); };
+    if (!absKey('main.mere')) throw new Error('main.mere not in sources');
+    if (!absKey('a.mere')) throw new Error('a.mere not in sources (transitive dep)');
+    if (!absKey('b.mere')) throw new Error('b.mere not in sources');
 
-  // Each source should be non-empty
-  for (const key of Object.keys(sources)) {
-    const src = sources[key];
-    if (!src || src.trim().length === 0) throw new Error('empty source for ' + key);
-  }
-
-  // Should have exactly 3 modules: main.sim, a.sim, b.sim
-  if (Object.keys(sources).length !== 3) throw new Error('expected 3 sources, got ' + Object.keys(sources).length);
-});
-
-// ── Language-level import/export (via run() — these fail) ────────
-
-test('import/export cannot be used with run() — needs ModuleLoader', () => {
-  try {
-    run(`import math from "math.sim";`);
-    throw new Error('expected error');
-  } catch (e) {
-    if (!e.message.includes('no exports') && !e.message.match(/ENOENT|no such file/i)) {
-      throw e; // Unexpected error — re-throw
+    // Each source should be non-empty
+    for (const key of Object.keys(sources)) {
+      const src = sources[key];
+      if (!src || src.trim().length === 0) throw new Error('empty source for ' + key);
     }
-    // expected — run() has no module resolution
-  }
-});
 
-test('export keyword compiles via compile()', () => {
-  const result = compile(`
+    // Should have exactly 3 modules: main.mere, a.mere, b.mere
+    if (Object.keys(sources).length !== 3) throw new Error('expected 3 sources, got ' + Object.keys(sources).length);
+  });
+
+  // ── Language-level import/export (via run() — these fail) ────────
+
+  await test('import/export cannot be used with run() — needs ModuleLoader', async () => {
+    try {
+      await run(`import math from "math.mere";`);
+      throw new Error('expected error');
+    } catch (e) {
+      if (!e.message.includes('no exports') && !e.message.match(/ENOENT|no such file/i)) {
+        throw e; // Unexpected error — re-throw
+      }
+      // expected — run() has no module resolution
+    }
+  });
+
+  await test('export keyword compiles via compile()', () => {
+    const result = compile(`
 export fn f() -> Number { 42 }
 f()
 `);
-  if (!result) throw new Error('compile returned falsy');
-});
+    if (!result) throw new Error('compile returned falsy');
+  });
 
-} finally {
-  cleanTmpDir();
+  } finally {
+    cleanTmpDir();
+  }
+
+  console.log();
+  console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
+  if (failed > 0) process.exit(1);
 }
 
-console.log();
-console.log('=== Results:', passed, 'passed,', failed, 'failed ===');
-if (failed > 0) process.exit(1);
+main().catch(e => { console.error(e); process.exit(1); });

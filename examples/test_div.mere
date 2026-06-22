@@ -1,4 +1,4 @@
-// test_div.sim
+// test_div.mere
 
 fn main() -> Unit {
   let x: Number = 3;

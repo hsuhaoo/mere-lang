@@ -692,3 +692,4 @@ fn main() -> Unit {
   canvas_on_drag(handle_hover);
   canvas_on_dblclick(handle_dblclick);
 }
+main()

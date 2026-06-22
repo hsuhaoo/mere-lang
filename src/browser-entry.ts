@@ -39,7 +39,7 @@ type ModuleData = {
   exports: Map<string, any>;
 };
 
-export function runBrowser(
+export async function runBrowser(
   source: string,
   config: {
     target?: string;
@@ -49,7 +49,7 @@ export function runBrowser(
     sources?: Record<string, string>;
     mainKey?: string;
   } = {}
-) {
+): Promise<Value> {
   if (config.sources) {
     return runWithModules(config.sources, config.mainKey || '', config);
   }
@@ -67,7 +67,7 @@ export function runBrowser(
   return interpreter.run(program);
 }
 
-function runWithModules(
+async function runWithModules(
   sources: Record<string, string>,
   mainKey: string,
   config: {
@@ -75,7 +75,7 @@ function runWithModules(
     canvasWidth?: number;
     canvasHeight?: number;
   }
-) {
+): Promise<Value> {
   const loaded = new Map<string, ModuleData>();
 
   function evalExportLetInit(expr: any): Value {

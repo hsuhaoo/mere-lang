@@ -28,7 +28,7 @@ import { createRuntime, RuntimeConfig } from './runtime/runtime.js';
  * High-level compile-and-run API.
  * Takes source code string and returns the result value.
  */
-function run(source, filePath = 'main.sim') {
+async function run(source, filePath = 'main.mere'): Promise<Value> {
   const lexer = new Lexer(source);
   const tokens = lexer.getTokens();
 
@@ -45,7 +45,7 @@ function run(source, filePath = 'main.sim') {
 /**
  * Run in browser mode with Canvas support.
  */
-function runBrowser(source, config: RuntimeConfig = { target: 'browser' }) {
+async function runBrowser(source, config: RuntimeConfig = { target: 'browser' }): Promise<Value> {
   const lexer = new Lexer(source);
   const tokens = lexer.getTokens();
 

@@ -1,6 +1,6 @@
-// agent_demo.sim - 简化版 Agent (使用 map/filter/fold)
+// agent_demo.mere - 简化版 Agent (使用 map/filter/fold)
 // 运行前确保：omlx start (端口 8000，API key: 1234)
-// 运行：node bin/mere.js examples/agent_demo.sim
+// 运行：node bin/mere.js examples/agent_demo.mere
 
 // 配置
 let OMLX_URL: String = "http://localhost:8000/v1/chat/completions";

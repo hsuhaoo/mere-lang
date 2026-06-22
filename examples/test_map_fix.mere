@@ -1,4 +1,4 @@
-// test_map_fix.sim - 验证 Map 修复后的不可变性
+// test_map_fix.mere - 验证 Map 修复后的不可变性
 
 fn main() -> Unit {
   let m1: Map<String, Number> = {"a": 1, "b": 2};

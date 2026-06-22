@@ -1,5 +1,5 @@
 // Mere example: File I/O
-// Run with: node bin/mere.js examples/file_io.sim
+// Run with: node bin/mere.js examples/file_io.mere
 
 // --- Write a file ---
 // file_write returns Task<Result<Unit>> — join to get the result

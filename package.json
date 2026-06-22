@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsgo && npm run build:browser",
-    "build:browser": "esbuild src/browser-entry.ts --bundle --format=iife --global-name=mere --outfile=dist/mere.browser.js --platform=browser --alias:fs=./shims/fs.js --alias:process=./shims/process.js --alias:deasync=./shims/deasync.js --external:child_process",
+    "build:browser": "esbuild src/browser-entry.ts --bundle --format=iife --global-name=mere --outfile=dist/mere.browser.js --platform=browser --alias:fs=./shims/fs.js --alias:process=./shims/process.js --external:child_process",
     "dev:browser": "npm run build && npm run build:browser",
     "test": "node tests/run-tests.js && node tests/typechecker.test.js && node tests/modules.test.js && node tests/browser.test.js && bash tests/game-flow-cli.test.sh"
   },
@@ -21,7 +21,6 @@
     "esbuild": "^0.28.1"
   },
   "dependencies": {
-    "deasync": "^0.1.31",
     "typescript": "^6.0.3"
   }
 }

@@ -1,5 +1,5 @@
 // Mere example: Lambda expressions
-// Run with: node bin/mere.js examples/lambda.sim
+// Run with: node bin/mere.js examples/lambda.mere
 
 // --- Lambda as a value ---
 let add: Fn<Number, Number, Number> = fn(x: Number, y: Number) -> Number { x + y };
@@ -18,8 +18,4 @@ print(hello());
 let double: Fn<Number, Number> = fn(n: Number) -> Number { n * 2 };
 print("double(21) = " + to_string(double(21)));
 
-// --- Use lambda with spawn ---
-// spawn 接受零参 lambda，返回 Task<T>，join 获取结果
-let task: Task<Number> = spawn(fn() -> Number { 10 + 20 });
-let taskResult: Number = join(task);
-print("spawned result: " + to_string(taskResult));
+

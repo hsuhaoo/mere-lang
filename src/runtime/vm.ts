@@ -4,7 +4,7 @@ import {
   MapValue, RecordValue, ResultValue, FnValue,
   unit as mkUnit, number as mkNumber, string as mkString,
   boolean as mkBoolean,
-  mkOk, mkErr, UNIT_VALUE,
+  mkOk, mkErr, UNIT_VALUE, SuspendFrame,
 } from './values.js';
 import { Builtins } from './builtins.js';
 import type { CompiledFn } from './compiler.js';
@@ -29,19 +29,40 @@ interface RegisteredFn {
 
 class VM {
   private builtins: Builtins;
-  private functions: Map<string, RegisteredFn> = new Map();
-  private funcList: RegisteredFn[] = [];
-  private funcNameToIndex: Map<string, number> = new Map();
-  private globals: Value[];
-  private globalNames: string[];
+  functions: Map<string, RegisteredFn> = new Map();
+  funcList: RegisteredFn[] = [];
+  funcNameToIndex: Map<string, number> = new Map();
+  globals: Value[];
+  globalNames: string[];
 
-  private stack: Value[] = [];
-  private frames: Frame[] = [];
+  stack: Value[] = [];
+  frames: Frame[] = [];
+  lastResult: Value | null = null;
 
   constructor(builtins: Builtins, globalNames: string[], globalValues: Value[]) {
     this.builtins = builtins;
     this.globalNames = globalNames;
     this.globals = globalValues;
+  }
+
+  pushFrame(fn: RegisteredFn, args: Value[]): number {
+    const depth = this.frames.length;
+    const locals = new Array<Value>(fn.localCount);
+    for (let i = 0; i < args.length; i++) locals[i] = args[i];
+    for (let i = args.length; i < fn.localCount; i++) locals[i] = UNIT_VALUE;
+    this.frames.push({ code: fn.code, constants: fn.constants, ip: 0, locals, subFnIndices: fn.subFnIndices, fnName: fn.name });
+    return depth;
+  }
+
+  runScheduled(targetDepth: number): Value {
+    try {
+      return this.runLoop(targetDepth);
+    } catch (e) {
+      if (e instanceof SuspendFrame) {
+        throw e;
+      }
+      throw e;
+    }
   }
 
   tryRegister(fn: CompiledFn) {
@@ -101,12 +122,7 @@ class VM {
   }
 
   private execute(fn: RegisteredFn, args: Value[]): Value {
-    const locals = new Array<Value>(fn.localCount);
-    for (let i = 0; i < args.length; i++) locals[i] = args[i];
-    for (let i = args.length; i < fn.localCount; i++) locals[i] = UNIT_VALUE;
-
-    const targetDepth = this.frames.length;
-    this.frames.push({ code: fn.code, constants: fn.constants, ip: 0, locals, subFnIndices: fn.subFnIndices, fnName: fn.name });
+    const targetDepth = this.pushFrame(fn, args);
     const result = this.runLoop(targetDepth);
     return result;
   }

@@ -43,8 +43,7 @@ Mere is a minimal, explicit programming language with both Node.js and browser r
 - No `try-catch`, no `?` operator
 
 ### Concurrency
-- `spawn` creates a lightweight task, returns `Task<T>`
-- `join` waits for task completion
+- `join` waits for async task completion
 - Cooperative scheduling (synchronous appearance)
 
 ### Browser / Canvas API
@@ -116,7 +115,7 @@ Mere supports browser-based 2D drawing via built-in `canvas_*` functions:
 | **Await** | `await_font_loaded` | — | Wait for font loading |
 | | `next_frame` | — | Wait until next animation frame |
 
-Use `mere build` to produce a standalone HTML file that inlines the runtime and your `.sim` code.
+Use `mere build` to produce a standalone HTML file that inlines the runtime and your `.mere` code.
 
 <p align="center">
   <img src="https://via.placeholder.com/800x600/1a1a2e/FFFFFF?text=Mere+Canvas" alt="Canvas demo" width="400">
@@ -139,32 +138,32 @@ npm run build            # Compile TypeScript + build browser bundle
 
 ```bash
 # Run a Mere program (Node.js)
-mere examples/hello.sim
+mere examples/hello.mere
 
 # Run tests
 npm test
 
 # Build for browser — produces standalone HTML
-mere build examples/browser/rectangles.sim
+mere build examples/browser/rectangles.mere
 open rectangles.html   # Works directly in browser
 
 # Options
-mere build input.sim -o output.html --width 1024 --height 768
+mere build input.mere -o output.html --width 1024 --height 768
 ```
 
 ## Examples
 
 | File | Description |
 |------|-------------|
-| `examples/hello.sim` | Hello World |
-| `examples/factorial.sim` | Recursive factorial |
-| `examples/fibonacci.sim` | Recursive Fibonacci |
-| `examples/error_handling.sim` | Result-based error handling |
-| `examples/data_structures.sim` | Lists and Maps |
-| `examples/records.sim` | Custom record types |
-| `examples/browser/rectangles.sim` | Canvas drawing (browser target) |
+| `examples/hello.mere` | Hello World |
+| `examples/factorial.mere` | Recursive factorial |
+| `examples/fibonacci.mere` | Recursive Fibonacci |
+| `examples/error_handling.mere` | Result-based error handling |
+| `examples/data_structures.mere` | Lists and Maps |
+| `examples/records.mere` | Custom record types |
+| `examples/browser/rectangles.mere` | Canvas drawing (browser target) |
 | `examples/browser/game.html` | Browser game (Touhou-themed card game) |
-| `examples/browser/events.sim` | Click/drag event handling |
+| `examples/browser/events.mere` | Click/drag event handling |
 
 ## Language Specification
 

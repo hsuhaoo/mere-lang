@@ -1,4 +1,4 @@
-// test_higher_order.sim - 测试 map/filter/fold
+// test_higher_order.mere - 测试 map/filter/fold
 
 fn main() -> Unit {
   let nums: List<Number> = [1, 2, 3, 4, 5];

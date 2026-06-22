@@ -543,20 +543,6 @@ class TypeChecker {
         return this.inferPolyBuiltin(expr, fnName);
       }
 
-      // spawn: Fn<RetT> → Task<RetT>
-      if (fnName === 'spawn') {
-        const fnType = this.inferExprType(expr.args[0]);
-        if (fnType.name !== 'Fn') {
-          throw new TypeError('spawn expects a function', expr.line, expr.column);
-        }
-        const typeParams = fnType.typeParams || [];
-        if (typeParams.length === 0) {
-          throw new TypeError('spawn expects a function with a return type', expr.line, expr.column);
-        }
-        const retType = typeParams[typeParams.length - 1];
-        return new TypeAnnotation('Task', [retType], expr.line, expr.column);
-      }
-
       // join: Task<RetT> → RetT
       if (fnName === 'join') {
         const taskType = this.inferExprType(expr.args[0]);

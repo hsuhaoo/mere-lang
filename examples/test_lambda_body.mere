@@ -1,4 +1,4 @@
-// test_lambda_body.sim
+// test_lambda_body.mere
 
 fn main() -> Unit {
   let items: List<String> = ["a", "b", "c"];

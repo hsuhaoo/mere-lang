@@ -493,10 +493,17 @@ class FnValue extends Value {
   }
 }
 
+class SuspendFrame extends Error {
+  constructor() {
+    super('Suspended');
+    this.name = 'SuspendFrame';
+  }
+}
+
 export interface TaskHandle {
   id: number;
   state: 'pending' | 'done';
-  fn: () => Value | Promise<Value>;
+  fn?: () => Value | Promise<Value>;
   result: Value | null;
   error: string | null;
   resultType: TypeAnnotation | null;
@@ -582,6 +589,7 @@ export {
   ResultValue,
   FnValue,
   TaskValue,
+  SuspendFrame,
   UNIT_VALUE,
   number,
   string,
