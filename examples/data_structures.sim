@@ -1,5 +1,5 @@
-// Simplex example: Data structures (List, Map, and Records)
-// Run with: node bin/simplex.js examples/data_structures.sim
+// Mere example: Data structures (List, Map, and Records)
+// Run with: node bin/mere.js examples/data_structures.sim
 
 // --- List operations ---
 let numbers: List<Number> = [1, 2, 3, 4, 5];

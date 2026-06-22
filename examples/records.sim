@@ -1,5 +1,5 @@
-// Simplex example: Custom record types
-// Run with: node bin/simplex.js examples/records.sim
+// Mere example: Custom record types
+// Run with: node bin/mere.js examples/records.sim
 
 // Define a Point record
 type Point = { x: Number, y: Number };

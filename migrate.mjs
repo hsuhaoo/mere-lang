@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
-const root = '/Users/xx/thou/simplex';
+const root = '/Users/xx/thou/mere';
 
 // 1. Rename
 execSync('find ' + root + '/src -name "*.js" ! -name "*.bak" -exec sh -c \'mv "$0" "${0%.js}.ts"\' {} \\;', { cwd: root });

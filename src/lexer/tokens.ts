@@ -1,5 +1,5 @@
 /**
- * Token types for the Simplex language lexer.
+ * Token types for the Mere language lexer.
  * Each token has a type, raw value, and source position.
  */
 

@@ -1,9 +1,9 @@
-// Simplex example: File I/O
-// Run with: node bin/simplex.js examples/file_io.sim
+// Mere example: File I/O
+// Run with: node bin/mere.js examples/file_io.sim
 
 // --- Write a file ---
 // file_write returns Task<Result<Unit>> — join to get the result
-let write_task: Task<Result<Unit>> = file_write("output.txt", "Hello from Simplex!\nSecond line\n");
+let write_task: Task<Result<Unit>> = file_write("output.txt", "Hello from Mere!\nSecond line\n");
 let write_result: Result<Unit> = join(write_task);
 if write_result.isOk {
   print("File written successfully");

@@ -1,4 +1,4 @@
-# Simplex — 设计哲学
+# Mere — 设计哲学
 
 > 一个极简、显式的编程语言，没有语法糖，没有隐式行为。
 
@@ -28,7 +28,7 @@
 ## 运行
 
 ```bash
-node bin/simplex.js examples/hello.sim
+node bin/mere.js examples/hello.sim
 node tests/run-tests.js
 ```
 

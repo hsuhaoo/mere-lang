@@ -404,7 +404,7 @@ class BrowserBuiltins {
         const key = args[0].toRawString();
         const value = args[1].toRawString();
         const promise = new Promise<Value>((resolve) => {
-          const req = indexedDB.open('simplex_store', 1);
+          const req = indexedDB.open('mere_store', 1);
           req.onupgradeneeded = () => {
             req.result.createObjectStore('data');
           };
@@ -423,7 +423,7 @@ class BrowserBuiltins {
       this.registerFn('db_load', 1, (args) => {
         const key = args[0].toRawString();
         const promise = new Promise<Value>((resolve) => {
-          const req = indexedDB.open('simplex_store', 1);
+          const req = indexedDB.open('mere_store', 1);
           req.onupgradeneeded = () => {
             req.result.createObjectStore('data');
           };
@@ -449,7 +449,7 @@ class BrowserBuiltins {
       this.registerFn('db_delete', 1, (args) => {
         const key = args[0].toRawString();
         const promise = new Promise<Value>((resolve) => {
-          const req = indexedDB.open('simplex_store', 1);
+          const req = indexedDB.open('mere_store', 1);
           req.onupgradeneeded = () => {
             req.result.createObjectStore('data');
           };

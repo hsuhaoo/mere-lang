@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-console.log('=== Simplex Language Test Suite ===');
+console.log('=== Mere Language Test Suite ===');
 console.log();
 
 let passed = 0;
@@ -508,12 +508,12 @@ to_string(42)
 `, "42");
 
 // ── File I/O ────────────────────────────────────────────────────
-const ioDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simplex-io-test-'));
+const ioDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mere-io-test-'));
 const ioFilePath = path.join(ioDir, 'test.txt');
 const ioLinesPath = path.join(ioDir, 'lines.txt');
 const ioWritePath = path.join(ioDir, 'written.txt');
   const ioNoDirPath = path.join(ioDir, 'nope', 'file.txt');
-fs.writeFileSync(ioFilePath, 'hello simplex');
+fs.writeFileSync(ioFilePath, 'hello mere');
 fs.writeFileSync(ioLinesPath, 'line1\nline2\nline3\n');
 fs.writeFileSync(path.join(ioDir, 'conc-a.txt'), 'aaa');
 fs.writeFileSync(path.join(ioDir, 'conc-b.txt'), 'bbb');
@@ -521,7 +521,7 @@ fs.writeFileSync(path.join(ioDir, 'conc-b.txt'), 'bbb');
 test('file_read existing file', `
 let r: Result<String> = join(file_read("${ioFilePath}"));
 r.value
-`, "hello simplex");
+`, "hello mere");
 
 test('file_read non-existent file', `
 let r: Result<String> = join(file_read("${ioNoDirPath}"));

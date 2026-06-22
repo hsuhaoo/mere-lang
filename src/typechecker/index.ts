@@ -1,5 +1,5 @@
 /**
- * Type checker for the Simplex language.
+ * Type checker for the Mere language.
  * Static checking: types, scopes, fields, function signatures, recursion.
  * 
  * Design principles:

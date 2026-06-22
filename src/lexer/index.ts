@@ -1,5 +1,5 @@
 /**
- * Lexer for the Simplex language.
+ * Lexer for the Mere language.
  * Converts source code into a stream of tokens.
  * 
  * Design principles:

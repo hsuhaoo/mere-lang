@@ -1,5 +1,5 @@
 // test_fetch_omlx.sim
-// 验证 Simplex fetch builtin 调用本机 oMLX 推理服务器
+// 验证 Mere fetch builtin 调用本机 oMLX 推理服务器
 // 使用前确保 oMLX 已启动: omlx start
 // 默认端口: 8000
 
@@ -39,7 +39,7 @@ fn test_chat_with_history() -> Task<Result<String>> {
     "Content-Type": "application/json",
     "Authorization": "Bearer 1234"
   };
-  let body: String = "{\"model\":\"Qwen3.5-4B-MLX-4bit\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a helpful assistant.\"},{\"role\":\"user\",\"content\":\"What is Simplex?\"}],\"max_tokens\":200}";
+  let body: String = "{\"model\":\"Qwen3.5-4B-MLX-4bit\",\"messages\":[{\"role\":\"system\",\"content\":\"You are a helpful assistant.\"},{\"role\":\"user\",\"content\":\"What is Mere?\"}],\"max_tokens\":200}";
   let task: Task<Result<String>> = fetch(
     "http://localhost:8000/v1/chat/completions",
     "POST",
@@ -51,7 +51,7 @@ fn test_chat_with_history() -> Task<Result<String>> {
 
 // 主程序
 fn main() -> Unit {
-  print("=== Simplex fetch builtin 验证脚本 ===");
+  print("=== Mere fetch builtin 验证脚本 ===");
   print("");
   print("正在连接 oMLX 服务器 (localhost:8000)...");
   print("");

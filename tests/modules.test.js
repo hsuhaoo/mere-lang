@@ -65,7 +65,7 @@ console.log('=== Module System Test Suite ===');
 console.log();
 
 // Setup: create temp directory
-tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simplex-test-'));
+tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mere-test-'));
 const cleanTmpDir = () => fs.rmSync(tmpDir, { recursive: true, force: true });
 
 try {

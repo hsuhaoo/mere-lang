@@ -1,5 +1,5 @@
 #!/bin/bash
-# playwright-cli end-to-end test for Simplex game flow
+# playwright-cli end-to-end test for Mere game flow
 # Tests the full flow: title → character-select → game → end turn
 set -euo pipefail
 IFS=$'\n\t'
@@ -50,7 +50,7 @@ check_pixel() {
 }
 
 # === SETUP ===
-echo "=== Simplex Game E2E Test (playwright-cli) ==="
+echo "=== Mere Game E2E Test (playwright-cli) ==="
 
 # Start HTTP server (pick a free port)
 SERVER_PORT=0
@@ -107,7 +107,7 @@ echo "--- Phase 2: Character Select ---"
 npx playwright-cli eval "document.querySelector('canvas').dispatchEvent(new MouseEvent('click', {clientX:400, clientY:350, bubbles:true}))" > /dev/null 2>&1
 sleep 1
 
-# Title is "东方卡片战斗 - Simplex" (no longer set by debug code)
+# Title is "东方卡片战斗 - Mere" (no longer set by debug code)
 green "Navigated to character-select"
 
 # Reimu name "博丽灵梦" — scan for any red pixel in the name area

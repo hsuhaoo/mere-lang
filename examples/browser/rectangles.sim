@@ -9,7 +9,7 @@ fn draw() {
 
   canvas_set_fill_color("white")
   canvas_set_font("bold 48px sans-serif")
-  canvas_fill_text("Simplex", 120, 300)
+  canvas_fill_text("Mere", 120, 300)
 }
 
 draw()

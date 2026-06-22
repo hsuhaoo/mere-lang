@@ -432,7 +432,7 @@ function createTest(opts) {
 })();
 
 // ════════════════════════════════════════════════════════════
-// 4. Integration via runBrowser — Simplex source → canvas
+// 4. Integration via runBrowser — Mere source → canvas
 // ════════════════════════════════════════════════════════════
 
 (function() {

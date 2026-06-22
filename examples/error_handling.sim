@@ -1,5 +1,5 @@
-// Simplex example: Error handling with Result
-// Run with: node bin/simplex.js examples/error_handling.sim
+// Mere example: Error handling with Result
+// Run with: node bin/mere.js examples/error_handling.sim
 
 fn safe_divide(a: Number, b: Number) -> Result<Number> {
   if b == 0 {

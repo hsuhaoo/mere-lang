@@ -4,19 +4,19 @@ const path = require('path');
 const { ModuleLoader } = require('../dist/module-loader.js');
 
 function printHelp() {
-  console.log(`Simplex Language Interpreter v1.0.0
+  console.log(`Mere Language Interpreter v1.0.0
 
 Usage:
-  simplex <file.sim> [args...]    Run a Simplex file
-  simplex build <file.sim>        Build self-contained HTML for browser
-  simplex --help                  Show this help
-  simplex --version               Show version
+  mere <file.sim> [args...]    Run a Mere file
+  mere build <file.sim>        Build self-contained HTML for browser
+  mere --help                  Show this help
+  mere --version               Show version
 
 Build options:
   -o, --output <file>     Output HTML file path (default: <name>.html)
   --width <px>            Canvas width (default: 800)
   --height <px>           Canvas height (default: 600)
-  --title <text>          Page title (default: "Simplex")
+  --title <text>          Page title (default: "Mere")
   --background <color>    Page background color (default: "#1a1a2e")`);
 }
 
@@ -34,7 +34,7 @@ function build(args) {
     output: path.join(simDir, baseName + '.html'),
     width: 800,
     height: 600,
-    title: 'Simplex',
+    title: 'Mere',
     background: '#1a1a2e',
   };
 
@@ -59,10 +59,10 @@ function build(args) {
     }
   }
 
-  const runtimePath = path.join(__dirname, '..', 'dist', 'simplex.browser.js');
+  const runtimePath = path.join(__dirname, '..', 'dist', 'mere.browser.js');
 
   if (!fs.existsSync(runtimePath)) {
-    console.error('Error: Runtime bundle not found at dist/simplex.browser.js');
+    console.error('Error: Runtime bundle not found at dist/mere.browser.js');
     console.error('Run "npm run build" first to build the project');
     process.exit(1);
   }
@@ -104,7 +104,7 @@ function build(args) {
 <body>
 ${hasCanvas ? '<canvas id="canvas"></canvas>' : '<div id="output"></div>'}
 <script>${runtime}
-const { runBrowser } = simplex;
+const { runBrowser } = mere;
 const moduleSources = ${sourcesJson};
 const mainKey = ${JSON.stringify(mainKey)};
 try {
@@ -134,7 +134,7 @@ try {
   document.getElementById('output').textContent = String(result);`
   }
 } catch (e) {
-  console.error('Simplex error:', e);
+  console.error('Mere error:', e);
   const el = ${hasCanvas ? "document.getElementById('canvas')" : "document.getElementById('output')"};
   el.after(Object.assign(document.createElement('div'), { className: 'error', textContent: 'Error: ' + e.message }));
 }
@@ -155,7 +155,7 @@ function main() {
   }
 
   if (args.includes('--version') || args.includes('-v')) {
-    console.log('Simplex v1.0.0');
+    console.log('Mere v1.0.0');
     process.exit(0);
   }
 

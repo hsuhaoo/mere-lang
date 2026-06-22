@@ -1,6 +1,6 @@
-# Simplex - A Minimal Explicit Language
+# Mere - A Minimal Explicit Language
 
-Simplex is a minimal, explicit programming language with both Node.js and browser runtimes. It embodies the following design principles:
+Mere is a minimal, explicit programming language with both Node.js and browser runtimes. It embodies the following design principles:
 
 ## Design Principles
 
@@ -49,7 +49,7 @@ Simplex is a minimal, explicit programming language with both Node.js and browse
 
 ### Browser / Canvas API
 
-Simplex supports browser-based 2D drawing via built-in `canvas_*` functions:
+Mere supports browser-based 2D drawing via built-in `canvas_*` functions:
 
 | Category | Function | Params | Description |
 |----------|----------|--------|-------------|
@@ -116,10 +116,10 @@ Simplex supports browser-based 2D drawing via built-in `canvas_*` functions:
 | **Await** | `await_font_loaded` | — | Wait for font loading |
 | | `next_frame` | — | Wait until next animation frame |
 
-Use `simplex build` to produce a standalone HTML file that inlines the runtime and your `.sim` code.
+Use `mere build` to produce a standalone HTML file that inlines the runtime and your `.sim` code.
 
 <p align="center">
-  <img src="https://via.placeholder.com/800x600/1a1a2e/FFFFFF?text=Simplex+Canvas" alt="Canvas demo" width="400">
+  <img src="https://via.placeholder.com/800x600/1a1a2e/FFFFFF?text=Mere+Canvas" alt="Canvas demo" width="400">
 </p>
 
 ## Module System
@@ -130,7 +130,7 @@ Use `simplex build` to produce a standalone HTML file that inlines the runtime a
 ## Installation
 
 ```bash
-cd simplex
+cd mere
 npm install
 npm run build            # Compile TypeScript + build browser bundle
 ```
@@ -138,18 +138,18 @@ npm run build            # Compile TypeScript + build browser bundle
 ## Usage
 
 ```bash
-# Run a Simplex program (Node.js)
-simplex examples/hello.sim
+# Run a Mere program (Node.js)
+mere examples/hello.sim
 
 # Run tests
 npm test
 
 # Build for browser — produces standalone HTML
-simplex build examples/browser/rectangles.sim
+mere build examples/browser/rectangles.sim
 open rectangles.html   # Works directly in browser
 
 # Options
-simplex build input.sim -o output.html --width 1024 --height 768
+mere build input.sim -o output.html --width 1024 --height 768
 ```
 
 ## Examples

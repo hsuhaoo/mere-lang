@@ -1,5 +1,5 @@
-// Simplex example: Fibonacci
-// Run with: node bin/simplex.js examples/fibonacci.sim
+// Mere example: Fibonacci
+// Run with: node bin/mere.js examples/fibonacci.sim
 
 fn fib(n: Number) -> Number {
   if n <= 0 {

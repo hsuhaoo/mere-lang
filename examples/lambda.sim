@@ -1,5 +1,5 @@
-// Simplex example: Lambda expressions
-// Run with: node bin/simplex.js examples/lambda.sim
+// Mere example: Lambda expressions
+// Run with: node bin/mere.js examples/lambda.sim
 
 // --- Lambda as a value ---
 let add: Fn<Number, Number, Number> = fn(x: Number, y: Number) -> Number { x + y };

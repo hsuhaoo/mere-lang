@@ -1,5 +1,5 @@
 /**
- * Parser for the Simplex language.
+ * Parser for the Mere language.
  * Recursive descent parser with clear error reporting.
  * 
  * Grammar:

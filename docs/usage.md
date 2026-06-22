@@ -1,6 +1,6 @@
-# Simplex 使用文档
+# Mere 使用文档
 
-Simplex 是一个极简、显式的编程语言。关键字分为几类：
+Mere 是一个极简、显式的编程语言。关键字分为几类：
 
 - **控制流**：`fn`、`let`、`if`、`elif`、`else`、`while`、`return`
 - **类型**：`type`
@@ -39,7 +39,7 @@ Simplex 是一个极简、显式的编程语言。关键字分为几类：
 ## 1. 运行
 
 ```bash
-node bin/simplex.js <file.sim>
+node bin/mere.js <file.sim>
 node tests/run-tests.js
 ```
 
@@ -86,7 +86,7 @@ print("Hello");               // 语句可以不用分号
 ```sim
 // 必须显式标注类型
 let x: Number = 42;
-let name: String = "Simplex";
+let name: String = "Mere";
 let flag: Boolean = true;
 let empty: Unit = ();
 ```
@@ -259,7 +259,7 @@ let x: Number = add(3, 4);       // 7
 
 ### 5.5 可变量
 
-Simplex 默认不可变，但支持 `let mut` 声明可变量并用 `=` 赋值：
+Mere 默认不可变，但支持 `let mut` 声明可变量并用 `=` 赋值：
 
 ```sim
 let mut x: Number = 10;
@@ -674,7 +674,7 @@ print("top-left: x=" + to_string(rect.top_left.x));
 I/O 函数返回 `Task<Result<T>>`，需用 `join` 获取结果：
 
 ```sim
-let task: Task<Result<Unit>> = file_write("output.txt", "Hello from Simplex!\n");
+let task: Task<Result<Unit>> = file_write("output.txt", "Hello from Mere!\n");
 let result: Result<Unit> = join(task);
 if result.isOk {
   print("File written successfully");
@@ -729,7 +729,7 @@ if result2.isOk {
 
 // 带自定义 Header
 let headers: Map<String, String> = {
-  "User-Agent": "MySimplexApp/1.0",
+  "User-Agent": "MyMereApp/1.0",
   "Authorization": "Bearer token123"
 };
 let task3: Task<Result<String>> = fetch(
@@ -1008,7 +1008,7 @@ fn main_loop(state: GameState) -> GameState {
 
 浏览器运行时提供简单的 IndexedDB 持久化存储。所有操作返回 `Task<Result<...>>`，需要使用 `join` 获取结果。
 
-数据库名 `simplex_store`，使用单一的 `data` 对象存储。
+数据库名 `mere_store`，使用单一的 `data` 对象存储。
 
 ### 18.1 API
 
@@ -1044,7 +1044,7 @@ let _: Result<Unit> = join(t3);
 ### 19.1 构建自包含 HTML
 
 ```bash
-node bin/simplex.js build examples/my_app.sim
+node bin/mere.js build examples/my_app.sim
 ```
 
 生成 `my_app.sim.html`，是包含运行时和 canvas 的自包含 HTML 文件。Canvas 自动全屏铺满视口。
@@ -1052,15 +1052,15 @@ node bin/simplex.js build examples/my_app.sim
 指定输出路径：
 
 ```bash
-node bin/simplex.js build examples/my_app.sim --output dist/index.html
+node bin/mere.js build examples/my_app.sim --output dist/index.html
 ```
 
 ### 19.2 直接运行
 
-在 Node.js 中可通过 `runBrowser` API 执行 Simplex 源码（带 canvas 上下文）：
+在 Node.js 中可通过 `runBrowser` API 执行 Mere 源码（带 canvas 上下文）：
 
 ```js
-const { runBrowser } = require('simplex-lang');
+const { runBrowser } = require('mere-lang');
 const canvas = document.getElementById('myCanvas');
 runBrowser(sourceCode, { target: 'browser', canvas });
 ```
@@ -1102,7 +1102,7 @@ runBrowser(sourceCode, { target: 'browser', canvas });
 ### 20.1 Hello World
 
 ```sim
-print("Hello, Simplex!");
+print("Hello, Mere!");
 let name: String = "World";
 print("Hello, " + name + "!");
 ```
@@ -1155,10 +1155,10 @@ print("multiply: " + to_string(y));
 
 ```bash
 # Node.js 运行
-node bin/simplex.js run examples/hello.sim
+node bin/mere.js run examples/hello.sim
 
 # 构建浏览器 HTML
-node bin/simplex.js build examples/browser/events.sim
+node bin/mere.js build examples/browser/events.sim
 
 # 运行测试
 node tests/run-tests.js

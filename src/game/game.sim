@@ -298,7 +298,7 @@ fn render_title_screen() -> Unit {
   canvas_fill_text("东方卡片战斗", 400, 150);
   canvas_set_fill_color("#ffffff");
   canvas_set_font("18px sans-serif");
-  canvas_fill_text("Simplex实现的回合制卡片游戏", 400, 200);
+  canvas_fill_text("Mere实现的回合制卡片游戏", 400, 200);
   canvas_set_text_align("left");
   canvas_set_fill_color("#e94560");
   canvas_fill_rect(300, 320, 200, 60);

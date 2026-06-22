@@ -1,5 +1,5 @@
-// Simplex example: Factorial
-// Run with: node bin/simplex.js examples/factorial.sim
+// Mere example: Factorial
+// Run with: node bin/mere.js examples/factorial.sim
 
 fn factorial(n: Number) -> Number {
   if n <= 1 {

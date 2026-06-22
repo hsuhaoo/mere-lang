@@ -1,5 +1,5 @@
 /**
- * Main entry point for the Simplex language runtime.
+ * Main entry point for the Mere language runtime.
  * Exports all public APIs.
  */
 

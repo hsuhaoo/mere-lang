@@ -1,5 +1,5 @@
 /**
- * Standard library for the Simplex language.
+ * Standard library for the Mere language.
  * Built-in functions implemented in JavaScript.
  * 
  * All built-ins are explicit: no implicit conversions, no hidden behavior.
