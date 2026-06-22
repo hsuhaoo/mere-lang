@@ -6,15 +6,38 @@
   "bin": {
     "mere": "bin/mere.js"
   },
+  "files": [
+    "dist",
+    "bin",
+    "shims",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsgo && npm run build:browser",
     "build:browser": "esbuild src/browser-entry.ts --bundle --format=iife --global-name=mere --outfile=dist/mere.browser.js --platform=browser --alias:fs=./shims/fs.js --alias:process=./shims/process.js --external:child_process",
     "dev:browser": "npm run build && npm run build:browser",
     "test": "node tests/run-tests.js && node tests/typechecker.test.js && node tests/modules.test.js && node tests/browser.test.js && bash tests/game-flow-cli.test.sh"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "programming-language",
+    "interpreter",
+    "compiler",
+    "minimal",
+    "explicit",
+    "async",
+    "concurrent"
+  ],
+  "author": "hsuhaoo <35220477+hsuhaoo@users.noreply.github.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hsuhaoo/mere-lang.git"
+  },
+  "homepage": "https://github.com/hsuhaoo/mere-lang#readme",
+  "bugs": {
+    "url": "https://github.com/hsuhaoo/mere-lang/issues"
+  },
   "devDependencies": {
     "@types/node": "^25.9.3",
     "@typescript/native-preview": "^7.0.0-dev.20260612.1",

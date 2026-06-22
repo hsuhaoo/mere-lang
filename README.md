@@ -4,12 +4,12 @@ Mere is a minimal, explicit programming language with both Node.js and browser r
 
 ## Design Principles
 
-- **极简 (Minimal)**: Minimal keywords, no syntax sugar, no implicit behavior
-- **显式 (Explicit)**: No hidden behavior, no automatic cleanup, no default values
-- **具体 (Concrete)**: No user-defined generics, all types are concrete
-- **确定 (Deterministic)**: Each structure does one thing, each token has a clear role
-- **局部可校验 (Locally Checkable)**: Errors detected in local scope
-- **闭包无关 (Closure-free)**: Functions capture no scope; all dependencies are explicit parameters
+- **Minimal**: Minimal keywords, no syntax sugar, no implicit behavior
+- **Explicit**: No hidden behavior, no automatic cleanup, no default values
+- **Concrete**: No user-defined generics, all types are concrete
+- **Deterministic**: Each structure does one thing, each token has a clear role
+- **Locally Checkable**: Errors detected in local scope
+- **Closure-free**: Functions capture no scope; all dependencies are explicit parameters
 
 ## Language Features
 
